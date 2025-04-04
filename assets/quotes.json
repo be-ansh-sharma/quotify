@@ -1,0 +1,802 @@
+[
+  {
+    "text": "The only way to do great work is to love what you do.",
+    "author": "Steve Jobs",
+    "likes": 0,
+    "tags": ["inspiration", "work", "passion"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Strive not to be a success, but rather to be of value.",
+    "author": "Albert Einstein",
+    "likes": 0,
+    "tags": ["value", "success", "purpose"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The mind is everything. What you think you become.",
+    "author": "Buddha",
+    "likes": 0,
+    "tags": ["mindset", "positivity", "spirituality"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Your time is limited, don't waste it living someone else's life.",
+    "author": "Steve Jobs",
+    "likes": 0,
+    "tags": ["life", "purpose", "individuality"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The best way to predict the future is to create it.",
+    "author": "Peter Drucker",
+    "likes": 0,
+    "tags": ["future", "action", "creation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Life is what happens when you're busy making other plans.",
+    "author": "John Lennon",
+    "likes": 0,
+    "tags": ["life", "present-moment", "planning"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Get busy living or get busy dying.",
+    "author": "Stephen King",
+    "likes": 0,
+    "tags": ["action", "life", "urgency"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Whether you think you can or you think you can't, you're right.",
+    "author": "Henry Ford",
+    "likes": 0,
+    "tags": ["mindset", "belief", "self-confidence"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You miss 100% of the shots you don't take.",
+    "author": "Wayne Gretzky",
+    "likes": 0,
+    "tags": ["opportunity", "risk", "action"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "I have not failed. I've just found 10,000 ways that won't work.",
+    "author": "Thomas A. Edison",
+    "likes": 0,
+    "tags": ["failure", "perseverance", "perspective"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The journey of a thousand miles begins with a single step.",
+    "author": "Lao Tzu",
+    "likes": 0,
+    "tags": ["journey", "perseverance", "beginnings"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Dream big and dare to fail.",
+    "author": "Norman Vaughan",
+    "likes": 0,
+    "tags": ["dreams", "courage", "failure"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It does not matter how slowly you go as long as you do not stop.",
+    "author": "Confucius",
+    "likes": 0,
+    "tags": ["perseverance", "patience", "progress"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Everything you can imagine is real.",
+    "author": "Pablo Picasso",
+    "likes": 0,
+    "tags": ["imagination", "creativity", "possibility"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Change your thoughts and you change your world.",
+    "author": "Norman Vincent Peale",
+    "likes": 0,
+    "tags": ["mindset", "change", "positivity"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "What we think, we become.",
+    "author": "Buddha",
+    "likes": 0,
+    "tags": ["mindset", "self-creation", "thoughts"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Happiness is not something readymade. It comes from your own actions.",
+    "author": "Dalai Lama",
+    "likes": 0,
+    "tags": ["happiness", "action", "responsibility"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "To live is the rarest thing in the world. Most people exist, that is all.",
+    "author": "Oscar Wilde",
+    "likes": 0,
+    "tags": ["life", "existence", "living-fully"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The purpose of our lives is to be happy.",
+    "author": "Dalai Lama",
+    "likes": 0,
+    "tags": ["happiness", "purpose", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Turn your wounds into wisdom.",
+    "author": "Oprah Winfrey",
+    "likes": 0,
+    "tags": ["adversity", "wisdom", "growth"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Believe you can and you're halfway there.",
+    "author": "Theodore Roosevelt",
+    "likes": 0,
+    "tags": ["belief", "self-confidence", "mindset"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Act as if what you do makes a difference. It does.",
+    "author": "William James",
+    "likes": 0,
+    "tags": ["action", "impact", "purpose"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Success is not final, failure is not fatal: It is the courage to continue that counts.",
+    "author": "Winston Churchill",
+    "likes": 0,
+    "tags": ["success", "failure", "courage", "perseverance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You must be the change you wish to see in the world.",
+    "author": "Mahatma Gandhi",
+    "likes": 0,
+    "tags": ["change", "action", "responsibility"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The only impossible journey is the one you never begin.",
+    "author": "Tony Robbins",
+    "likes": 0,
+    "tags": ["journey", "beginnings", "possibility"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Do one thing every day that scares you.",
+    "author": "Eleanor Roosevelt",
+    "likes": 0,
+    "tags": ["courage", "growth", "comfort-zone"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It is never too late to be what you might have been.",
+    "author": "George Eliot",
+    "likes": 0,
+    "tags": ["potential", "second-chances", "self-improvement"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Everything has beauty, but not everyone sees it.",
+    "author": "Confucius",
+    "likes": 0,
+    "tags": ["beauty", "perspective", "appreciation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Build your own dreams, or someone else will hire you to build theirs.",
+    "author": "Farraj Gray",
+    "likes": 0,
+    "tags": ["dreams", "entrepreneurship", "ambition"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Don’t watch the clock; do what it does. Keep going.",
+    "author": "Sam Levenson",
+    "likes": 0,
+    "tags": ["perseverance", "action", "time"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Keep your face always toward the sunshine—and shadows will fall behind you.",
+    "author": "Walt Whitman",
+    "likes": 0,
+    "tags": ["positivity", "optimism", "perspective"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The future belongs to those who believe in the beauty of their dreams.",
+    "author": "Eleanor Roosevelt",
+    "likes": 0,
+    "tags": ["dreams", "future", "belief"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "What lies behind us and what lies before us are tiny matters compared to what lies within us.",
+    "author": "Ralph Waldo Emerson",
+    "likes": 0,
+    "tags": ["potential", "inner-strength", "self-awareness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The best revenge is massive success.",
+    "author": "Frank Sinatra",
+    "likes": 0,
+    "tags": ["success", "motivation", "resilience"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Don't be afraid to give up the good to go for the great.",
+    "author": "John D. Rockefeller",
+    "likes": 0,
+    "tags": ["ambition", "sacrifice", "excellence"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "I can't change the direction of the wind, but I can adjust my sails to always reach my destination.",
+    "author": "Jimmy Dean",
+    "likes": 0,
+    "tags": ["adaptability", "resilience", "control"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Perfection is not attainable, but if we chase perfection we can catch excellence.",
+    "author": "Vince Lombardi",
+    "likes": 0,
+    "tags": ["excellence", "perfection", "striving"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "If you want to lift yourself up, lift up someone else.",
+    "author": "Booker T. Washington",
+    "likes": 0,
+    "tags": ["kindness", "service", "altruism"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Limitations live only in our minds. But if we use our imaginations, our possibilities become limitless.",
+    "author": "Jamie Paolinetti",
+    "likes": 0,
+    "tags": ["limitations", "imagination", "potential"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The only limit to our realization of tomorrow will be our doubts of today.",
+    "author": "Franklin D. Roosevelt",
+    "likes": 0,
+    "tags": ["doubt", "future", "potential"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Do not wait to strike till the iron is hot; but make it hot by striking.",
+    "author": "William Butler Yeats",
+    "likes": 0,
+    "tags": ["proactivity", "action", "opportunity"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It is our choices, Harry, that show what we truly are, far more than our abilities.",
+    "author": "J.K. Rowling",
+    "likes": 0,
+    "tags": ["choices", "character", "identity"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The question isn't who is going to let me; it's who is going to stop me.",
+    "author": "Ayn Rand",
+    "likes": 0,
+    "tags": ["determination", "ambition", "self-belief"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A person who never made a mistake never tried anything new.",
+    "author": "Albert Einstein",
+    "likes": 0,
+    "tags": ["mistakes", "learning", "risk"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Start where you are. Use what you have. Do what you can.",
+    "author": "Arthur Ashe",
+    "likes": 0,
+    "tags": ["action", "resourcefulness", "beginnings"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Too many of us are not living our dreams because we are living our fears.",
+    "author": "Les Brown",
+    "likes": 0,
+    "tags": ["dreams", "fear", "courage"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Challenges are what make life interesting and overcoming them is what makes life meaningful.",
+    "author": "Joshua J. Marine",
+    "likes": 0,
+    "tags": ["challenges", "meaning", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "If you are not willing to risk the usual, you will have to settle for the ordinary.",
+    "author": "Jim Rohn",
+    "likes": 0,
+    "tags": ["risk", "ambition", "excellence"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Nothing is impossible, the word itself says 'I'm possible'!",
+    "author": "Audrey Hepburn",
+    "likes": 0,
+    "tags": ["possibility", "mindset", "optimism"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The difference between ordinary and extraordinary is that little extra.",
+    "author": "Jimmy Johnson",
+    "likes": 0,
+    "tags": ["excellence", "effort", "distinction"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "We know what we are, but know not what we may be.",
+    "author": "William Shakespeare",
+    "likes": 0,
+    "tags": ["potential", "self-discovery", "future"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The harder the conflict, the more glorious the triumph.",
+    "author": "Thomas Paine",
+    "likes": 0,
+    "tags": ["adversity", "triumph", "perseverance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Don’t judge each day by the harvest you reap but by the seeds that you plant.",
+    "author": "Robert Louis Stevenson",
+    "likes": 0,
+    "tags": ["effort", "process", "future"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The mind is not a vessel to be filled, but a fire to be kindled.",
+    "author": "Plutarch",
+    "likes": 0,
+    "tags": ["learning", "curiosity", "potential"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Go confidently in the direction of your dreams! Live the life you've imagined.",
+    "author": "Henry David Thoreau",
+    "likes": 0,
+    "tags": ["dreams", "confidence", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Either write something worth reading or do something worth writing.",
+    "author": "Benjamin Franklin",
+    "likes": 0,
+    "tags": ["action", "legacy", "purpose"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Life is 10% what happens to us and 90% how we react to it.",
+    "author": "Charles R. Swindoll",
+    "likes": 0,
+    "tags": ["attitude", "perspective", "control"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The two most important days in your life are the day you are born and the day you find out why.",
+    "author": "Mark Twain",
+    "likes": 0,
+    "tags": ["purpose", "meaning", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "When you reach the end of your rope, tie a knot in it and hang on.",
+    "author": "Franklin D. Roosevelt",
+    "likes": 0,
+    "tags": ["perseverance", "resilience", "hope"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "There is no substitute for hard work.",
+    "author": "Thomas A. Edison",
+    "likes": 0,
+    "tags": ["hard-work", "dedication", "success"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Whatever the mind of man can conceive and believe, it can achieve.",
+    "author": "Napoleon Hill",
+    "likes": 0,
+    "tags": ["belief", "mindset", "achievement"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Strive for progress, not perfection.",
+    "author": "unknown",
+    "likes": 0,
+    "tags": ["progress", "perfection", "growth"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You take your life in your own hands, and what happens? A terrible thing, no one to blame.",
+    "author": "Erica Jong",
+    "likes": 0,
+    "tags": ["responsibility", "freedom", "control"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "What's money? A man is a success if he gets up in the morning and goes to bed at night and in between does what he wants to do.",
+    "author": "Bob Dylan",
+    "likes": 0,
+    "tags": ["success", "freedom", "passion"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "In order to succeed, we must first believe that we can.",
+    "author": "Nikos Kazantzakis",
+    "likes": 0,
+    "tags": ["belief", "success", "mindset"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "If you want to make your dreams come true, the first thing you have to do is wake up.",
+    "author": "J.M. Power",
+    "likes": 0,
+    "tags": ["dreams", "action", "reality"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Let us make our future now, and let us make our dreams tomorrow's reality.",
+    "author": "Malala Yousafzai",
+    "likes": 0,
+    "tags": ["future", "dreams", "action"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The only source of knowledge is experience.",
+    "author": "Albert Einstein",
+    "likes": 0,
+    "tags": ["knowledge", "experience", "learning"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "All our dreams can come true if we have the courage to pursue them.",
+    "author": "Walt Disney",
+    "likes": 0,
+    "tags": ["dreams", "courage", "perseverance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It always seems impossible until it's done.",
+    "author": "Nelson Mandela",
+    "likes": 0,
+    "tags": ["possibility", "perseverance", "achievement"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Our greatest glory is not in never falling, but in rising up every time we fall.",
+    "author": "Ralph Waldo Emerson",
+    "likes": 0,
+    "tags": ["resilience", "failure", "perseverance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Don’t let yesterday take up too much of today.",
+    "author": "Will Rogers",
+    "likes": 0,
+    "tags": ["present-moment", "past", "focus"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The secret of getting ahead is getting started.",
+    "author": "Mark Twain",
+    "likes": 0,
+    "tags": ["action", "beginnings", "motivation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Good, better, best. Never let it rest. 'Til your good is better and your better is best.",
+    "author": "St. Jerome",
+    "likes": 0,
+    "tags": ["improvement", "excellence", "striving"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You can't build a reputation on what you are going to do.",
+    "author": "Henry Ford",
+    "likes": 0,
+    "tags": ["action", "reputation", "results"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Without hustle, talent will only carry you so far.",
+    "author": "Gary Vaynerchuk",
+    "likes": 0,
+    "tags": ["hustle", "talent", "hard-work"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "To accomplish great things, we must not only act, but also dream; not only plan, but also believe.",
+    "author": "Anatole France",
+    "likes": 0,
+    "tags": ["action", "dreams", "belief", "planning"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "We become what we think about most of the time, and that's the strangest secret.",
+    "author": "Earl Nightingale",
+    "likes": 0,
+    "tags": ["mindset", "thoughts", "focus"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A goal is a dream with a deadline.",
+    "author": "Napoleon Hill",
+    "likes": 0,
+    "tags": ["goals", "dreams", "action"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "If you're going through hell, keep going.",
+    "author": "Winston Churchill",
+    "likes": 0,
+    "tags": ["perseverance", "adversity", "resilience"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Opportunity does not knock, it presents itself when you beat down the door.",
+    "author": "Kyle Chandler",
+    "likes": 0,
+    "tags": ["opportunity", "proactivity", "determination"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Success usually comes to those who are too busy to be looking for it.",
+    "author": "Henry David Thoreau",
+    "likes": 0,
+    "tags": ["success", "hard-work", "focus"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The way to get started is to quit talking and begin doing.",
+    "author": "Walt Disney",
+    "likes": 0,
+    "tags": ["action", "beginnings", "execution"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "I find that the harder I work, the more luck I seem to have.",
+    "author": "Thomas Jefferson",
+    "likes": 0,
+    "tags": ["hard-work", "luck", "success"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Don't be pushed around by the fears in your mind. Be led by the dreams in your heart.",
+    "author": "Roy T. Bennett",
+    "likes": 0,
+    "tags": ["dreams", "fear", "courage"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It's not whether you get knocked down, it's whether you get up.",
+    "author": "Vince Lombardi",
+    "likes": 0,
+    "tags": ["resilience", "failure", "perseverance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Work hard in silence, let your success be your noise.",
+    "author": "Frank Ocean",
+    "likes": 0,
+    "tags": ["hard-work", "success", "humility"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Hardships often prepare ordinary people for an extraordinary destiny.",
+    "author": "C.S. Lewis",
+    "likes": 0,
+    "tags": ["hardship", "destiny", "potential"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Believe in yourself and all that you are. Know that there is something inside you that is greater than any obstacle.",
+    "author": "Christian D. Larson",
+    "likes": 0,
+    "tags": ["self-belief", "potential", "resilience"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The only thing standing between you and your goal is the story you keep telling yourself as to why you can't achieve it.",
+    "author": "Jordan Belfort",
+    "likes": 0,
+    "tags": ["mindset", "limiting-beliefs", "goals"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Your positive action combined with positive thinking results in success.",
+    "author": "Shiv Khera",
+    "likes": 0,
+    "tags": ["positivity", "action", "success"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The best time to plant a tree was 20 years ago. The second best time is now.",
+    "author": "Chinese Proverb",
+    "likes": 0,
+    "tags": ["action", "opportunity", "timing"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "If you can dream it, you can achieve it.",
+    "author": "Zig Ziglar",
+    "likes": 0,
+    "tags": ["dreams", "belief", "achievement"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Great minds discuss ideas; average minds discuss events; small minds discuss people.",
+    "author": "Eleanor Roosevelt",
+    "likes": 0,
+    "tags": ["mindset", "conversation", "intellect"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Winning isn’t everything, but wanting to win is.",
+    "author": "Vince Lombardi",
+    "likes": 0,
+    "tags": ["ambition", "desire", "effort"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "An unexamined life is not worth living.",
+    "author": "Socrates",
+    "likes": 0,
+    "tags": ["reflection", "self-awareness", "purpose"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Eighty percent of success is showing up.",
+    "author": "Woody Allen",
+    "likes": 0,
+    "tags": ["action", "consistency", "presence"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Life isn't about finding yourself. Life is about creating yourself.",
+    "author": "George Bernard Shaw",
+    "likes": 0,
+    "tags": ["self-creation", "purpose", "action"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Don't let someone else's opinion of you become your reality.",
+    "author": "Les Brown",
+    "likes": 0,
+    "tags": ["self-worth", "opinion", "reality"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "If you want to live a happy life, tie it to a goal, not to people or things.",
+    "author": "Albert Einstein",
+    "likes": 0,
+    "tags": ["happiness", "goals", "purpose"],
+    "shares": 0,
+    "language": "en"
+  }
+]
