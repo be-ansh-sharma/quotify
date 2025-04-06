@@ -1,4 +1,4 @@
-import { db } from "./firebaseconfig";
+import { db } from './firebaseconfig';
 import {
   collection,
   query,
@@ -9,12 +9,12 @@ import {
   orderBy,
   limit,
   startAfter,
-} from "firebase/firestore";
-import quotes from "assets/quotes.json";
+} from 'firebase/firestore';
+import quotes from 'assets/quotes.json';
 
 export const uploadQuotes = async () => {
-  const quotesRef = collection(db, "quotes");
-  const tagsRef = collection(db, "tags");
+  const quotesRef = collection(db, 'quotes');
+  const tagsRef = collection(db, 'tags');
 
   let added = 0;
   let skipped = 0;
@@ -65,7 +65,7 @@ export const uploadQuotes = async () => {
       // Commit batch if it reaches Firestore's limit of 500 writes
       if (batchCount >= 500) {
         await batch.commit();
-        console.log("Batch committed.");
+        console.log('Batch committed.');
         batch = writeBatch(db); // Start a new batch
         batchCount = 0;
       }
@@ -74,17 +74,17 @@ export const uploadQuotes = async () => {
     // Commit any remaining writes in the batch
     if (batchCount > 0) {
       await batch.commit();
-      console.log("Final batch committed.");
+      console.log('Final batch committed.');
     }
 
     console.log(`✅ Added: ${added}, Skipped (duplicate): ${skipped}`);
   } catch (error) {
-    console.error("Error uploading quotes:", error);
+    console.error('Error uploading quotes:', error);
   }
 };
 
 export const fetchAllQuotes = async () => {
-  const quotesRef = collection(db, "quotes");
+  const quotesRef = collection(db, 'quotes');
   const pageSize = 500; // Number of documents to fetch per page
   const existingQuotes = new Set();
   let lastDoc = null;
@@ -92,15 +92,14 @@ export const fetchAllQuotes = async () => {
 
   try {
     while (true) {
-      // Create a query with pagination
       const quotesQuery = lastDoc
         ? query(
             quotesRef,
-            orderBy("text"),
+            orderBy('text'),
             startAfter(lastDoc),
             limit(pageSize)
           )
-        : query(quotesRef, orderBy("text"), limit(pageSize));
+        : query(quotesRef, orderBy('text'), limit(pageSize));
 
       const snapshot = await getDocs(quotesQuery);
 
@@ -127,7 +126,120 @@ export const fetchAllQuotes = async () => {
     console.log(`Total quotes fetched: ${totalFetched}`);
     return existingQuotes;
   } catch (error) {
-    console.error("Error fetching quotes:", error);
+    console.error('Error fetching quotes:', error);
     return existingQuotes;
   }
 };
+
+export const createUser = async (userData) => {
+  const usersRef = collection(db, 'users');
+  const userDocRef = doc(usersRef);
+  const uid = userDocRef.id;
+
+  try {
+    await setDoc(userDocRef, {
+      ...userData,
+      uid,
+      createdAt: serverTimestamp(),
+    });
+    console.log('User created successfully:', { ...userData, uid });
+  } catch (error) {
+    console.error('Error creating user:', error);
+  }
+};
+
+export const fetchQuotes = async (lastDoc = null, selectedSort) => {
+  console.log('selectedSort', selectedSort);
+  const quotesRef = collection(db, 'quotes');
+  let quotesQuery;
+
+  // Determine the sorting logic based on selectedSort
+  switch (selectedSort) {
+    case 'newest':
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            orderBy('createdAt', 'desc'),
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(quotesRef, orderBy('createdAt', 'desc'), limit(20));
+      break;
+    case 'oldest':
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            orderBy('createdAt', 'asc'),
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(quotesRef, orderBy('createdAt', 'asc'), limit(20));
+      break;
+    case 'mostPopular':
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            orderBy('likes', 'desc'),
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(quotesRef, orderBy('likes', 'desc'), limit(20));
+      break;
+    case 'a_z_author':
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            orderBy('author', 'asc'),
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(quotesRef, orderBy('author', 'asc'), limit(20));
+      break;
+    case 'z_a_author':
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            orderBy('author', 'desc'),
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(quotesRef, orderBy('author', 'desc'), limit(20));
+      break;
+    default:
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            orderBy('likes', 'desc'),
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(quotesRef, orderBy('likes', 'desc'), limit(20));
+  }
+
+  try {
+    const snapshot = await getDocs(quotesQuery);
+
+    if (!snapshot.empty) {
+      const newQuotes = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
+      return {
+        newQuotes,
+        lastVisibleDoc,
+        hasMoreQuotes: true,
+      };
+    } else {
+      return {
+        newQuotes: [],
+        lastVisibleDoc: null,
+        hasMoreQuotes: false, // No more quotes to fetch
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching quotes:', error);
+    throw error;
+  }
+};
+
