@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { createUser } from 'utils/firebase/firestore';
+import useUserStore from 'stores/userStore';
 
 const RegisterForm = () => {
   const [email, setEmail] = useState('');
@@ -17,6 +18,7 @@ const RegisterForm = () => {
   const router = useRouter();
   const [createUserWithEmailAndPassword, user, loading, error] =
     useCreateUserWithEmailAndPassword(auth);
+  const setUser = useUserStore((state) => state.setUser);
 
   const validate = () => {
     let valid = true;
@@ -90,6 +92,11 @@ const RegisterForm = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('User:', user);
+      setUser({
+        email: user.user.email,
+      });
+      console.log('User data:', user);
       console.log('User registered successfully:', user);
       router.navigate('/(tabs)/home');
     }

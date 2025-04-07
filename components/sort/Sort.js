@@ -1,18 +1,8 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Text, Menu, Divider, IconButton, useTheme } from 'react-native-paper';
-import useUserStore from 'stores/userStore';
 
-const sortOptions = [
-  { label: 'Newest', value: 'newest' },
-  { label: 'Oldest', value: 'oldest' },
-  { label: 'Most Popular', value: 'mostPopular' },
-  { label: 'A-Z by Author', value: 'a_z_author' },
-  { label: 'Z-A by Author', value: 'z_a_author' },
-];
-
-export default function Sort({ selectedSort }) {
-  const setSelectedSort = useUserStore((state) => state.setSelectedSort);
+export default function Sort({ selectedSort, sortOptions, sortHandler }) {
   const [visible, setVisible] = useState(false);
   const theme = useTheme(); // Access the app's theme
 
@@ -20,7 +10,7 @@ export default function Sort({ selectedSort }) {
   const closeMenu = () => setVisible(false);
 
   const handleSortSelection = (sortOption) => {
-    setSelectedSort(sortOption);
+    sortHandler(sortOption);
     closeMenu();
   };
 

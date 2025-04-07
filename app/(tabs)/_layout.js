@@ -12,6 +12,7 @@ export default function Layout() {
   const [visible, setVisible] = useState(false);
   const router = useRouter();
   const isGuest = useUserStore((state) => state.isGuest);
+  const resetUser = useUserStore((state) => state.resetUser);
 
   // Menu visibility handlers
   const openMenu = () => setVisible(true);
@@ -20,9 +21,15 @@ export default function Layout() {
   // Handle sign-out using Firebase hook
   const handleSignOut = async () => {
     try {
+      if (isGuest) {
+        resetUser();
+        router.push('/auth/entry');
+        return;
+      }
       await auth.signOut();
+      resetUser();
       closeMenu();
-      router.push('/entry');
+      router.push('/auth/entry');
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -45,11 +52,7 @@ export default function Layout() {
               onDismiss={closeMenu}
               anchor={<Button icon='dots-vertical' onPress={openMenu} />}
             >
-              <Menu.Item
-                onPress={handleSignOut}
-                title='Sign Out'
-                disabled={isGuest}
-              />
+              <Menu.Item onPress={handleSignOut} title='Sign Out' />
             </Menu>
           ),
           tabBarStyle: {
@@ -63,7 +66,7 @@ export default function Layout() {
           name='home'
           options={{
             title: 'Home',
-            tabBarIcon: ({ color, size, focused }) => (
+            tabBarIcon: ({ size, focused }) => (
               <MaterialIcons
                 name='home'
                 color={focused ? COLORS.primary : COLORS.placeholder} // Primary color when focused

@@ -9,6 +9,11 @@ import {
   orderBy,
   limit,
   startAfter,
+  setDoc,
+  where,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 
@@ -148,8 +153,11 @@ export const createUser = async (userData) => {
   }
 };
 
-export const fetchQuotes = async (lastDoc = null, selectedSort) => {
-  console.log('selectedSort', selectedSort);
+export const fetchQuotes = async (
+  lastDoc = null,
+  selectedSort,
+  author = null
+) => {
   const quotesRef = collection(db, 'quotes');
   let quotesQuery;
 
@@ -216,6 +224,11 @@ export const fetchQuotes = async (lastDoc = null, selectedSort) => {
         : query(quotesRef, orderBy('likes', 'desc'), limit(20));
   }
 
+  // Add a filter for the author if provided
+  if (author) {
+    quotesQuery = query(quotesQuery, where('author', '==', author));
+  }
+
   try {
     const snapshot = await getDocs(quotesQuery);
 
@@ -239,6 +252,107 @@ export const fetchQuotes = async (lastDoc = null, selectedSort) => {
     }
   } catch (error) {
     console.error('Error fetching quotes:', error);
+    throw error;
+  }
+};
+
+export const fetchUserProfile = async (email) => {
+  try {
+    if (!email) {
+      console.error('Invalid email parameter:', email);
+      return null;
+    }
+
+    const usersRef = collection(db, 'users');
+    const userQuery = query(usersRef, where('email', '==', email));
+
+    try {
+      const userSnapshot = await getDocs(userQuery);
+
+      if (!userSnapshot.empty) {
+        const userProfile = userSnapshot.docs[0].data();
+        return userProfile;
+      } else {
+        console.log('User not found');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error.message);
+      throw error;
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+/**
+ * Add a quote to the user's likes in Firestore.
+ * @param {string} userId - The user's UID.
+ * @param {string} quoteId - The quote's UID.
+ */
+export const likeQuote = async (userId, quoteId) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      likes: arrayUnion(quoteId), // Add the quote UID to the likes array
+    });
+    console.log(`Quote ${quoteId} liked by user ${userId}`);
+  } catch (error) {
+    console.error('Error liking quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove a quote from the user's likes in Firestore.
+ * @param {string} userId - The user's UID.
+ * @param {string} quoteId - The quote's UID.
+ */
+export const unlikeQuote = async (userId, quoteId) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      likes: arrayRemove(quoteId), // Remove the quote UID from the likes array
+    });
+    console.log(`Quote ${quoteId} unliked by user ${userId}`);
+  } catch (error) {
+    console.error('Error unliking quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a quote to the user's bookmarks in Firestore.
+ * @param {string} userId - The user's UID.
+ * @param {string} quoteId - The quote's UID.
+ */
+export const bookmarkQuote = async (userId, quoteId) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      bookmarked: arrayUnion(quoteId), // Add the quote UID to the bookmarks array
+    });
+    console.log(`Quote ${quoteId} bookmarked by user ${userId}`);
+  } catch (error) {
+    console.error('Error bookmarking quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove a quote from the user's bookmarks in Firestore.
+ * @param {string} userId - The user's UID.
+ * @param {string} quoteId - The quote's UID.
+ */
+export const unbookmarkQuote = async (userId, quoteId) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      bookmarked: arrayRemove(quoteId), // Remove the quote UID from the bookmarks array
+    });
+    console.log(`Quote ${quoteId} unbookmarked by user ${userId}`);
+  } catch (error) {
+    console.error('Error unbookmarking quote:', error);
     throw error;
   }
 };

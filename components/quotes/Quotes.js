@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+import { View, FlatList, ActivityIndicator } from 'react-native';
 import { fetchQuotes } from 'utils/firebase/firestore'; // Import the Firestore logic
 import Tile from './tile/Tile';
 
-export default Quotes = ({ selectedSort }) => {
+export default Quotes = ({ selectedSort, user, author = null }) => {
   const [quotes, setQuotes] = useState([]);
   const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,8 @@ export default Quotes = ({ selectedSort }) => {
     try {
       const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
         lastDoc,
-        selectedSort
+        selectedSort,
+        author // Pass the author to filter quotes if provided
       );
 
       // Ensure no duplicate quotes are added
@@ -38,12 +39,12 @@ export default Quotes = ({ selectedSort }) => {
   };
 
   useEffect(() => {
-    // Reset and fetch quotes when sort order changes
+    // Reset and fetch quotes when sort order or author changes
     setQuotes([]);
     setLastDoc(null);
     setHasMore(true);
     loadQuotes();
-  }, [selectedSort]);
+  }, [selectedSort, author]);
 
   const renderFooter = () => {
     if (!loading) return null;
@@ -55,7 +56,7 @@ export default Quotes = ({ selectedSort }) => {
       <FlatList
         data={quotes}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <Tile quote={item} />}
+        renderItem={({ item }) => <Tile quote={item} user={user} />}
         onEndReached={loadQuotes}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'expo-zustand-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useUserStore = create(
@@ -8,14 +8,16 @@ const useUserStore = create(
       user: null,
       isGuest: false,
       selectedSort: 'mostPopular',
+      hasCheckedProfileOnce: false, // 👈 New flag
       setSelectedSort: (sort) => set({ selectedSort: sort }),
       setUser: (user) => set({ user, isGuest: false }),
       setGuest: () => set({ isGuest: true, user: null }),
       resetUser: () => set({ user: null, isGuest: false }),
+      setHasCheckedProfileOnce: (val) => set({ hasCheckedProfileOnce: val }), // 👈 Setter
     }),
     {
       name: 'user-storage',
-      getStorage: () => AsyncStorage,
+      storage: createJSONStorage(() => AsyncStorage),
     }
   )
 );

@@ -1,7 +1,7 @@
 import { MD3DarkTheme } from 'react-native-paper';
 
 const COLORS = {
-  primary: '#1DA1F2', // Twitter blue
+  primary: '#00B0FF', // Twitter blue
   accent: '#FF6F61', // Accent color
   background: '#121212', // Body background color
   surface: '#1A1A1A', // Surface (like cards, modals, etc.)
@@ -15,6 +15,7 @@ const COLORS = {
   tag: '#1DA1F2', // Tag color
   avatarText: '#FFFFFF', // White text for initials
   icon: '#E5E5E5', // Icon color
+  liked: '#E0245E',
 };
 
 const customDarkTheme = {
@@ -29,3 +30,4 @@ const customDarkTheme = {
 
 export { COLORS }; // Export COLORS separately
 export default customDarkTheme;
+

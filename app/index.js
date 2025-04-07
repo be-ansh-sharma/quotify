@@ -16,7 +16,7 @@ export default function Home() {
     if (user || isGuest) {
       router.replace('/(tabs)/home');
     } else {
-      router.replace('/entry');
+      router.replace('/auth/entry');
     }
   }, [user, loading, isGuest, router]);
 
