@@ -5,14 +5,40 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const useUserStore = create(
   persist(
     (set) => ({
-      user: null,
+      user: {
+        uid: null,
+        email: null,
+        name: null,
+        likes: [], // Initialize as an empty array
+        bookmarked: [], // Initialize as an empty array
+      },
       isGuest: false,
       selectedSort: 'mostPopular',
       hasCheckedProfileOnce: false, // 👈 New flag
       setSelectedSort: (sort) => set({ selectedSort: sort }),
-      setUser: (user) => set({ user, isGuest: false }),
-      setGuest: () => set({ isGuest: true, user: null }),
-      resetUser: () => set({ user: null, isGuest: false }),
+      setUser: (user) => set({ user }),
+      setGuest: () =>
+        set({
+          isGuest: true,
+          user: {
+            uid: null,
+            email: null,
+            name: null,
+            likes: [],
+            bookmarked: [],
+          },
+        }),
+      resetUser: () =>
+        set({
+          user: {
+            uid: null,
+            email: null,
+            name: null,
+            likes: [],
+            bookmarked: [],
+          },
+          isGuest: false,
+        }),
       setHasCheckedProfileOnce: (val) => set({ hasCheckedProfileOnce: val }), // 👈 Setter
     }),
     {

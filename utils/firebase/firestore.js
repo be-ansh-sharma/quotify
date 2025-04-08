@@ -20,6 +20,7 @@ import quotes from 'assets/quotes.json';
 export const uploadQuotes = async () => {
   const quotesRef = collection(db, 'quotes');
   const tagsRef = collection(db, 'tags');
+  const authorsRef = collection(db, 'authors'); // New authors collection
 
   let added = 0;
   let skipped = 0;
@@ -34,6 +35,9 @@ export const uploadQuotes = async () => {
     // Use Firestore batch for efficient writes
     let batch = writeBatch(db);
     let batchCount = 0;
+
+    // Track authors and their quote counts
+    const authorQuoteCounts = {};
 
     for (const quote of quotes) {
       if (existingQuotes.has(quote.text)) {
@@ -67,6 +71,15 @@ export const uploadQuotes = async () => {
         );
       }
 
+      // Track author and increment their quote count
+      const author = quote.author;
+      if (author) {
+        if (!authorQuoteCounts[author]) {
+          authorQuoteCounts[author] = 0;
+        }
+        authorQuoteCounts[author]++;
+      }
+
       // Commit batch if it reaches Firestore's limit of 500 writes
       if (batchCount >= 500) {
         await batch.commit();
@@ -80,6 +93,34 @@ export const uploadQuotes = async () => {
     if (batchCount > 0) {
       await batch.commit();
       console.log('Final batch committed.');
+    }
+
+    // Update authors collection with quote counts
+    batch = writeBatch(db); // Start a new batch for authors
+    batchCount = 0;
+
+    for (const [author, quoteCount] of Object.entries(authorQuoteCounts)) {
+      const authorRef = doc(authorsRef, author);
+      batch.set(
+        authorRef,
+        { name: author, quotes: quoteCount },
+        { merge: true } // Merge to update quote count if the author already exists
+      );
+      batchCount++;
+
+      // Commit batch if it reaches Firestore's limit of 500 writes
+      if (batchCount >= 500) {
+        await batch.commit();
+        console.log('Author batch committed.');
+        batch = writeBatch(db); // Start a new batch
+        batchCount = 0;
+      }
+    }
+
+    // Commit any remaining writes in the batch for authors
+    if (batchCount > 0) {
+      await batch.commit();
+      console.log('Final author batch committed.');
     }
 
     console.log(`✅ Added: ${added}, Skipped (duplicate): ${skipped}`);
@@ -156,7 +197,8 @@ export const createUser = async (userData) => {
 export const fetchQuotes = async (
   lastDoc = null,
   selectedSort,
-  author = null
+  author = null,
+  tag = null
 ) => {
   const quotesRef = collection(db, 'quotes');
   let quotesQuery;
@@ -227,6 +269,11 @@ export const fetchQuotes = async (
   // Add a filter for the author if provided
   if (author) {
     quotesQuery = query(quotesQuery, where('author', '==', author));
+  }
+
+  // Add a filter for the tag if provided
+  if (tag) {
+    quotesQuery = query(quotesQuery, where('tags', 'array-contains', tag));
   }
 
   try {
@@ -355,5 +402,146 @@ export const unbookmarkQuote = async (userId, quoteId) => {
     console.error('Error unbookmarking quote:', error);
     throw error;
   }
+};
+
+export const fetchAuthors = async (lastDoc = null) => {
+  try {
+    const authorsRef = collection(db, 'authors'); // Replace 'authors' with your Firestore collection name
+    let authorsQuery = query(authorsRef, orderBy('name', 'asc'), limit(10)); // Fetch 10 authors at a time
+
+    if (lastDoc) {
+      authorsQuery = query(authorsQuery, startAfter(lastDoc)); // Start after the last document for pagination
+    }
+
+    const snapshot = await getDocs(authorsQuery);
+
+    const newAuthors = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
+    const hasMoreAuthors = snapshot.docs.length === 10; // Check if there are more authors to load
+
+    return { newAuthors, lastVisibleDoc, hasMoreAuthors };
+  } catch (error) {
+    console.error('Error fetching authors:', error);
+    throw error;
+  }
+};
+
+export const fetchTags = async (lastDoc = null) => {
+  try {
+    const tagsRef = collection(db, 'tags'); // Replace 'tags' with your Firestore collection name
+    let tagsQuery = query(tagsRef, orderBy('name', 'asc'), limit(10)); // Fetch 10 tags at a time
+
+    if (lastDoc) {
+      tagsQuery = query(tagsQuery, startAfter(lastDoc)); // Start after the last document for pagination
+    }
+
+    const snapshot = await getDocs(tagsQuery);
+
+    const newTags = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
+    const hasMoreTags = snapshot.docs.length === 10; // Check if there are more tags to load
+
+    return { newTags, lastVisibleDoc, hasMoreTags };
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    throw error;
+  }
+};
+
+export const followAuthor = async (userId, author) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      followedAuthors: arrayUnion(author), // Add the author to the followedAuthors array
+    });
+    console.log(`User ${userId} is now following ${author}`);
+  } catch (error) {
+    console.error('Error following author:', error);
+    throw error;
+  }
+};
+
+export const unfollowAuthor = async (userId, author) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      followedAuthors: arrayRemove(author), // Remove the author from the followedAuthors array
+    });
+    console.log(`User ${userId} has unfollowed ${author}`);
+  } catch (error) {
+    console.error('Error unfollowing author:', error);
+    throw error;
+  }
+};
+
+export const fetchQuotesByAuthors = async (
+  authors,
+  lastDoc = null,
+  sort = 'newest'
+) => {
+  try {
+    const quotesRef = collection(db, 'quotes');
+    let quotesQuery = query(
+      quotesRef,
+      where('author', 'in', authors),
+      orderBy('createdAt', sort === 'newest' ? 'desc' : 'asc'), // Sort by creation date
+      limit(20) // Fetch 20 quotes at a time
+    );
+
+    if (lastDoc) {
+      quotesQuery = query(quotesQuery, startAfter(lastDoc));
+    }
+
+    const snapshot = await getDocs(quotesQuery);
+
+    const newQuotes = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
+    const hasMoreQuotes = snapshot.docs.length === 20; // Check if there are more quotes to load
+
+    return { newQuotes, lastVisibleDoc, hasMoreQuotes };
+  } catch (error) {
+    console.error('Error fetching quotes by authors:', error);
+    throw error;
+  }
+};
+
+export const fetchQuotesByIds = async (ids, startIndex = 0, limit = 10) => {
+  if (!ids || startIndex >= ids.length) return { quotes: [], hasMore: false };
+
+  const endIndex = Math.min(startIndex + limit, ids.length);
+  const batchIds = ids.slice(startIndex, endIndex);
+
+  // Firestore only allows 10 in an `in` query
+  const chunks = [];
+  for (let i = 0; i < batchIds.length; i += 10) {
+    const chunk = batchIds.slice(i, i + 10);
+    const q = query(collection(db, 'quotes'), where('__name__', 'in', chunk));
+    const snapshot = await getDocs(q);
+    chunks.push(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  }
+
+  // Flatten and preserve input ID order
+  const flatQuotes = chunks.flat();
+  const quoteMap = {};
+  flatQuotes.forEach((q) => (quoteMap[q.id] = q));
+  const quotes = batchIds.map((id) => quoteMap[id]).filter(Boolean);
+
+  return {
+    quotes,
+    hasMore: endIndex < ids.length, // Check if there are more quotes to load
+    nextIndex: endIndex, // Return the next start index for pagination
+  };
 };
 

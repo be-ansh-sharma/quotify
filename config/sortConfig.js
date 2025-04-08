@@ -4,6 +4,7 @@ export const SORT_OPTIONS = [
   { label: 'Most Popular', value: 'mostPopular' },
   { label: 'A-Z by Author', value: 'a_z_author' },
   { label: 'Z-A by Author', value: 'z_a_author' },
+  { label: 'Favorite Authors', value: 'favoriteAuthor' },
 ];
 
 export const AUTHOR_SORT_OPTIONS = [

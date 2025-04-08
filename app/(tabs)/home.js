@@ -10,7 +10,7 @@ import { auth } from 'utils/firebase/firebaseconfig';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { SORT_OPTIONS } from 'config/sortConfig';
 
-const CURRENT_VERSION = '1';
+const CURRENT_VERSION = '2';
 
 export default function Index() {
   const storedSort = useUserStore((state) => state.selectedSort);
@@ -85,7 +85,6 @@ export default function Index() {
     setHasCheckedProfileOnce(true);
   }, [isGuest, hasCheckedProfileOnce]);
 
-  // App state change (foreground/background)
   useEffect(() => {
     if (isGuest) return;
 

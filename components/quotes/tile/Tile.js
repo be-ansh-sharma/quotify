@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme'; // Import COLORS
-import { router } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import {
   likeQuote,
   unlikeQuote,
@@ -24,14 +24,19 @@ export default function Tile({ quote, user }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
   const setUser = useUserStore((state) => state.setUser); // Function to update the user in the store
+  const router = useRouter();
+  const currentPath = usePathname(); // Get the current route path
 
   // Check if the quote is already liked or bookmarked by the user
   useEffect(() => {
     if (!isGuest) {
-      if (user?.likes?.includes(quote.id)) {
+      if (Array.isArray(user?.likes) && user.likes.includes(quote.id)) {
         setIsLiked(true); // Set the initial liked state
       }
-      if (user?.bookmarked?.includes(quote.id)) {
+      if (
+        Array.isArray(user?.bookmarked) &&
+        user.bookmarked.includes(quote.id)
+      ) {
         setIsBookmarked(true); // Set the initial bookmarked state
       }
     }
@@ -42,6 +47,7 @@ export default function Tile({ quote, user }) {
       SnackbarService.show('Please log in to like quotes');
       return;
     }
+
     // Trigger the "pop-out" animation
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -65,13 +71,13 @@ export default function Tile({ quote, user }) {
         await likeQuote(user.uid, quote.id);
         setUser({
           ...user,
-          likes: [...user.likes, quote.id], // Add the quote ID to the user's likes
+          likes: [...(user.likes || []), quote.id], // Ensure `user.likes` is an array
         });
       } else {
         await unlikeQuote(user.uid, quote.id);
         setUser({
           ...user,
-          likes: user.likes.filter((id) => id !== quote.id), // Remove the quote ID from the user's likes
+          likes: (user.likes || []).filter((id) => id !== quote.id), // Ensure `user.likes` is an array
         });
       }
     } catch (error) {
@@ -84,22 +90,23 @@ export default function Tile({ quote, user }) {
       SnackbarService.show('Please log in to bookmark quotes');
       return;
     }
+
     // Toggle the bookmark state
     setIsBookmarked((prev) => !prev);
 
     // Call Firestore functions to update bookmarks and update the user in the store
     try {
       if (!isBookmarked) {
-        await bookmarkQuote(user.uid, quote.id); // Add the quote to the user's bookmarks
+        await bookmarkQuote(user.uid, quote.id);
         setUser({
           ...user,
-          bookmarked: [...user.bookmarked, quote.id], // Add the quote ID to the user's bookmarks
+          bookmarked: [...(user.bookmarked || []), quote.id], // Ensure `user.bookmarked` is an array
         });
       } else {
-        await unbookmarkQuote(user.uid, quote.id); // Remove the quote from the user's bookmarks
+        await unbookmarkQuote(user.uid, quote.id);
         setUser({
           ...user,
-          bookmarked: user.bookmarked.filter((id) => id !== quote.id), // Remove the quote ID from the user's bookmarks
+          bookmarked: (user.bookmarked || []).filter((id) => id !== quote.id), // Ensure `user.bookmarked` is an array
         });
       }
     } catch (error) {
@@ -114,14 +121,23 @@ export default function Tile({ quote, user }) {
     return initials.toUpperCase();
   };
 
+  const navigateToAuthor = (author) => {
+    const targetPath = `/authors/${encodeURIComponent(author)}`;
+    if (currentPath === targetPath) {
+      // If already on the target author screen, replace the route
+      router.replace(targetPath);
+    } else {
+      // Otherwise, push a new route
+      router.push(targetPath);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Author Avatar and Name */}
       <TouchableOpacity
         style={styles.header}
-        onPress={() =>
-          router.push(`/author/${encodeURIComponent(quote.author)}`)
-        }
+        onPress={() => navigateToAuthor(quote.author)}
       >
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{getInitials(quote.author)}</Text>
@@ -137,7 +153,7 @@ export default function Tile({ quote, user }) {
         {quote.tags.map((tag, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => router.push(`/tag/${encodeURIComponent(tag)}`)}
+            onPress={() => router.push(`/tags/${encodeURIComponent(tag)}`)}
           >
             <Text style={styles.tag}>#{tag}</Text>
           </TouchableOpacity>
@@ -186,7 +202,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: COLORS.surface,
     borderRadius: 10,
-    marginBottom: 16,
+    marginTop: 16,
     shadowColor: COLORS.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 5,

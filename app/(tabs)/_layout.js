@@ -14,7 +14,6 @@ export default function Layout() {
   const isGuest = useUserStore((state) => state.isGuest);
   const resetUser = useUserStore((state) => state.resetUser);
 
-  // Menu visibility handlers
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
 
@@ -36,60 +35,71 @@ export default function Layout() {
   };
 
   return (
-    <>
-      <Tabs
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: COLORS.background, // Same dark color as body
-            shadowColor: 'rgba(0, 0, 0, 0.25)', // Shadow color
-            shadowOffset: { width: 0, height: 2 }, // Shadow offset
-            shadowOpacity: 1, // Full opacity for shadow
-            shadowRadius: 4, // Shadow blur radius
-          },
-          headerRight: () => (
-            <Menu
-              visible={visible}
-              onDismiss={closeMenu}
-              anchor={<Button icon='dots-vertical' onPress={openMenu} />}
-            >
-              <Menu.Item onPress={handleSignOut} title='Sign Out' />
-            </Menu>
+    <Tabs
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: COLORS.background, // Same dark color as body
+          shadowColor: 'rgba(0, 0, 0, 0.25)', // Shadow color
+          shadowOffset: { width: 0, height: 2 }, // Shadow offset
+          shadowOpacity: 1, // Full opacity for shadow
+          shadowRadius: 4, // Shadow blur radius
+        },
+        headerRight: () => (
+          <Menu
+            visible={visible}
+            onDismiss={closeMenu}
+            anchor={<Button icon='dots-vertical' onPress={openMenu} />}
+          >
+            <Menu.Item onPress={handleSignOut} title='Sign Out' />
+          </Menu>
+        ),
+        tabBarStyle: {
+          backgroundColor: COLORS.background, // Tab bar background color
+        },
+        tabBarActiveTintColor: COLORS.primary, // Active tab color
+        tabBarInactiveTintColor: COLORS.placeholder, // Inactive tab color
+      }}
+    >
+      <Tabs.Screen
+        name='home'
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ size, focused }) => (
+            <MaterialIcons
+              name='home'
+              color={focused ? COLORS.primary : COLORS.placeholder} // Primary color when focused
+              size={size}
+            />
           ),
-          tabBarStyle: {
-            backgroundColor: COLORS.background, // Tab bar background color
-          },
-          tabBarActiveTintColor: COLORS.primary, // Active tab color
-          tabBarInactiveTintColor: COLORS.placeholder, // Inactive tab color
         }}
-      >
-        <Tabs.Screen
-          name='home'
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ size, focused }) => (
-              <MaterialIcons
-                name='home'
-                color={focused ? COLORS.primary : COLORS.placeholder} // Primary color when focused
-                size={size}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name='browse'
-          options={{
-            title: 'Browse',
-            tabBarIcon: ({ color, size, focused }) => (
-              <MaterialIcons
-                name='search'
-                color={focused ? COLORS.primary : COLORS.placeholder} // Primary color when focused
-                size={size}
-              />
-            ),
-          }}
-        />
-      </Tabs>
-    </>
+      />
+      <Tabs.Screen
+        name='browse'
+        options={{
+          title: 'Browse',
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialIcons
+              name='search'
+              color={focused ? COLORS.primary : COLORS.placeholder}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name='profile'
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialIcons
+              name='person'
+              color={focused ? COLORS.primary : COLORS.placeholder}
+              size={size}
+            />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
 

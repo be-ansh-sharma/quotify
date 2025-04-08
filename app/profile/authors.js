@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,33 +7,39 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
 
-const categories = [
-  { id: '1', title: 'Authors', route: '/authors' },
-  { id: '2', title: 'Tags', route: '/tags' },
-  { id: '3', title: 'Popular Quotes', route: '/popular' },
-  { id: '4', title: 'Newest Quotes', route: '/newest' },
-];
-
-export default function Browse() {
+export default function FavoriteAuthors() {
   const router = useRouter();
+  const user = useUserStore((state) => state.user); // Get the user from the store
+  const favoriteAuthors = user?.followedAuthors || []; // Get the list of favorite authors
 
-  const renderTile = ({ item }) => (
+  const renderAuthorTile = ({ item }) => (
     <TouchableOpacity
       style={styles.tile}
-      onPress={() => router.push(item.route)} // Ensure router.push is used
+      onPress={() => router.push(`/authors/${encodeURIComponent(item)}`)} // Navigate to the author's page
     >
-      <Text style={styles.tileText}>{item.title}</Text>
+      <Text style={styles.tileText}>{item}</Text>
     </TouchableOpacity>
   );
+
+  if (favoriteAuthors.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.emptyText}>
+          You haven't followed any authors yet.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={categories}
-        keyExtractor={(item) => item.id}
-        renderItem={renderTile}
+        data={favoriteAuthors}
+        keyExtractor={(item) => item}
+        renderItem={renderAuthorTile}
         numColumns={2} // Display 2 tiles per row
         columnWrapperStyle={styles.row} // Style for rows
         contentContainerStyle={styles.grid} // Style for the grid
@@ -47,6 +53,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     padding: 16,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: COLORS.placeholder,
+    textAlign: 'center',
+    marginTop: 20,
   },
   grid: {
     justifyContent: 'center',
@@ -71,8 +83,7 @@ const styles = StyleSheet.create({
   tileText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.text,
+    color: COLORS.onPrimary,
     textAlign: 'center',
   },
 });
-
