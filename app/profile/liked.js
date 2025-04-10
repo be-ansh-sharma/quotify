@@ -24,6 +24,7 @@ export default function LikedQuotes() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextIndex, setNextIndex] = useState(0); // Track the next start index
   const [hasMore, setHasMore] = useState(true); // Track if more quotes are available
+  const [processedChunks, setProcessedChunks] = useState(0); // Track processed chunks for pagination
 
   const loadLikedQuotes = async (isLoadMore = false) => {
     // If there are no liked quotes, stop loading and show empty state
@@ -46,7 +47,13 @@ export default function LikedQuotes() {
         quotes,
         hasMore: moreAvailable,
         nextIndex: newNextIndex,
-      } = await fetchQuotesByIds(user.likes, nextIndex, PAGE_SIZE);
+        processedChunks: updatedChunks,
+      } = await fetchQuotesByIds(
+        user.likes,
+        nextIndex,
+        PAGE_SIZE,
+        processedChunks // Pass the current processedChunks
+      );
 
       setLikedQuotes((prevQuotes) => {
         const existingIds = new Set(prevQuotes.map((quote) => quote.id));
@@ -58,6 +65,7 @@ export default function LikedQuotes() {
 
       setNextIndex(newNextIndex);
       setHasMore(moreAvailable);
+      setProcessedChunks(updatedChunks); // Update the processedChunks state
     } catch (error) {
       console.error('Error fetching liked quotes:', error);
     } finally {

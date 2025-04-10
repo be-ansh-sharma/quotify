@@ -132,6 +132,28 @@ export default function Tile({ quote, user }) {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      const result = await Share.share({
+        message: `"${quote.text}" - ${
+          quote.author || 'Unknown'
+        }\n\nShared via Quotify App`,
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log('Shared with activity type:', result.activityType);
+        } else {
+          console.log('Quote shared successfully!');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error('Error sharing quote:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Author Avatar and Name */}
@@ -185,12 +207,8 @@ export default function Tile({ quote, user }) {
           />
         </TouchableOpacity>
 
-        {/* Share Icon */}
-        <TouchableOpacity style={styles.actionButton}>
-          <FontAwesome name='share' size={20} color={COLORS.icon} />
-          {quote.shares > 100 && (
-            <Text style={styles.actionText}>{quote.shares}</Text>
-          )}
+        <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+          <FontAwesome name='share-alt' size={20} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
     </View>

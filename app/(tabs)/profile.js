@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { List, Divider } from 'react-native-paper'; // Import List and Divider from React Native Paper
 import useUserStore from 'stores/userStore'; // Import your user store
 import { COLORS } from 'styles/theme';
 import { auth } from 'utils/firebase/firebaseconfig'; // Import Firebase auth for logout
+import { FontAwesome } from '@expo/vector-icons'; // For the edit icon
 
 export default function Profile() {
   const router = useRouter();
@@ -32,6 +33,17 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
+      {/* Edit Profile Button */}
+      <View style={styles.editContainer}>
+        <TouchableOpacity
+          onPress={() => router.push('/profile/edit')} // Navigate to the edit profile screen
+          style={styles.editButton}
+        >
+          <FontAwesome name='edit' size={20} color={COLORS.primary} />
+          <Text style={styles.editText}>Edit Profile</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* User Info Section */}
       <View style={styles.userInfo}>
         <List.Icon icon='account' color={COLORS.primary} size={48} />
@@ -87,6 +99,22 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     padding: 16,
   },
+  editContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  editText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    marginLeft: 8,
+  },
   userInfo: {
     alignItems: 'center',
     marginBottom: 16,
@@ -101,6 +129,7 @@ const styles = StyleSheet.create({
     color: COLORS.placeholder,
   },
   logoutText: {
-    color: COLORS.error, // Highlight logout in a different color
+    color: COLORS.error,
   },
 });
+

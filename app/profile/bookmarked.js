@@ -24,6 +24,7 @@ export default function BookmarkedQuotes() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextIndex, setNextIndex] = useState(0); // Track the next start index
   const [hasMore, setHasMore] = useState(true); // Track if more quotes are available
+  const [processedChunks, setProcessedChunks] = useState(0); // Track processed chunks for pagination
 
   const loadBookmarkedQuotes = async (isLoadMore = false) => {
     // If there are no bookmarked quotes, stop loading and show empty state
@@ -46,7 +47,13 @@ export default function BookmarkedQuotes() {
         quotes,
         hasMore: moreAvailable,
         nextIndex: newNextIndex,
-      } = await fetchQuotesByIds(user.bookmarked, nextIndex, PAGE_SIZE);
+        processedChunks: updatedChunks,
+      } = await fetchQuotesByIds(
+        user.bookmarked,
+        nextIndex,
+        PAGE_SIZE,
+        processedChunks // Pass the current processedChunks
+      );
 
       setBookmarkedQuotes((prevQuotes) => {
         const existingIds = new Set(prevQuotes.map((quote) => quote.id));
@@ -58,6 +65,7 @@ export default function BookmarkedQuotes() {
 
       setNextIndex(newNextIndex);
       setHasMore(moreAvailable);
+      setProcessedChunks(updatedChunks); // Update the processedChunks state
     } catch (error) {
       console.error('Error fetching bookmarked quotes:', error);
     } finally {

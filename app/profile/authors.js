@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
+import { FontAwesome } from '@expo/vector-icons'; // For back button
 
 export default function FavoriteAuthors() {
   const router = useRouter();
@@ -27,6 +28,17 @@ export default function FavoriteAuthors() {
   if (favoriteAuthors.length === 0) {
     return (
       <View style={styles.container}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <FontAwesome name='arrow-left' size={20} color={COLORS.onPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Favorite Authors</Text>
+        </View>
+
         <Text style={styles.emptyText}>
           You haven't followed any authors yet.
         </Text>
@@ -36,6 +48,18 @@ export default function FavoriteAuthors() {
 
   return (
     <View style={styles.container}>
+      {/* Header Section */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Favorite Authors</Text>
+      </View>
+
+      {/* Favorite Authors Grid */}
       <FlatList
         data={favoriteAuthors}
         keyExtractor={(item) => item}
@@ -52,7 +76,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    backgroundColor: COLORS.primary, // Use the app's primary color for the header
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text, // Use a contrasting color for the text
   },
   emptyText: {
     fontSize: 18,
@@ -83,7 +122,8 @@ const styles = StyleSheet.create({
   tileText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.onPrimary,
+    color: COLORS.text,
     textAlign: 'center',
   },
 });
+

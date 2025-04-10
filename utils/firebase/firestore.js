@@ -485,63 +485,136 @@ export const unfollowAuthor = async (userId, author) => {
 export const fetchQuotesByAuthors = async (
   authors,
   lastDoc = null,
-  sort = 'newest'
+  sort = 'newest',
+  processedChunks = 0 // Track how many chunks have already been processed
 ) => {
   try {
     const quotesRef = collection(db, 'quotes');
-    let quotesQuery = query(
-      quotesRef,
-      where('author', 'in', authors),
-      orderBy('createdAt', sort === 'newest' ? 'desc' : 'asc'), // Sort by creation date
-      limit(20) // Fetch 20 quotes at a time
-    );
+    const chunkSize = 10; // Firestore allows a maximum of 10 values in the `in` clause
+    const authorChunks = [];
 
-    if (lastDoc) {
-      quotesQuery = query(quotesQuery, startAfter(lastDoc));
+    // Split authors into chunks of 10
+    for (let i = 0; i < authors.length; i += chunkSize) {
+      authorChunks.push(authors.slice(i, i + chunkSize));
     }
 
-    const snapshot = await getDocs(quotesQuery);
+    let allQuotes = [];
+    let lastVisibleDoc = lastDoc;
+    let hasMoreQuotes = false;
 
-    const newQuotes = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Start processing from the current chunk
+    for (
+      let chunkIndex = processedChunks;
+      chunkIndex < authorChunks.length;
+      chunkIndex++
+    ) {
+      const chunk = authorChunks[chunkIndex];
 
-    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
-    const hasMoreQuotes = snapshot.docs.length === 20; // Check if there are more quotes to load
+      let quotesQuery = query(
+        quotesRef,
+        where('author', 'in', chunk),
+        orderBy('createdAt', sort === 'newest' ? 'desc' : 'asc'),
+        limit(20) // Fetch 20 quotes at a time
+      );
 
-    return { newQuotes, lastVisibleDoc, hasMoreQuotes };
+      if (lastVisibleDoc) {
+        quotesQuery = query(quotesQuery, startAfter(lastVisibleDoc));
+      }
+
+      const snapshot = await getDocs(quotesQuery);
+
+      const newQuotes = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      allQuotes = [...allQuotes, ...newQuotes];
+      lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+      hasMoreQuotes = snapshot.docs.length === 20;
+
+      // If we fetched a full batch, stop and return the results
+      if (hasMoreQuotes) {
+        return {
+          newQuotes: allQuotes,
+          lastVisibleDoc,
+          hasMoreQuotes,
+          processedChunks: chunkIndex, // Return the current chunk index
+        };
+      }
+
+      // Reset lastDoc for the next chunk
+      lastVisibleDoc = null;
+    }
+
+    // If we processed all chunks and didn't fetch a full batch, return the results
+    return {
+      newQuotes: allQuotes,
+      lastVisibleDoc: null,
+      hasMoreQuotes: false,
+      processedChunks: authorChunks.length, // All chunks have been processed
+    };
   } catch (error) {
     console.error('Error fetching quotes by authors:', error);
     throw error;
   }
 };
 
-export const fetchQuotesByIds = async (ids, startIndex = 0, limit = 10) => {
+export const fetchQuotesByIds = async (
+  ids,
+  startIndex = 0,
+  limit = 10,
+  processedChunks = 0 // Track processed chunks
+) => {
   if (!ids || startIndex >= ids.length) return { quotes: [], hasMore: false };
 
-  const endIndex = Math.min(startIndex + limit, ids.length);
-  const batchIds = ids.slice(startIndex, endIndex);
+  const chunkSize = 10; // Firestore allows a maximum of 10 IDs in an `in` query
+  const idChunks = [];
 
-  // Firestore only allows 10 in an `in` query
-  const chunks = [];
-  for (let i = 0; i < batchIds.length; i += 10) {
-    const chunk = batchIds.slice(i, i + 10);
-    const q = query(collection(db, 'quotes'), where('__name__', 'in', chunk));
-    const snapshot = await getDocs(q);
-    chunks.push(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  // Split IDs into chunks of 10
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    idChunks.push(ids.slice(i, i + chunkSize));
   }
 
-  // Flatten and preserve input ID order
-  const flatQuotes = chunks.flat();
-  const quoteMap = {};
-  flatQuotes.forEach((q) => (quoteMap[q.id] = q));
-  const quotes = batchIds.map((id) => quoteMap[id]).filter(Boolean);
+  let allQuotes = [];
+  let hasMore = false;
 
+  // Start processing from the current chunk
+  for (
+    let chunkIndex = processedChunks;
+    chunkIndex < idChunks.length;
+    chunkIndex++
+  ) {
+    const chunk = idChunks[chunkIndex];
+
+    // Fetch quotes for the current chunk
+    const q = query(collection(db, 'quotes'), where('__name__', 'in', chunk));
+    const snapshot = await getDocs(q);
+
+    const newQuotes = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    allQuotes = [...allQuotes, ...newQuotes];
+
+    // Check if we've reached the limit
+    if (allQuotes.length >= limit) {
+      hasMore = true;
+      return {
+        quotes: allQuotes.slice(0, limit), // Return only the requested number of quotes
+        hasMore,
+        nextIndex: startIndex + limit, // Update the next start index
+        processedChunks: chunkIndex, // Return the current chunk index
+      };
+    }
+  }
+
+  // If all chunks are processed and we haven't reached the limit
   return {
-    quotes,
-    hasMore: endIndex < ids.length, // Check if there are more quotes to load
-    nextIndex: endIndex, // Return the next start index for pagination
+    quotes: allQuotes,
+    hasMore: false,
+    nextIndex: ids.length, // All IDs have been processed
+    processedChunks: idChunks.length, // All chunks have been processed
   };
 };
 

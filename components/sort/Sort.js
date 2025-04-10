@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Text, Menu, Divider, IconButton, useTheme } from 'react-native-paper';
-import useUserStore from 'stores/userStore'; // Import user store to check if the user is a guest
+import { Menu, Divider, IconButton, useTheme } from 'react-native-paper';
+import useUserStore from 'stores/userStore';
 
 export default function Sort({ selectedSort, sortOptions, sortHandler }) {
   const [visible, setVisible] = useState(false);
-  const theme = useTheme(); // Access the app's theme
-  const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
+  const theme = useTheme();
+  const isGuest = useUserStore((state) => state.isGuest);
 
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
@@ -17,43 +17,50 @@ export default function Sort({ selectedSort, sortOptions, sortHandler }) {
   };
 
   return (
-    <View style={{ padding: 20 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 16,
+      }}
+    >
       <Menu
         visible={visible}
         onDismiss={closeMenu}
         anchor={
-          <View>
-            <IconButton
-              icon='sort'
-              size={24}
-              onPress={openMenu}
-              style={{ marginBottom: 10 }}
-            />
-          </View>
+          <IconButton
+            icon='sort'
+            size={24}
+            onPress={openMenu}
+            style={{ marginBottom: 10 }}
+          />
         }
+        anchorPosition='bottom'
+        contentStyle={{
+          marginTop: 4, // optional spacing between icon and menu
+        }}
       >
         {sortOptions.map((option, index) => {
-          // Disable "Favorite Author" option if the user is a guest
           const isDisabled = isGuest && option.value === 'favoriteAuthor';
 
           return (
             <Menu.Item
               key={index}
-              onPress={() => !isDisabled && handleSortSelection(option.value)} // Prevent selection if disabled
+              onPress={() => !isDisabled && handleSortSelection(option.value)}
               title={option.label}
               titleStyle={
                 isDisabled
-                  ? { color: theme.colors.disabled } // Use disabled color for guests
+                  ? { color: theme.colors.disabled }
                   : selectedSort === option.value
-                  ? { color: theme.colors.primary, fontWeight: 'bold' } // Highlight selected option
+                  ? { color: theme.colors.primary, fontWeight: 'bold' }
                   : {}
               }
               style={
                 selectedSort === option.value && !isDisabled
-                  ? { backgroundColor: theme.colors.surface } // Highlight background for selected option
+                  ? { backgroundColor: theme.colors.surface }
                   : {}
               }
-              disabled={isDisabled} // Disable the option if the user is a guest
+              disabled={isDisabled}
             />
           );
         })}

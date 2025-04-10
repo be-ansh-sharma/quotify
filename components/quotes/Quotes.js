@@ -12,14 +12,15 @@ import { fetchQuotes, fetchQuotesByAuthors } from 'utils/firebase/firestore'; //
 export default Quotes = ({
   selectedSort,
   user,
-  author = null,
-  tag = null,
+  author = null, // Filter by specific author
+  tag = null, // Filter by specific tag
   favoriteAuthors = false, // Add favoriteAuthors prop
 }) => {
   const [quotes, setQuotes] = useState([]);
   const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [processedChunks, setProcessedChunks] = useState(0); // Track processed chunks for favorite authors
 
   const loadQuotes = async () => {
     if (loading || !hasMore) return;
@@ -30,22 +31,48 @@ export default Quotes = ({
 
       if (favoriteAuthors && user?.followedAuthors?.length > 0) {
         // Fetch quotes by favorite authors
-        const { newQuotes, lastVisibleDoc, hasMoreQuotes } =
-          await fetchQuotesByAuthors(
-            user.followedAuthors,
-            lastDoc,
-            selectedSort
-          );
+        const {
+          newQuotes,
+          lastVisibleDoc,
+          hasMoreQuotes,
+          processedChunks: updatedChunks,
+        } = await fetchQuotesByAuthors(
+          user.followedAuthors,
+          lastDoc,
+          selectedSort,
+          processedChunks // Pass the current processedChunks
+        );
         fetchedQuotes = newQuotes;
         setLastDoc(lastVisibleDoc);
         setHasMore(hasMoreQuotes);
-      } else {
-        // Fetch general quotes (fallback)
+        setProcessedChunks(updatedChunks); // Update the processedChunks state
+      } else if (author) {
+        // Fetch quotes by a specific author
         const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
           lastDoc,
           selectedSort,
           author,
+          null // No tag filtering
+        );
+        fetchedQuotes = newQuotes;
+        setLastDoc(lastVisibleDoc);
+        setHasMore(hasMoreQuotes);
+      } else if (tag) {
+        // Fetch quotes by a specific tag
+        const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
+          lastDoc,
+          selectedSort,
+          null, // No author filtering
           tag
+        );
+        fetchedQuotes = newQuotes;
+        setLastDoc(lastVisibleDoc);
+        setHasMore(hasMoreQuotes);
+      } else {
+        // Fetch general quotes (no author or tag filtering)
+        const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
+          lastDoc,
+          selectedSort
         );
         fetchedQuotes = newQuotes;
         setLastDoc(lastVisibleDoc);
@@ -72,6 +99,7 @@ export default Quotes = ({
     setQuotes([]);
     setLastDoc(null);
     setHasMore(true);
+    setProcessedChunks(0); // Reset processedChunks when filters change
     loadQuotes();
   }, [selectedSort, author, tag, favoriteAuthors]);
 
@@ -85,7 +113,13 @@ export default Quotes = ({
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>
-          No quotes found by your favorite authors.
+          {favoriteAuthors
+            ? 'No quotes found by your favorite authors.'
+            : author
+            ? `No quotes found by ${author}.`
+            : tag
+            ? `No quotes found for the tag "${tag}".`
+            : 'No quotes found.'}
         </Text>
       </View>
     );

@@ -16,6 +16,7 @@ const COLORS = {
   avatarText: '#FFFFFF', // White text for initials
   icon: '#E5E5E5', // Icon color
   liked: '#E0245E',
+  error: '#D32F2F',
 };
 
 const customDarkTheme = {

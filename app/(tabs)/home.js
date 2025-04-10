@@ -117,7 +117,11 @@ export default function Index() {
         sortHandler={sortHandler}
         sortOptions={SORT_OPTIONS}
       />
-      <Quotes selectedSort={selectedSort} user={user} />
+      <Quotes
+        selectedSort={selectedSort}
+        user={user}
+        favoriteAuthors={selectedSort === 'favoriteAuthor'} // Pass favoriteAuthors prop
+      />
     </View>
   );
 }
