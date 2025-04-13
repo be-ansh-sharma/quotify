@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { COLORS } from 'styles/theme';
 import { FontAwesome } from '@expo/vector-icons'; // For back button
 import Quotes from 'components/quotes/Quotes'; // Reuse the Quotes component
+import useUserStore from 'stores/userStore';
 
 export default function PopularQuotes() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function PopularQuotes() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onPrimary} />
+          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Popular Quotes</Text>
       </View>
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary, // Use the app's primary color for the header
   },
   backButton: {
-    marginRight: 12,
+    marginRight: 12, // Use the app's primary color for the button
   },
   headerTitle: {
     fontSize: 20,

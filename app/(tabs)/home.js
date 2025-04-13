@@ -62,7 +62,7 @@ export default function Index() {
           console.log('User profile not found, redirecting to login...');
           SnackbarService.show('User not found. Please create a new account');
           await auth.signOut();
-          router.push('/auth/login');
+          router.push('/auth/entry');
           return;
         }
 

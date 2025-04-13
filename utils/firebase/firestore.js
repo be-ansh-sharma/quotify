@@ -14,6 +14,9 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  addDoc,
+  deleteDoc,
+  getDoc,
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 
@@ -178,19 +181,24 @@ export const fetchAllQuotes = async () => {
 };
 
 export const createUser = async (userData) => {
-  const usersRef = collection(db, 'users');
-  const userDocRef = doc(usersRef);
-  const uid = userDocRef.id;
-
   try {
+    if (!userData.uid || !userData.email) {
+      throw new Error('UID and email are required to create a user.');
+    }
+
+    const userDocRef = doc(db, 'users', userData.uid); // Use UID as the document ID
     await setDoc(userDocRef, {
-      ...userData,
-      uid,
-      createdAt: serverTimestamp(),
+      email: userData.email,
+      firstName: userData.firstName || '', // Optional fields
+      lastName: userData.lastName || '',
+      createdAt: new Date().toISOString(),
+      uid: userData.uid,
     });
-    console.log('User created successfully:', { ...userData, uid });
+
+    console.log('User created successfully in Firestore:', userData);
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error('Error creating user in Firestore:', error);
+    throw error;
   }
 };
 
@@ -616,5 +624,201 @@ export const fetchQuotesByIds = async (
     nextIndex: ids.length, // All IDs have been processed
     processedChunks: idChunks.length, // All chunks have been processed
   };
+};
+
+/**
+ * Updates the user's profile in Firestore.
+ * @param {string} uid - The user's UID (used as the document ID).
+ * @param {object} updatedProfile - The updated profile data (e.g., firstName, lastName).
+ */
+export const updateUserProfile = async (uid, updatedProfile) => {
+  try {
+    console.log('ssss', uid);
+    if (!uid) {
+      throw new Error('UID is required to update the user profile.');
+    }
+
+    const userDocRef = doc(db, 'users', uid); // Use UID as the document ID
+    await updateDoc(userDocRef, updatedProfile);
+    console.log(
+      'User profile updated successfully in Firestore:',
+      updatedProfile
+    );
+  } catch (error) {
+    console.error('Error updating user profile in Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a new quote to the Firestore database.
+ * @param {object} quote - The quote object to add.
+ * @returns {Promise<void>} - A promise that resolves when the quote is added.
+ */
+export const addQuote = async (quote) => {
+  try {
+    const quotesRef = collection(db, 'pendingquotes');
+    await addDoc(quotesRef, quote); // Add the quote to Firestore
+    console.log('Quote added successfully:', quote);
+  } catch (error) {
+    console.error('Error adding quote:', error);
+    throw error; // Rethrow the error to handle it in the calling function
+  }
+};
+
+/**
+ * Fetch pending quotes from Firestore.
+ * @returns {Promise<Array<object>>} - A promise that resolves to an array of pending quotes.
+ */
+export const fetchPendingQuotes = async () => {
+  try {
+    const pendingQuotesRef = collection(db, 'pendingquotes');
+    const pendingQuotesQuery = query(
+      pendingQuotesRef,
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(pendingQuotesQuery);
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error fetching pending quotes:', error);
+    throw error;
+  }
+};
+
+/**
+ * Approve a pending quote and move it to the main quotes collection.
+ * @param {object} quote - The quote object to approve.
+ */
+export const approveQuote = async (quote) => {
+  try {
+    const quotesRef = doc(db, 'quotes', quote.id); // Reference to the main quotes collection
+    const pendingQuoteRef = doc(db, 'pendingquotes', quote.id); // Reference to the pending quote
+
+    // Add the quote to the main quotes collection
+    await setDoc(quotesRef, {
+      ...quote,
+      approved: true,
+      userQuote: true,
+      createdAt: quote.createdAt || new Date().toISOString(),
+    });
+
+    // Remove the quote from the pendingquotes collection
+    await deleteDoc(pendingQuoteRef);
+
+    console.log(`Quote approved and moved to main collection: ${quote.id}`);
+  } catch (error) {
+    console.error('Error approving quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reject a pending quote and delete it from Firestore.
+ * @param {string} quoteId - The ID of the quote to reject.
+ */
+export const rejectQuote = async (quoteId) => {
+  try {
+    const pendingQuoteRef = doc(db, 'pendingquotes', quoteId);
+    await deleteDoc(pendingQuoteRef);
+
+    console.log(`Quote rejected and deleted: ${quoteId}`);
+  } catch (error) {
+    console.error('Error rejecting quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch quotes created by a specific user.
+ * @param {string} userId - The user's UID.
+ * @returns {Promise<Array<object>>} - A promise that resolves to an array of quotes created by the user.
+ */
+export const fetchQuotesByUser = async (userId) => {
+  try {
+    const quotesRef = collection(db, 'quotes');
+    const userQuotesQuery = query(
+      quotesRef,
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(userQuotesQuery);
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error fetching user quotes:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch paginated user quotes where userQuote is true.
+ * @param {number} pageSize - Number of quotes to fetch per page.
+ * @param {object} lastVisible - The last document from the previous query.
+ * @returns {Promise<{ quotes: Array<object>, lastDoc: object }>} - A promise that resolves to an array of quotes and the last document.
+ */
+export const fetchUserQuotesPaginated = async (pageSize, lastVisible) => {
+  try {
+    const quotesRef = collection(db, 'quotes');
+    let userQuotesQuery = query(
+      quotesRef,
+      where('userQuote', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(pageSize)
+    );
+
+    if (lastVisible) {
+      userQuotesQuery = query(
+        quotesRef,
+        where('userQuote', '==', true),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(pageSize)
+      );
+    }
+
+    const snapshot = await getDocs(userQuotesQuery);
+
+    const quotes = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const lastDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
+
+    return { quotes, lastDoc };
+  } catch (error) {
+    console.error('Error fetching paginated user quotes:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a quote to a specific list in the user's bookmarklist.
+ * @param {string} userId - The user's UID.
+ * @param {string} listName - The name of the list.
+ * @param {object} quote - The quote object to add.
+ * @returns {Promise<void>} - A promise that resolves when the quote is added.
+ */
+export const addQuoteToList = async (userId, listName, quoteId) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+
+    // Update the specific list in the user's bookmarklist
+    await updateDoc(userDocRef, {
+      [`bookmarklist.${listName}`]: arrayUnion(quoteId), // Add the quote to the specified list
+    });
+
+    console.log(`Quote added to list "${listName}" for user ${userId}`);
+  } catch (error) {
+    console.error(`Error adding quote to list "${listName}":`, error);
+    throw error;
+  }
 };
 

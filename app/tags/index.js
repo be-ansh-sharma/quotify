@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   BackHandler,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,6 +21,7 @@ export default function Tags() {
   const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [scale] = useState(new Animated.Value(1)); // Animation value for scaling
 
   // Fetch tags from the database
   const loadTags = async () => {
@@ -60,14 +62,43 @@ export default function Tags() {
     loadTags(); // Load tags when the component mounts
   }, []);
 
-  const renderTile = ({ item }) => (
-    <TouchableOpacity
-      style={styles.tile}
-      onPress={() => router.push(`/tags/${encodeURIComponent(item.name)}`)} // Navigate to the tag's page
-    >
-      <Text style={styles.tileText}>#{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const renderTile = ({ item }) => {
+    const handlePressIn = () => {
+      Animated.spring(scale, {
+        toValue: 0.95,
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    return (
+      <TouchableOpacity
+        style={styles.tile}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => router.push(`/tags/${encodeURIComponent(item.name)}`)} // Navigate to the tag's page
+      >
+        <Animated.View
+          style={[
+            styles.tileContent,
+            {
+              transform: [{ scale: scale }],
+            },
+          ]}
+        >
+          <Text style={styles.tileText}>#{item.name}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderFooter = () => {
     if (!loading) return null;
@@ -133,7 +164,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 8,
     aspectRatio: 1, // Make tiles square
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
@@ -141,6 +172,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 1 },
+  },
+  tileContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tileText: {
     fontSize: 16,

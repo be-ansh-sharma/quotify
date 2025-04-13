@@ -1,16 +1,20 @@
 import React from 'react';
 import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import { List, Divider } from 'react-native-paper'; // Import List and Divider from React Native Paper
-import useUserStore from 'stores/userStore'; // Import your user store
+import { List, Divider, Surface } from 'react-native-paper';
+import { FontAwesome } from '@expo/vector-icons';
+
+import useUserStore from 'stores/userStore';
+import { auth } from 'utils/firebase/firebaseconfig';
 import { COLORS } from 'styles/theme';
-import { auth } from 'utils/firebase/firebaseconfig'; // Import Firebase auth for logout
-import { FontAwesome } from '@expo/vector-icons'; // For the edit icon
+
+const ADMIN = 'us@yopmail.com';
 
 export default function Profile() {
   const router = useRouter();
-  const user = useUserStore((state) => state.user); // Get user info from the store
-  const resetUser = useUserStore((state) => state.resetUser); // Function to reset user state
+  const user = useUserStore((state) => state.user);
+  const resetUser = useUserStore((state) => state.resetUser);
+  const isGuest = user?.isGuest || false; // Check if the user is a guest
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -20,9 +24,9 @@ export default function Profile() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await auth.signOut(); // Sign out from Firebase
-            resetUser(); // Reset user state in the store
-            router.replace('/auth/entry'); // Navigate to the login/entry screen
+            await auth.signOut();
+            resetUser();
+            router.replace('/auth/entry');
           } catch (error) {
             console.error('Error logging out:', error);
           }
@@ -33,58 +37,109 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
-      {/* Edit Profile Button */}
+      {/* Conditional Button */}
       <View style={styles.editContainer}>
-        <TouchableOpacity
-          onPress={() => router.push('/profile/edit')} // Navigate to the edit profile screen
-          style={styles.editButton}
-        >
-          <FontAwesome name='edit' size={20} color={COLORS.primary} />
-          <Text style={styles.editText}>Edit Profile</Text>
-        </TouchableOpacity>
+        {isGuest ? (
+          <TouchableOpacity
+            onPress={() => router.push('/auth/entry')}
+            style={styles.editButton}
+          >
+            <FontAwesome name='sign-in' size={18} color={COLORS.primary} />
+            <Text style={styles.editText}>Log In</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => router.push('/profile/edit')} // Navigate to edit profile page
+            style={styles.editButton}
+          >
+            <FontAwesome name='edit' size={18} color={COLORS.primary} />
+            <Text style={styles.editText}>Edit Profile</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* User Info Section */}
-      <View style={styles.userInfo}>
+      {/* User Info Card */}
+      <Surface style={styles.userCard} elevation={2}>
         <List.Icon icon='account' color={COLORS.primary} size={48} />
-        <List.Item
-          title={user?.name || 'Anonymous'}
-          description={user?.email || 'Not logged in'}
-          titleStyle={styles.userName}
-          descriptionStyle={styles.userEmail}
-        />
-      </View>
+        <View style={styles.userDetails}>
+          <Text style={styles.userName}>
+            {user?.firstName
+              ? `${user?.firstName} ${user?.lastName}`
+              : `Anonymous`}
+          </Text>
+          <Text style={styles.userEmail}>{user?.email || 'Not logged in'}</Text>
+        </View>
+      </Surface>
 
       {/* Links Section */}
-      <Divider />
-      <List.Section>
+      <List.Section style={styles.linksSection}>
+        <Divider />
         <List.Item
           title='Bookmarked Quotes'
-          left={(props) => <List.Icon {...props} icon='bookmark' />}
+          left={(props) => (
+            <List.Icon {...props} icon='bookmark' color={COLORS.icon} />
+          )}
           onPress={() => router.push('/profile/bookmarked')}
         />
         <Divider />
         <List.Item
           title='Liked Quotes'
-          left={(props) => <List.Icon {...props} icon='heart' />}
+          left={(props) => (
+            <List.Icon {...props} icon='heart' color={COLORS.icon} />
+          )}
           onPress={() => router.push('/profile/liked')}
         />
         <Divider />
         <List.Item
           title='Favorite Authors'
-          left={(props) => <List.Icon {...props} icon='account-heart' />}
+          left={(props) => (
+            <List.Icon {...props} icon='account-heart' color={COLORS.icon} />
+          )}
           onPress={() => router.push('/profile/authors')}
         />
         <Divider />
         <List.Item
+          title='My Quotes'
+          left={(props) => (
+            <List.Icon
+              {...props}
+              icon='format-quote-open'
+              color={COLORS.icon}
+            />
+          )}
+          onPress={() => router.push('/profile/myquotes')} // Navigate to the "My Quotes" page
+        />
+        <Divider />
+        {user?.email === ADMIN && (
+          <>
+            <List.Item
+              title='Pending Quotes'
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon='format-quote-open'
+                  color={COLORS.icon}
+                />
+              )}
+              onPress={() => router.push('/profile/pendingquotes')}
+            />
+            <Divider />
+          </>
+        )}
+
+        <List.Item
           title='Settings'
-          left={(props) => <List.Icon {...props} icon='cog' />}
+          left={(props) => (
+            <List.Icon {...props} icon='cog' color={COLORS.icon} />
+          )}
           onPress={() => router.push('/settings')}
         />
         <Divider />
         <List.Item
           title='Logout'
-          left={(props) => <List.Icon {...props} icon='logout' />}
+          left={(props) => (
+            <List.Icon {...props} icon='logout' color={COLORS.error} />
+          )}
           titleStyle={styles.logoutText}
           onPress={handleLogout}
         />
@@ -102,22 +157,32 @@ const styles = StyleSheet.create({
   editContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
   },
   editText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.primary,
-    marginLeft: 8,
+    marginLeft: 6,
+    fontWeight: '600',
   },
-  userInfo: {
+  userCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  userDetails: {
+    marginLeft: 12,
   },
   userName: {
     fontSize: 20,
@@ -127,9 +192,16 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: COLORS.placeholder,
+    marginTop: 2,
+  },
+  linksSection: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    paddingVertical: 4,
   },
   logoutText: {
     color: COLORS.error,
+    fontWeight: '600',
   },
 });
 

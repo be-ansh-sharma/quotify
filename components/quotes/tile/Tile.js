@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,23 +9,21 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme'; // Import COLORS
 import { useRouter, usePathname } from 'expo-router';
-import {
-  likeQuote,
-  unlikeQuote,
-  bookmarkQuote,
-  unbookmarkQuote,
-} from 'utils/firebase/firestore';
+import ListManager from 'components/listmanager/ListManager'; // Import the new ListManager component
+import { likeQuote, unlikeQuote } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 
 export default function Tile({ quote, user }) {
   const [isLiked, setIsLiked] = useState(false); // State to track like status
-  const [isBookmarked, setIsBookmarked] = useState(false); // State to track bookmark status
+  const bottomSheetRef = useRef(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
   const setUser = useUserStore((state) => state.setUser); // Function to update the user in the store
+  const bookmarklist = user?.bookmarklist || {}; // Access the user's bookmarklist from the user object
   const router = useRouter();
   const currentPath = usePathname(); // Get the current route path
+  const listManagerRef = useRef(null); // Ref for the ListManager component
 
   // Check if the quote is already liked or bookmarked by the user
   useEffect(() => {
@@ -33,14 +31,15 @@ export default function Tile({ quote, user }) {
       if (Array.isArray(user?.likes) && user.likes.includes(quote.id)) {
         setIsLiked(true); // Set the initial liked state
       }
-      if (
-        Array.isArray(user?.bookmarked) &&
-        user.bookmarked.includes(quote.id)
-      ) {
-        setIsBookmarked(true); // Set the initial bookmarked state
-      }
     }
   }, [user, quote.id]);
+
+  // Check if the quote is part of any user-created list
+  const isBookmarked = useMemo(() => {
+    return Object.values(bookmarklist).some((list) =>
+      list.some((q) => q.id === quote.id)
+    );
+  }, [bookmarklist, quote.id]);
 
   const toggleLike = async () => {
     if (isGuest) {
@@ -85,32 +84,16 @@ export default function Tile({ quote, user }) {
     }
   };
 
-  const toggleBookmark = async () => {
+  const toggleBookmark = () => {
     if (isGuest) {
       SnackbarService.show('Please log in to bookmark quotes');
       return;
     }
 
-    // Toggle the bookmark state
-    setIsBookmarked((prev) => !prev);
-
-    // Call Firestore functions to update bookmarks and update the user in the store
-    try {
-      if (!isBookmarked) {
-        await bookmarkQuote(user.uid, quote.id);
-        setUser({
-          ...user,
-          bookmarked: [...(user.bookmarked || []), quote.id], // Ensure `user.bookmarked` is an array
-        });
-      } else {
-        await unbookmarkQuote(user.uid, quote.id);
-        setUser({
-          ...user,
-          bookmarked: (user.bookmarked || []).filter((id) => id !== quote.id), // Ensure `user.bookmarked` is an array
-        });
-      }
-    } catch (error) {
-      console.error('Error updating bookmarks:', error);
+    if (listManagerRef.current) {
+      listManagerRef.current.openBottomSheet(isBookmarked); // Pass `isBookmarked` to determine the mode
+    } else {
+      console.log('listManagerRef.current is null');
     }
   };
 
@@ -199,7 +182,11 @@ export default function Tile({ quote, user }) {
         </TouchableOpacity>
 
         {/* Bookmark Icon */}
-        <TouchableOpacity style={styles.actionButton} onPress={toggleBookmark}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={toggleBookmark}
+          activeOpacity={0.7} // Make it more responsive
+        >
           <FontAwesome
             name={isBookmarked ? 'bookmark' : 'bookmark-o'} // Filled bookmark if bookmarked
             size={20}
@@ -211,6 +198,9 @@ export default function Tile({ quote, user }) {
           <FontAwesome name='share-alt' size={20} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
+
+      {/* List Manager */}
+      {user && <ListManager ref={listManagerRef} user={user} quote={quote} />}
     </View>
   );
 }
@@ -279,6 +269,28 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 12,
     color: COLORS.text,
+  },
+  bottomSheetContent: {
+    padding: 16,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  input: {
+    marginBottom: 16,
+  },
+  button: {
+    marginBottom: 16,
+  },
+  listItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  listItemText: {
+    fontSize: 16,
   },
 });
 

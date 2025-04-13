@@ -52,15 +52,19 @@ const RegisterForm = () => {
   const handleRegister = async () => {
     if (validate()) {
       try {
-        await createUserWithEmailAndPassword(email, password);
+        const userCredential = await createUserWithEmailAndPassword(
+          email,
+          password
+        );
         if (error) {
           throw error;
         }
+        const { user } = userCredential;
         await createUser({
-          email,
+          uid: user.uid,
+          email: user.email,
         });
       } catch (error) {
-        console.log(error);
         switch (error.code) {
           case 'auth/email-already-in-use':
             setEmailError(

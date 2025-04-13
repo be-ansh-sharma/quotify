@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   BackHandler,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,6 +21,7 @@ export default function Authors() {
   const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [scale] = useState(new Animated.Value(1)); // Animation value for scaling
 
   // Fetch authors from the database
   const loadAuthors = async () => {
@@ -62,14 +64,43 @@ export default function Authors() {
     loadAuthors(); // Load authors when the component mounts
   }, []);
 
-  const renderTile = ({ item }) => (
-    <TouchableOpacity
-      style={styles.tile}
-      onPress={() => router.push(`/authors/${encodeURIComponent(item.name)}`)} // Navigate to the author's page
-    >
-      <Text style={styles.tileText}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const renderTile = ({ item }) => {
+    const handlePressIn = () => {
+      Animated.spring(scale, {
+        toValue: 0.95,
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    return (
+      <TouchableOpacity
+        style={styles.tile}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => router.push(`/authors/${encodeURIComponent(item.name)}`)} // Navigate to the author's page
+      >
+        <Animated.View
+          style={[
+            styles.tileContent,
+            {
+              transform: [{ scale: scale }],
+            },
+          ]}
+        >
+          <Text style={styles.tileText}>{item.name}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderFooter = () => {
     if (!loading) return null;
@@ -79,14 +110,14 @@ export default function Authors() {
   return (
     <View style={styles.container}>
       {/* Banner Section */}
-      <View style={styles.banner}>
+      <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.replace('/browse')}
+          onPress={() => router.push('/browse')}
           style={styles.backButton}
         >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
+          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
         </TouchableOpacity>
-        <Text style={styles.bannerText}>Authors</Text>
+        <Text style={styles.headerTitle}>Edit Profile</Text>
       </View>
 
       {/* Authors List */}
@@ -110,44 +141,53 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  banner: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 16,
     backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   backButton: {
     marginRight: 12,
   },
-  bannerText: {
-    fontSize: 24,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.onSurface,
+    color: COLORS.text,
   },
   grid: {
     justifyContent: 'center',
   },
   row: {
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 8,
   },
   tile: {
     flex: 1,
     marginHorizontal: 8,
     aspectRatio: 1, // Make tiles square
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 15,
+    elevation: 6,
     shadowColor: COLORS.shadow,
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  tileContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tileText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.avatarText,
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.onSurface,
     textAlign: 'center',
   },
 });

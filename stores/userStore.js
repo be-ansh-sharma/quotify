@@ -25,7 +25,6 @@ const useUserStore = create(
             email: null,
             name: null,
             likes: [],
-            bookmarked: [],
           },
         }),
       resetUser: () =>
@@ -35,7 +34,6 @@ const useUserStore = create(
             email: null,
             name: null,
             likes: [],
-            bookmarked: [],
           },
           isGuest: false,
         }),

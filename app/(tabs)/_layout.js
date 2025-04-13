@@ -1,38 +1,10 @@
-import { useState } from 'react';
-import { Menu, Button } from 'react-native-paper';
 import { Tabs } from 'expo-router';
-import { auth } from 'utils/firebase/firebaseconfig';
 import { useRouter } from 'expo-router';
-import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
-
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function Layout() {
-  const [visible, setVisible] = useState(false);
   const router = useRouter();
-  const isGuest = useUserStore((state) => state.isGuest);
-  const resetUser = useUserStore((state) => state.resetUser);
-
-  const openMenu = () => setVisible(true);
-  const closeMenu = () => setVisible(false);
-
-  // Handle sign-out using Firebase hook
-  const handleSignOut = async () => {
-    try {
-      if (isGuest) {
-        resetUser();
-        router.push('/auth/entry');
-        return;
-      }
-      await auth.signOut();
-      resetUser();
-      closeMenu();
-      router.push('/auth/entry');
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
 
   return (
     <Tabs
@@ -45,13 +17,13 @@ export default function Layout() {
           shadowRadius: 4, // Shadow blur radius
         },
         headerRight: () => (
-          <Menu
-            visible={visible}
-            onDismiss={closeMenu}
-            anchor={<Button icon='dots-vertical' onPress={openMenu} />}
-          >
-            <Menu.Item onPress={handleSignOut} title='Sign Out' />
-          </Menu>
+          <MaterialIcons
+            name='format-quote'
+            size={28}
+            color={COLORS.primary}
+            style={{ marginRight: 16 }}
+            onPress={() => router.push('/postquote')} // Navigate to the post quote page
+          />
         ),
         tabBarStyle: {
           backgroundColor: COLORS.background, // Tab bar background color
