@@ -79,6 +79,7 @@ export default function Index() {
 
   // Run only once when app starts
   useEffect(() => {
+    console.log('Checking user profile on app start...', isGuest);
     if (isGuest || hasCheckedProfileOnce) return;
 
     checkUserProfile();

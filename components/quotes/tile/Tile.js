@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Share,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme'; // Import COLORS
@@ -16,7 +17,6 @@ import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 
 export default function Tile({ quote, user }) {
   const [isLiked, setIsLiked] = useState(false); // State to track like status
-  const bottomSheetRef = useRef(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
   const setUser = useUserStore((state) => state.setUser); // Function to update the user in the store
@@ -34,11 +34,14 @@ export default function Tile({ quote, user }) {
     }
   }, [user, quote.id]);
 
-  // Check if the quote is part of any user-created list
   const isBookmarked = useMemo(() => {
-    return Object.values(bookmarklist).some((list) =>
-      list.some((q) => q.id === quote.id)
-    );
+    return Object.values(bookmarklist).some((list) => list.includes(quote.id));
+  }, [bookmarklist, quote.id]);
+
+  // Calculate how many lists the quote is part of
+  const listCount = useMemo(() => {
+    return Object.values(bookmarklist).filter((list) => list.includes(quote.id))
+      .length;
   }, [bookmarklist, quote.id]);
 
   const toggleLike = async () => {
@@ -86,12 +89,12 @@ export default function Tile({ quote, user }) {
 
   const toggleBookmark = () => {
     if (isGuest) {
-      SnackbarService.show('Please log in to bookmark quotes');
+      SnackbarService.show('Please log in to manage bookmarks');
       return;
     }
 
     if (listManagerRef.current) {
-      listManagerRef.current.openBottomSheet(isBookmarked); // Pass `isBookmarked` to determine the mode
+      listManagerRef.current.openBottomSheet(); // Open the ListManager
     } else {
       console.log('listManagerRef.current is null');
     }
@@ -187,11 +190,18 @@ export default function Tile({ quote, user }) {
           onPress={toggleBookmark}
           activeOpacity={0.7} // Make it more responsive
         >
-          <FontAwesome
-            name={isBookmarked ? 'bookmark' : 'bookmark-o'} // Filled bookmark if bookmarked
-            size={20}
-            color={isBookmarked ? COLORS.primary : COLORS.icon} // Highlighted color if bookmarked
-          />
+          <View>
+            <FontAwesome
+              name={isBookmarked ? 'bookmark' : 'bookmark-o'} // Filled bookmark if bookmarked
+              size={20}
+              color={isBookmarked ? COLORS.primary : COLORS.icon} // Highlighted color if bookmarked
+            />
+            {listCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{listCount}</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
@@ -200,7 +210,14 @@ export default function Tile({ quote, user }) {
       </View>
 
       {/* List Manager */}
-      {user && <ListManager ref={listManagerRef} user={user} quote={quote} />}
+      {user && (
+        <ListManager
+          ref={listManagerRef}
+          user={user}
+          quote={quote}
+          mode={isBookmarked ? 'remove' : 'add'} // Dynamically set the mode
+        />
+      )}
     </View>
   );
 }
@@ -291,6 +308,22 @@ const styles = StyleSheet.create({
   },
   listItemText: {
     fontSize: 16,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -10,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 

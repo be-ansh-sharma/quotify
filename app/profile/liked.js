@@ -18,6 +18,7 @@ const PAGE_SIZE = 10; // Number of quotes to fetch per page
 
 export default function LikedQuotes() {
   const user = useUserStore((state) => state.user);
+  const isGuest = useUserStore((state) => state.isGuest);
   const router = useRouter();
   const [likedQuotes, setLikedQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,11 @@ export default function LikedQuotes() {
   const [processedChunks, setProcessedChunks] = useState(0); // Track processed chunks for pagination
 
   const loadLikedQuotes = async (isLoadMore = false) => {
+    if (isGuest) {
+      setLoading(false);
+      return;
+    }
+
     // If there are no liked quotes, stop loading and show empty state
     if (!user?.likes?.length) {
       setLoading(false);
@@ -98,12 +104,35 @@ export default function LikedQuotes() {
     return <ActivityIndicator size='small' color={COLORS.primary} />;
   };
 
+  const renderEmptyState = (message) => (
+    <View style={styles.emptyContainer}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.push('/profile')}
+          style={styles.backButton}
+        >
+          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Liked Quotes</Text>
+      </View>
+      <Text style={styles.emptyText}>{message}</Text>
+    </View>
+  );
+
   if (loading && likedQuotes.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size='large' color={COLORS.primary} />
       </View>
     );
+  }
+
+  if (isGuest) {
+    return renderEmptyState('Login to view your liked quotes.');
+  }
+
+  if (!likedQuotes.length) {
+    return renderEmptyState("You haven't liked any quotes yet.");
   }
 
   return (
@@ -118,14 +147,6 @@ export default function LikedQuotes() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Liked Quotes</Text>
       </View>
-
-      {!loading && likedQuotes.length === 0 && (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            You haven't liked any quotes yet.
-          </Text>
-        </View>
-      )}
 
       {/* Liked Quotes List */}
       <FlatList
@@ -151,8 +172,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, // Use the app's background color
   },
   header: {
+    width: '100%', // Ensure the header occupies the full width
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center', // Align items vertically in the center of the header
+    justifyContent: 'space-between', // Space between back button and title
     padding: 16,
     backgroundColor: COLORS.primary, // Use the app's primary color for the header
   },
@@ -163,6 +186,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.text, // Use a contrasting color for the text
+    flex: 1, // Allow the title to take up available space
+    textAlign: 'center', // Center the title text
   },
   loadingContainer: {
     flex: 1,
@@ -171,7 +196,7 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start', // Align content to the top
     alignItems: 'center',
     padding: 16,
     backgroundColor: COLORS.background,
@@ -180,6 +205,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: COLORS.placeholder,
     textAlign: 'center',
+    marginTop: 20, // Add spacing below the header
   },
   listContent: {
     paddingHorizontal: 8,

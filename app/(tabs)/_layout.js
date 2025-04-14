@@ -2,9 +2,12 @@ import { Tabs } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { COLORS } from 'styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
+import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import useUserStore from 'stores/userStore'; // Import user store
 
 export default function Layout() {
   const router = useRouter();
+  const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
 
   return (
     <Tabs
@@ -22,7 +25,15 @@ export default function Layout() {
             size={28}
             color={COLORS.primary}
             style={{ marginRight: 16 }}
-            onPress={() => router.push('/postquote')} // Navigate to the post quote page
+            onPress={() => {
+              if (isGuest) {
+                // Show snackbar if the user is a guest
+                SnackbarService.show('You need to log in to post a quote.');
+              } else {
+                // Navigate to the post quote page
+                router.push('/postquote');
+              }
+            }}
           />
         ),
         tabBarStyle: {

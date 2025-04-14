@@ -14,7 +14,7 @@ export default function Profile() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
   const resetUser = useUserStore((state) => state.resetUser);
-  const isGuest = user?.isGuest || false; // Check if the user is a guest
+  const isGuest = useUserStore((state) => state.isGuest);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -135,14 +135,23 @@ export default function Profile() {
           onPress={() => router.push('/settings')}
         />
         <Divider />
-        <List.Item
-          title='Logout'
-          left={(props) => (
-            <List.Icon {...props} icon='logout' color={COLORS.error} />
-          )}
-          titleStyle={styles.logoutText}
-          onPress={handleLogout}
-        />
+        {isGuest ? (
+          <List.Item
+            title='Login'
+            left={(props) => (
+              <List.Icon {...props} icon='key' color={COLORS.primary} /> // Use primary color for the icon
+            )}
+            onPress={() => router.push('/auth/entry')}
+          />
+        ) : (
+          <List.Item
+            title='Logout'
+            left={(props) => (
+              <List.Icon {...props} icon='logout' color={COLORS.error} />
+            )}
+            onPress={handleLogout}
+          />
+        )}
       </List.Section>
     </View>
   );

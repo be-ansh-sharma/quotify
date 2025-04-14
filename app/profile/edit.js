@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { TextInput, Button, HelperText, Divider } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { auth } from 'utils/firebase/firebaseconfig';
@@ -34,10 +40,7 @@ export default function EditProfile() {
   const handleProfileUpdate = async () => {
     setLoading(true);
     try {
-      const updatedProfile = {
-        firstName,
-        lastName,
-      };
+      const updatedProfile = { firstName, lastName };
 
       await updateUserProfile(user.uid, updatedProfile);
 
@@ -63,9 +66,7 @@ export default function EditProfile() {
 
     setLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      await currentUser.updatePassword(password);
-
+      await auth.currentUser.updatePassword(password);
       SnackbarService.show('Password updated successfully');
       setPassword('');
       setConfirmPassword('');
@@ -82,7 +83,7 @@ export default function EditProfile() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push('/profile')}
+          onPress={() => router.back()}
           style={styles.backButton}
         >
           <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
@@ -90,7 +91,9 @@ export default function EditProfile() {
         <Text style={styles.headerTitle}>Edit Profile</Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Profile Fields */}
+        <Text style={styles.sectionTitle}>Profile Info</Text>
         <TextInput
           label='First Name'
           value={firstName}
@@ -116,11 +119,13 @@ export default function EditProfile() {
           disabled={loading}
           style={styles.button}
         >
-          Update Profile
+          Save Profile
         </Button>
 
         <Divider style={styles.divider} />
 
+        {/* Password Section */}
+        <Text style={styles.sectionTitle}>Change Password</Text>
         <TextInput
           label='New Password'
           value={password}
@@ -164,7 +169,7 @@ export default function EditProfile() {
         >
           Cancel
         </Button>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -177,10 +182,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingVertical: 18,
   },
   backButton: {
     marginRight: 12,
@@ -188,25 +192,33 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.text,
+    color: COLORS.onPrimary || '#fff',
   },
   content: {
     padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: COLORS.text,
   },
   input: {
     marginBottom: 16,
   },
   helperText: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   button: {
-    marginTop: 16,
+    marginTop: 4,
+    borderRadius: 8,
   },
   cancelButton: {
-    marginTop: 8,
+    marginTop: 24,
+    alignSelf: 'center',
   },
   divider: {
-    marginVertical: 24,
+    marginVertical: 32,
     height: 1,
     backgroundColor: COLORS.surface,
   },

@@ -29,13 +29,19 @@ const LoginForm = () => {
   const [signInWithEmailAndPassword, user, loading, error] =
     useSignInWithEmailAndPassword(auth);
   const setUser = useUserStore((state) => state.setUser);
+  const setHasCheckedProfileOnce = useUserStore(
+    (state) => state.setHasCheckedProfileOnce
+  );
+  const resetGuest = useUserStore((state) => state.resetGuest);
 
   useEffect(() => {
     if (user) {
       console.log('User logged in successfully:', user);
+      resetGuest();
       setUser({
         email: user.user.email,
       });
+      setHasCheckedProfileOnce(false);
       router.navigate('/(tabs)/home');
     }
   }, [user]);
@@ -192,3 +198,4 @@ const LoginForm = () => {
 };
 
 export default LoginForm;
+

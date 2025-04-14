@@ -17,6 +17,8 @@ import {
   addDoc,
   deleteDoc,
   getDoc,
+  FieldValue,
+  deleteField,
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 
@@ -818,6 +820,72 @@ export const addQuoteToList = async (userId, listName, quoteId) => {
     console.log(`Quote added to list "${listName}" for user ${userId}`);
   } catch (error) {
     console.error(`Error adding quote to list "${listName}":`, error);
+    throw error;
+  }
+};
+
+export const removeQuoteFromList = async (userId, listName, quoteId) => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+
+    // Remove the quote from the specified list
+    await updateDoc(userDocRef, {
+      [`bookmarklist.${listName}`]: arrayRemove(quoteId),
+    });
+
+    console.log(`Quote removed from list "${listName}" for user ${userId}`);
+  } catch (error) {
+    console.error(`Error removing quote from list "${listName}":`, error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch quotes in batches from Firestore.
+ * @param {Array<string>} quoteIds - Array of quote IDs to fetch.
+ * @param {number} startIndex - The starting index for the batch.
+ * @returns {Promise<Array>} - Array of fetched quote objects.
+ */
+export const fetchQuotesInBatches = async (quoteIds, startIndex) => {
+  try {
+    const BATCH_SIZE = 10;
+    const batch = quoteIds.slice(startIndex, startIndex + BATCH_SIZE); // Get the next batch of IDs
+    if (batch.length === 0) return []; // No more quotes to fetch
+
+    const q = query(
+      collection(db, 'quotes'),
+      where('id', 'in', batch) // Use Firestore's `in` operator
+    );
+
+    const querySnapshot = await getDocs(q);
+    const fetchedQuotes = [];
+    querySnapshot.forEach((doc) => {
+      fetchedQuotes.push({ id: doc.id, ...doc.data() });
+    });
+
+    return fetchedQuotes;
+  } catch (error) {
+    console.error('Error fetching quotes in batches:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a list from the user's bookmarklist in Firestore.
+ * @param {string} userId - The user's ID.
+ * @param {string} listName - The name of the list to delete.
+ */
+export const deleteListFromUser = async (userId, listName) => {
+  try {
+    // Remove the list from the user's bookmarklist
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      [`bookmarklist.${listName}`]: deleteField(), // Correctly delete the list from the bookmarklist
+    });
+
+    console.log(`List "${listName}" deleted successfully.`);
+  } catch (error) {
+    console.error(`Error deleting list "${listName}":`, error);
     throw error;
   }
 };

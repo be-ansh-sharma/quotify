@@ -21,6 +21,7 @@ export default Quotes = ({
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [processedChunks, setProcessedChunks] = useState(0); // Track processed chunks for favorite authors
+  console.log(user);
 
   const loadQuotes = async () => {
     if (loading || !hasMore) return;

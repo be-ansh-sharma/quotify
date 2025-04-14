@@ -37,6 +37,16 @@ const useUserStore = create(
           },
           isGuest: false,
         }),
+      resetGuest: () =>
+        set({
+          isGuest: false,
+          user: {
+            uid: null,
+            email: null,
+            name: null,
+            likes: [],
+          },
+        }),
       setHasCheckedProfileOnce: (val) => set({ hasCheckedProfileOnce: val }), // 👈 Setter
     }),
     {
