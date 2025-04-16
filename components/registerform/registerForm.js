@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text } from 'react-native';
-import { TextInput, Button, HelperText } from 'react-native-paper';
-import styles from './RegisterForm.style'; // Importing the styles
+import { View, StyleSheet } from 'react-native';
+import { TextInput, Button, HelperText, Title, Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { createUser } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
+import { COLORS } from 'styles/theme';
 
 const RegisterForm = () => {
   const [email, setEmail] = useState('');
@@ -15,162 +15,162 @@ const RegisterForm = () => {
   const [emailError, setEmailError] = useState(null);
   const [passwordError, setPasswordError] = useState(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState(null);
+
   const router = useRouter();
+  const setUser = useUserStore((state) => state.setUser);
+
   const [createUserWithEmailAndPassword, user, loading, error] =
     useCreateUserWithEmailAndPassword(auth);
-  const setUser = useUserStore((state) => state.setUser);
 
   const validate = () => {
     let valid = true;
 
-    // Email regex for basic validation
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    setEmailError(null);
+    setPasswordError(null);
+    setConfirmPasswordError(null);
+
     if (!email || !emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address');
+      setEmailError('Please enter a valid email');
       valid = false;
-    } else {
-      setEmailError(null);
     }
 
     if (!password || password.length < 6) {
       setPasswordError('Password must be at least 6 characters');
       valid = false;
-    } else {
-      setPasswordError(null);
     }
 
-    if (!confirmPassword || confirmPassword !== password) {
+    if (confirmPassword !== password) {
       setConfirmPasswordError('Passwords must match');
       valid = false;
-    } else {
-      setConfirmPasswordError(null);
     }
 
     return valid;
   };
 
   const handleRegister = async () => {
-    if (validate()) {
-      try {
-        const userCredential = await createUserWithEmailAndPassword(
-          email,
-          password
-        );
-        if (error) {
-          throw error;
-        }
-        const { user } = userCredential;
-        await createUser({
-          uid: user.uid,
-          email: user.email,
-        });
-      } catch (error) {
-        switch (error.code) {
-          case 'auth/email-already-in-use':
-            setEmailError(
-              'This email is already registered. Please use a different email.'
-            );
-            break;
-          case 'auth/invalid-email':
-            setEmailError(
-              'The email address is not valid. Please enter a valid email.'
-            );
-            break;
-          case 'auth/weak-password':
-            setPasswordError(
-              'The password is too weak. Please use at least 6 characters.'
-            );
-            break;
-          case 'auth/operation-not-allowed':
-            console.error(
-              'Email/password accounts are not enabled in Firebase settings.'
-            );
-            break;
-          case 'auth/network-request-failed':
-            console.error(
-              'A network error occurred. Please check your connection.'
-            );
-            break;
-          default:
-            console.error('An unexpected error occurred:', error.message);
-        }
+    if (!validate()) return;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        email,
+        password
+      );
+      if (!userCredential) return;
+
+      await createUser({
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+      });
+    } catch (err) {
+      switch (err.code) {
+        case 'auth/email-already-in-use':
+          setEmailError('Email already in use.');
+          break;
+        case 'auth/invalid-email':
+          setEmailError('Invalid email address.');
+          break;
+        case 'auth/weak-password':
+          setPasswordError('Password too weak.');
+          break;
+        default:
+          console.error('Unexpected error:', err.message);
       }
     }
   };
 
   useEffect(() => {
     if (user) {
-      console.log('User:', user);
-      setUser({
-        email: user.user.email,
-      });
-      console.log('User data:', user);
-      console.log('User registered successfully:', user);
+      setUser({ email: user.user.email });
       router.navigate('/(tabs)/home');
     }
-  }, [user, router]);
+  }, [user]);
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Loading</Text>
+      <View style={styles.loadingContainer}>
+        <Text variant='bodyMedium'>Creating account...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.form}>
-        <TextInput
-          label='Email'
-          value={email}
-          onChangeText={setEmail}
-          keyboardType='email-address'
-          autoCapitalize='none'
-          error={!!emailError}
-          style={styles.input}
-        />
-        {emailError && (
-          <HelperText type='error' style={styles.helperText}>
-            {emailError}
-          </HelperText>
-        )}
+      <Title style={styles.title}>Create Account</Title>
 
-        <TextInput
-          label='Password'
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          error={!!passwordError}
-          style={styles.input}
-        />
-        {passwordError && (
-          <HelperText type='error' style={styles.helperText}>
-            {passwordError}
-          </HelperText>
-        )}
+      <TextInput
+        label='Email'
+        value={email}
+        onChangeText={setEmail}
+        keyboardType='email-address'
+        autoCapitalize='none'
+        error={!!emailError}
+        style={styles.input}
+      />
+      {emailError && <HelperText type='error'>{emailError}</HelperText>}
 
-        <TextInput
-          label='Confirm Password'
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          error={!!confirmPasswordError}
-          style={styles.input}
-        />
-        {confirmPasswordError && (
-          <HelperText type='error' style={styles.helperText}>
-            {confirmPasswordError}
-          </HelperText>
-        )}
+      <TextInput
+        label='Password'
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        error={!!passwordError}
+        style={styles.input}
+      />
+      {passwordError && <HelperText type='error'>{passwordError}</HelperText>}
 
-        <Button mode='contained' onPress={handleRegister} style={styles.button}>
-          Register
-        </Button>
-      </View>
+      <TextInput
+        label='Confirm Password'
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+        error={!!confirmPasswordError}
+        style={styles.input}
+      />
+      {confirmPasswordError && (
+        <HelperText type='error'>{confirmPasswordError}</HelperText>
+      )}
+
+      <Button
+        mode='contained'
+        onPress={handleRegister}
+        style={styles.button}
+        contentStyle={{ paddingVertical: 6 }}
+        labelStyle={{ color: COLORS.icon }}
+      >
+        Register
+      </Button>
     </View>
   );
 };
 
 export default RegisterForm;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  input: {
+    marginBottom: 12,
+    backgroundColor: 'transparent',
+  },
+  button: {
+    marginTop: 16,
+    borderRadius: 8,
+  },
+});
 

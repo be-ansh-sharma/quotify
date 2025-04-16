@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import useUserStore from 'stores/userStore';
@@ -17,27 +18,25 @@ import {
   fetchQuotesInBatches,
   removeQuoteFromList,
   deleteListFromUser,
-} from 'utils/firebase/firestore'; // Import Firestore logic
-
-const BATCH_SIZE = 10; // Number of quotes to fetch per batch
+} from 'utils/firebase/firestore';
 
 export default function ListQuotes() {
   const router = useRouter();
-  const { listName, quotes } = useLocalSearchParams(); // Use useLocalSearchParams
+  const { listName, quotes } = useLocalSearchParams();
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
   const [listQuotes, setListQuotes] = useState(JSON.parse(quotes));
-  const [quoteDetails, setQuoteDetails] = useState([]); // Store fetched quote data
+  const [quoteDetails, setQuoteDetails] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false); // Track lazy loading state
-  const [currentBatchIndex, setCurrentBatchIndex] = useState(0); // Track the current batch index
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
 
   // Initial fetch
   useEffect(() => {
     const fetchInitialQuotes = async () => {
       try {
-        const initialQuotes = await fetchQuotesInBatches(listQuotes, 0); // Fetch the first batch
-        setQuoteDetails(removeDuplicates(initialQuotes)); // Remove duplicates
+        const initialQuotes = await fetchQuotesInBatches(listQuotes, 0);
+        setQuoteDetails(removeDuplicates(initialQuotes));
       } catch (error) {
         console.error('Error fetching initial quotes:', error);
       } finally {
@@ -48,112 +47,20 @@ export default function ListQuotes() {
     fetchInitialQuotes();
   }, [listQuotes]);
 
-  // Fetch more quotes when the user scrolls to the end
-  const fetchMoreQuotes = async () => {
-    if (loadingMore || currentBatchIndex >= listQuotes.length) return; // Prevent duplicate fetches
+  // Share the entire list
+  const handleShareList = async () => {
+    const formattedQuotes = quoteDetails
+      .map((quote, index) => `${index + 1}. ${quote.text} - ${quote.author}`)
+      .join('\n');
+    const message = `Check out my list "${listName}" on Quotify:\n\n${formattedQuotes}`;
 
-    setLoadingMore(true);
     try {
-      const nextBatch = await fetchQuotesInBatches(
-        listQuotes,
-        currentBatchIndex
-      );
-      setQuoteDetails(
-        (prev) => removeDuplicates([...prev, ...nextBatch]) // Append and remove duplicates
-      );
-      setCurrentBatchIndex((prev) => prev + BATCH_SIZE); // Update the batch index
+      await Share.share({
+        message,
+      });
     } catch (error) {
-      console.error('Error fetching more quotes:', error);
-    } finally {
-      setLoadingMore(false);
+      console.error('Error sharing the list:', error);
     }
-  };
-
-  // Remove duplicates based on quote ID
-  const removeDuplicates = (quotes) => {
-    const uniqueQuotes = [];
-    const seenIds = new Set();
-
-    for (const quote of quotes) {
-      if (!seenIds.has(quote.id)) {
-        uniqueQuotes.push(quote);
-        seenIds.add(quote.id);
-      }
-    }
-
-    return uniqueQuotes;
-  };
-
-  // Handle deleting the entire list
-  const handleDeleteList = () => {
-    Alert.alert(
-      'Delete List',
-      `Are you sure you want to delete the list "${listName}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Remove the list from Firestore
-              await deleteListFromUser(user.uid, listName);
-
-              // Update the user's bookmarklist in local state
-              const updatedBookmarklist = { ...user.bookmarklist };
-              delete updatedBookmarklist[listName];
-              setUser({ ...user, bookmarklist: updatedBookmarklist });
-
-              // Navigate back to the bookmarked lists page
-              router.push('/profile/bookmarked');
-            } catch (error) {
-              console.error(`Error deleting list "${listName}":`, error);
-              Alert.alert(
-                'Error',
-                'Failed to delete the list. Please try again later.'
-              );
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  // Handle removing a quote from the list
-  const handleRemoveQuote = (quoteId) => {
-    Alert.alert(
-      'Remove Quote',
-      'Are you sure you want to remove this quote from the list?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Remove the quote from the user's list in Firestore
-              await removeQuoteFromList(user.uid, listName, quoteId);
-
-              // Update the local state
-              const updatedQuotes = listQuotes.filter((id) => id !== quoteId);
-              setListQuotes(updatedQuotes);
-
-              setQuoteDetails((prev) =>
-                prev.filter((quote) => quote.id !== quoteId)
-              );
-
-              console.log(`Quote ${quoteId} removed successfully.`);
-            } catch (error) {
-              console.error(`Error removing quote ${quoteId}:`, error);
-              Alert.alert(
-                'Error',
-                'Failed to remove the quote. Please try again later.'
-              );
-            }
-          },
-        },
-      ]
-    );
   };
 
   if (loading) {
@@ -175,12 +82,20 @@ export default function ListQuotes() {
           <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{listName}</Text>
-        <TouchableOpacity
-          onPress={handleDeleteList}
-          style={styles.deleteListButton}
-        >
-          <FontAwesome name='trash' size={20} color={COLORS.icon} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={handleShareList}
+            style={styles.shareButton}
+          >
+            <FontAwesome name='share-alt' size={20} color={COLORS.icon} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleDeleteList}
+            style={styles.deleteListButton}
+          >
+            <FontAwesome name='trash' size={20} color={COLORS.icon} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Quotes in the List */}
@@ -197,7 +112,6 @@ export default function ListQuotes() {
           renderItem={({ item }) => (
             <View style={styles.tileContainer}>
               <View style={{ flex: 1 }}>
-                {/* Constrain Tile to available space */}
                 <Tile quote={item} user={user} />
               </View>
               <TouchableOpacity
@@ -209,8 +123,8 @@ export default function ListQuotes() {
             </View>
           )}
           contentContainerStyle={styles.listContent}
-          onEndReached={fetchMoreQuotes} // Trigger lazy loading
-          onEndReachedThreshold={0.5} // Trigger when 50% of the list is visible
+          onEndReached={fetchMoreQuotes}
+          onEndReachedThreshold={0.5}
           ListFooterComponent={
             loadingMore && (
               <View style={styles.loadingMoreContainer}>
@@ -232,7 +146,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Space between back button, title, and delete button
+    justifyContent: 'space-between',
     padding: 16,
     backgroundColor: COLORS.primary,
   },
@@ -243,8 +157,15 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.text,
-    flex: 1, // Allow title to take available space
+    flex: 1,
     textAlign: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  shareButton: {
+    marginRight: 12,
   },
   deleteListButton: {
     marginLeft: 12,
@@ -279,19 +200,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    flexDirection: 'row', // Ensure horizontal layout
-    alignItems: 'center', // Align items vertically
-    justifyContent: 'space-between', // Space between Tile and removeButton
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
   },
   removeButton: {
     marginLeft: 16,
-    padding: 8, // Add padding for better touch area
-    alignSelf: 'center', // Ensure the button stays centered vertically
+    padding: 8,
+    alignSelf: 'center',
   },
   loadingMoreContainer: {
     paddingVertical: 16,
     alignItems: 'center',
   },
 });
-

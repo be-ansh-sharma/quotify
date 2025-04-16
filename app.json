@@ -17,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.epoch.quotify",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#121212"
@@ -25,8 +26,18 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router"],
-    "scheme": "quotify"
+    "plugins": [
+      "expo-router",
+      "expo-localization"
+    ],
+    "scheme": "quotify",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "72429fcf-5b83-4cb5-b250-ffd6370f59bd"
+      }
+    }
   }
 }
-

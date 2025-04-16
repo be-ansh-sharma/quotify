@@ -5,8 +5,8 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
@@ -18,7 +18,7 @@ export default function FavoriteAuthors() {
   const isGuest = useUserStore((state) => state.isGuest);
 
   const renderEmptyState = (message) => (
-    <View style={styles.emptyContainer}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.push('/profile')}
@@ -29,13 +29,13 @@ export default function FavoriteAuthors() {
         <Text style={styles.headerTitle}>Favorite Authors</Text>
       </View>
       <Text style={styles.emptyText}>{message}</Text>
-    </View>
+    </SafeAreaView>
   );
 
   const renderAuthor = ({ item }) => (
     <TouchableOpacity
       style={styles.authorTile}
-      onPress={() => router.push(`/authors/${item.id}`)} // Navigate to the author's quotes
+      onPress={() => router.push(`/authors/${item.id}`)}
     >
       <Text style={styles.authorName}>{item.name}</Text>
     </TouchableOpacity>
@@ -50,8 +50,7 @@ export default function FavoriteAuthors() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header Section */}
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.push('/profile')}
@@ -62,29 +61,27 @@ export default function FavoriteAuthors() {
         <Text style={styles.headerTitle}>Favorite Authors</Text>
       </View>
 
-      {/* List of Favorite Authors */}
       <FlatList
-        data={user.followedAuthors} // Use authors directly from the user store
+        data={user.followedAuthors}
         keyExtractor={(item) => item.id}
         renderItem={renderAuthor}
         contentContainerStyle={styles.listContent}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background, // Use the app's background color
+    backgroundColor: COLORS.background,
   },
   header: {
-    width: '100%', // Ensure the header occupies the full width
+    width: '100%',
     flexDirection: 'row',
-    alignItems: 'center', // Align items vertically in the center of the header
-    justifyContent: 'space-between', // Space between back button and title
+    alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary, // Use the app's primary color for the header
+    backgroundColor: COLORS.primary,
   },
   backButton: {
     marginRight: 12,
@@ -92,22 +89,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.text, // Use a contrasting color for the text
-    flex: 1, // Allow the title to take up available space
-    textAlign: 'center', // Center the title text
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'flex-start', // Align content to the top
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.background,
+    color: COLORS.text,
   },
   emptyText: {
     fontSize: 18,
     color: COLORS.placeholder,
     textAlign: 'center',
-    marginTop: 20, // Add spacing below the header
+    marginTop: 20,
   },
   listContent: {
     paddingHorizontal: 8,

@@ -17,10 +17,11 @@ import {
   addDoc,
   deleteDoc,
   getDoc,
-  FieldValue,
   deleteField,
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
+import * as Localization from 'expo-localization';
+import { convertToUTCTimeBucket } from 'utils/helpers';
 
 export const uploadQuotes = async () => {
   const quotesRef = collection(db, 'quotes');
@@ -887,6 +888,153 @@ export const deleteListFromUser = async (userId, listName) => {
   } catch (error) {
     console.error(`Error deleting list "${listName}":`, error);
     throw error;
+  }
+};
+
+/**
+ * Add a user or guest to a time bucket.
+ * @param {string} timeBucket - The time bucket (e.g., "09-00").
+ * @param {string} id - The user ID or guest token.
+ * @param {boolean} isGuest - Whether the ID belongs to a guest.
+ */
+const addToTimeBucket = async (timeBucket, id, isGuest) => {
+  try {
+    const bucketRef = doc(db, 'timeBuckets', timeBucket);
+
+    await setDoc(
+      bucketRef,
+      {
+        [isGuest ? 'guests' : 'users']: arrayUnion(id),
+      },
+      { merge: true }
+    );
+
+    console.log(`Added ${id} to time bucket ${timeBucket}.`);
+  } catch (error) {
+    console.error(`Error adding ${id} to time bucket ${timeBucket}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Store the FCM token in Firestore for a user.
+ * @param {string|null} userId - The ID of the user (null for guests).
+ * @param {string} fcmToken - The FCM token to store.
+ * @param {boolean} isGuest - Whether the user is a guest.
+ */
+export const storeFCMToken = async (userId, fcmToken, isGuest) => {
+  try {
+    const defaultPreferences = {
+      tags: ['Motivational'],
+      frequency: 'daily',
+      time: '09:00 AM',
+    };
+
+    const timeZone = Localization.timezone;
+
+    if (isGuest) {
+      // Store the token and default preferences in the guest_tokens collection
+      const guestTokenRef = collection(db, 'guest_tokens');
+      const guestDoc = await addDoc(guestTokenRef, {
+        fcmToken,
+        preferences: defaultPreferences,
+        timeZone, // Store the user's time zone
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('FCM Token and default preferences stored for guest user.');
+
+      // Convert the time to UTC and add the guest to the time bucket
+      const timeBucket = convertToUTCTimeBucket(
+        defaultPreferences.time,
+        timeZone
+      );
+      await addToTimeBucket(timeBucket, guestDoc.id, true);
+    } else if (userId) {
+      // Store the token and default preferences in the users collection
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+
+        // Update the FCM token and retain existing preferences or set defaults
+        await updateDoc(userRef, {
+          fcmToken,
+          preferences: userData.preferences || defaultPreferences,
+          timeZone: userData.timeZone || timeZone, // Retain existing time zone or set default
+          createdAt: userData.createdAt || new Date(),
+          updatedAt: new Date(),
+        });
+
+        console.log('FCM Token and preferences updated for logged-in user.');
+      } else {
+        // If the user document doesn't exist, create it with the FCM token and default preferences
+        await setDoc(userRef, {
+          fcmToken,
+          preferences: defaultPreferences,
+          timeZone, // Store the user's time zone
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        console.log(
+          'FCM Token and default preferences stored for new logged-in user.'
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error storing FCM token and preferences:', error);
+    throw error;
+  }
+};
+
+/**
+ * Handle FCM token refresh for guest users.
+ * @param {string} oldToken - The old FCM token.
+ * @param {string} newToken - The new FCM token.
+ */
+export const handleGuestTokenRefresh = async (oldToken, newToken) => {
+  try {
+    const oldRef = doc(db, 'guest_tokens', oldToken);
+    const oldSnap = await getDoc(oldRef);
+
+    const defaultPreferences = {
+      tags: ['Motivational'],
+      frequency: 'daily',
+      time: '09:00 AM',
+    };
+
+    if (oldSnap.exists()) {
+      const data = oldSnap.data();
+
+      // Copy preferences and retain the original createdAt timestamp
+      const newRef = doc(db, 'guest_tokens', newToken);
+      await setDoc(newRef, {
+        ...data,
+        fcmToken: newToken,
+        preferences: data.preferences || defaultPreferences, // Retain existing preferences or set defaults
+        createdAt: data.createdAt || new Date(), // Retain old createdAt or fallback to now
+        updatedAt: new Date(), // Update the updatedAt timestamp
+      });
+
+      // Delete the old token
+      await deleteDoc(oldRef);
+      console.log('Guest token refreshed and preferences migrated.');
+    } else {
+      // If the old token doesn't exist, create a new document with default preferences
+      const newRef = doc(db, 'guest_tokens', newToken);
+      await setDoc(newRef, {
+        fcmToken: newToken,
+        preferences: defaultPreferences,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      console.log('Default preferences set for new guest token.');
+    }
+  } catch (error) {
+    console.error('Error handling guest token refresh:', error);
   }
 };
 

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchUserProfile, uploadQuotes } from 'utils/firebase/firestore';
+import {
+  fetchUserProfile,
+  uploadQuotes,
+  storeFCMToken,
+} from 'utils/firebase/firestore';
 import Sort from 'components/sort/Sort';
 import useUserStore from 'stores/userStore';
 import Quotes from 'components/quotes/Quotes';
@@ -9,6 +13,7 @@ import { router } from 'expo-router';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { SORT_OPTIONS } from 'config/sortConfig';
+import * as Notifications from 'expo-notifications';
 
 const CURRENT_VERSION = '2';
 
@@ -30,6 +35,35 @@ export default function Index() {
   const sortHandler = (sort) => {
     setSelectedSort(sort);
     useUserStore.setState({ selectedSort: sort });
+  };
+
+  const fetchAndStoreFCMToken = async () => {
+    try {
+      // Request notification permissions
+      const { status } = await Notifications.getPermissionsAsync();
+      console.log('statusss', status);
+      if (status !== 'granted') {
+        const { status: newStatus } =
+          await Notifications.requestPermissionsAsync();
+        if (newStatus !== 'granted') {
+          console.log('Notification permissions not granted');
+          return;
+        }
+      }
+
+      // Fetch the FCM token
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: 'quotify-b565b', // Ensure this matches your Firebase Project ID
+      });
+      const fcmToken = tokenData.data;
+
+      console.log('FCM Token:', fcmToken);
+
+      // Store the token in Firestore
+      await storeFCMToken(user?.id || null, fcmToken, isGuest);
+    } catch (error) {
+      console.error('Error fetching or storing FCM token:', error);
+    }
   };
 
   // Upload quotes if version changed
@@ -68,6 +102,13 @@ export default function Index() {
 
         console.log('User profile refreshed:', userProfile);
         setUser(userProfile);
+
+        // Fetch and store FCM token after fetching user profile
+        await fetchAndStoreFCMToken();
+      } else if (isGuest) {
+        console.log('Guest user detected, fetching FCM token...');
+        // Fetch and store FCM token for guest user
+        await fetchAndStoreFCMToken();
       } else {
         console.log('No email found. Redirecting to login/entry...');
         router.push('/auth/entry');

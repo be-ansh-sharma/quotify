@@ -1,33 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import {
   TextInput,
   Button,
   HelperText,
   Dialog,
   Portal,
-  Paragraph,
+  useTheme,
+  ActivityIndicator,
 } from 'react-native-paper';
-import styles from './LoginForm.style'; // Importing the styles
 import { useRouter } from 'expo-router';
 import { useSignInWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import useUserStore from 'stores/userStore';
+import styles from './LoginForm.style';
+import { COLORS } from 'styles/theme';
 
 const LoginForm = () => {
+  const theme = useTheme();
+  const router = useRouter();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState(null);
   const [passwordError, setPasswordError] = useState(null);
-  const [authError, setAuthError] = useState(null); // Handle Firebase auth errors
-  const [resetEmail, setResetEmail] = useState(''); // Email for password reset
-  const [isDialogVisible, setIsDialogVisible] = useState(false); // Dialog visibility
-  const [resetError, setResetError] = useState(null); // Error for reset email
-  const [resetSuccess, setResetSuccess] = useState(null); // Success message for reset email
-  const router = useRouter();
+  const [authError, setAuthError] = useState(null);
+  const [isDialogVisible, setIsDialogVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetError, setResetError] = useState(null);
+  const [resetSuccess, setResetSuccess] = useState(null);
+
   const [signInWithEmailAndPassword, user, loading, error] =
     useSignInWithEmailAndPassword(auth);
+
   const setUser = useUserStore((state) => state.setUser);
   const setHasCheckedProfileOnce = useUserStore(
     (state) => state.setHasCheckedProfileOnce
@@ -36,11 +42,8 @@ const LoginForm = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('User logged in successfully:', user);
       resetGuest();
-      setUser({
-        email: user.user.email,
-      });
+      setUser({ email: user.user.email });
       setHasCheckedProfileOnce(false);
       router.navigate('/(tabs)/home');
     }
@@ -49,21 +52,16 @@ const LoginForm = () => {
   const validate = () => {
     let valid = true;
 
-    // Email regex for basic validation
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
       setEmailError('Please enter a valid email address');
       valid = false;
-    } else {
-      setEmailError(null);
-    }
+    } else setEmailError(null);
 
     if (!password || password.length < 6) {
       setPasswordError('Password must be at least 6 characters');
       valid = false;
-    } else {
-      setPasswordError(null);
-    }
+    } else setPasswordError(null);
 
     return valid;
   };
@@ -72,8 +70,7 @@ const LoginForm = () => {
     if (validate()) {
       try {
         await signInWithEmailAndPassword(email, password);
-      } catch (error) {
-        console.error(error.message);
+      } catch (err) {
         setAuthError('Invalid email or password. Please try again.');
       }
     }
@@ -81,41 +78,33 @@ const LoginForm = () => {
 
   const handleResetPassword = async () => {
     if (!resetEmail) {
-      setResetError('Please enter your email address');
+      setResetError('Please enter your email');
       return;
     }
 
     try {
       await sendPasswordResetEmail(auth, resetEmail);
-      setResetSuccess('Password reset email sent successfully!');
+      setResetSuccess('Password reset email sent!');
       setResetError(null);
-    } catch (error) {
-      console.error('Error sending password reset email:', error);
-      setResetError('Failed to send password reset email. Please try again.');
+    } catch (err) {
+      setResetError('Failed to send reset email. Try again.');
     }
   };
 
   const openDialog = () => {
-    setResetEmail(''); // Clear the email field
-    setResetError(null); // Clear any previous errors
-    setResetSuccess(null); // Clear any previous success messages
+    setResetEmail('');
+    setResetError(null);
+    setResetSuccess(null);
     setIsDialogVisible(true);
   };
 
-  const closeDialog = () => {
-    setIsDialogVisible(false);
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+  const closeDialog = () => setIsDialogVisible(false);
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.form}>
         <TextInput
           label='Email'
@@ -126,11 +115,9 @@ const LoginForm = () => {
           error={!!emailError}
           style={styles.input}
         />
-        {emailError && (
-          <HelperText type='error' style={styles.helperText}>
-            {emailError}
-          </HelperText>
-        )}
+        <HelperText type='error' visible={!!emailError}>
+          {emailError}
+        </HelperText>
 
         <TextInput
           label='Password'
@@ -140,29 +127,37 @@ const LoginForm = () => {
           error={!!passwordError}
           style={styles.input}
         />
-        {passwordError && (
-          <HelperText type='error' style={styles.helperText}>
-            {passwordError}
-          </HelperText>
-        )}
+        <HelperText type='error' visible={!!passwordError}>
+          {passwordError}
+        </HelperText>
 
         {authError && (
-          <HelperText type='error' style={styles.helperText}>
+          <HelperText type='error' visible={true}>
             {authError}
           </HelperText>
         )}
 
-        <Button mode='contained' onPress={handleLogin} style={styles.button}>
-          Login
+        <Button
+          mode='contained'
+          onPress={handleLogin}
+          style={styles.button}
+          loading={loading}
+          disabled={loading}
+          labelStyle={{ color: COLORS.icon }}
+        >
+          {loading ? 'Logging In...' : 'Login'}
         </Button>
 
-        {/* Forgot Password Button */}
-        <Button mode='text' onPress={openDialog} style={styles.forgotPassword}>
+        <Button
+          mode='text'
+          onPress={openDialog}
+          style={styles.forgotPassword}
+          labelStyle={{ color: theme.colors.primary }}
+        >
           Forgot Password?
         </Button>
       </View>
 
-      {/* Reset Password Dialog */}
       <Portal>
         <Dialog visible={isDialogVisible} onDismiss={closeDialog}>
           <Dialog.Title>Reset Password</Dialog.Title>
@@ -177,12 +172,12 @@ const LoginForm = () => {
               style={styles.input}
             />
             {resetError && (
-              <HelperText type='error' style={styles.helperText}>
+              <HelperText type='error' visible={true}>
                 {resetError}
               </HelperText>
             )}
             {resetSuccess && (
-              <HelperText type='info' style={styles.helperText}>
+              <HelperText type='info' visible={true}>
                 {resetSuccess}
               </HelperText>
             )}
@@ -193,7 +188,7 @@ const LoginForm = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

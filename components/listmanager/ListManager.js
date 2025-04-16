@@ -70,20 +70,14 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
       // Add the quote to the new list in Firestore
       await addQuoteToList(user.uid, listName, quote.id);
 
+      const updatedBookmarklist = {
+        ...(state.user.bookmarklist || {}), // Ensure bookmarklist is an object
+        [listName]: [...(state.user.bookmarklist?.[listName] || []), quote.id], // Add the quote ID to the list
+      };
       // Update the user object in the Zustand store
-      setUser((state) => {
-        const updatedBookmarklist = {
-          ...(state.user.bookmarklist || {}), // Ensure bookmarklist is an object
-          [listName]: [
-            ...(state.user.bookmarklist?.[listName] || []),
-            quote.id,
-          ], // Add the quote ID to the list
-        };
-
-        return {
-          ...state.user,
-          bookmarklist: updatedBookmarklist,
-        };
+      setUser({
+        ...user,
+        bookmarklist: updatedBookmarklist,
       });
 
       SnackbarService.show(`Quote added to "${listName}"`);
@@ -104,20 +98,14 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
     try {
       await addQuoteToList(user.uid, listName, quote.id);
 
+      const updatedBookmarklist = {
+        ...(state.user.bookmarklist || {}),
+        [listName]: [...(state.user.bookmarklist?.[listName] || []), quote.id],
+      };
       // Update the user object in the Zustand store
-      setUser((state) => {
-        const updatedBookmarklist = {
-          ...(state.user.bookmarklist || {}),
-          [listName]: [
-            ...(state.user.bookmarklist?.[listName] || []),
-            quote.id,
-          ],
-        };
-
-        return {
-          ...state.user,
-          bookmarklist: updatedBookmarklist,
-        };
+      setUser({
+        ...user,
+        bookmarklist: updatedBookmarklist,
       });
 
       SnackbarService.show(`Quote added to "${listName}"`);

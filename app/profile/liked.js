@@ -7,14 +7,15 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for the back icon
-import { fetchQuotesByIds } from 'utils/firebase/firestore'; // Function to fetch quotes by IDs
-import Tile from 'components/quotes/tile/Tile'; // Reuse the Tile component for rendering quotes
+import { FontAwesome } from '@expo/vector-icons';
+import { fetchQuotesByIds } from 'utils/firebase/firestore';
+import Tile from 'components/quotes/tile/Tile';
 
-const PAGE_SIZE = 10; // Number of quotes to fetch per page
+const PAGE_SIZE = 10;
 
 export default function LikedQuotes() {
   const user = useUserStore((state) => state.user);
@@ -23,9 +24,9 @@ export default function LikedQuotes() {
   const [likedQuotes, setLikedQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [nextIndex, setNextIndex] = useState(0); // Track the next start index
-  const [hasMore, setHasMore] = useState(true); // Track if more quotes are available
-  const [processedChunks, setProcessedChunks] = useState(0); // Track processed chunks for pagination
+  const [nextIndex, setNextIndex] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [processedChunks, setProcessedChunks] = useState(0);
 
   const loadLikedQuotes = async (isLoadMore = false) => {
     if (isGuest) {
@@ -33,7 +34,6 @@ export default function LikedQuotes() {
       return;
     }
 
-    // If there are no liked quotes, stop loading and show empty state
     if (!user?.likes?.length) {
       setLoading(false);
       setHasMore(false);
@@ -42,11 +42,7 @@ export default function LikedQuotes() {
 
     if (isLoadMore && (!hasMore || loadingMore)) return;
 
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
+    isLoadMore ? setLoadingMore(true) : setLoading(true);
 
     try {
       const {
@@ -58,7 +54,7 @@ export default function LikedQuotes() {
         user.likes,
         nextIndex,
         PAGE_SIZE,
-        processedChunks // Pass the current processedChunks
+        processedChunks
       );
 
       setLikedQuotes((prevQuotes) => {
@@ -71,15 +67,11 @@ export default function LikedQuotes() {
 
       setNextIndex(newNextIndex);
       setHasMore(moreAvailable);
-      setProcessedChunks(updatedChunks); // Update the processedChunks state
+      setProcessedChunks(updatedChunks);
     } catch (error) {
       console.error('Error fetching liked quotes:', error);
     } finally {
-      if (isLoadMore) {
-        setLoadingMore(false);
-      } else {
-        setLoading(false);
-      }
+      isLoadMore ? setLoadingMore(false) : setLoading(false);
     }
   };
 
@@ -89,11 +81,10 @@ export default function LikedQuotes() {
 
   useEffect(() => {
     if (!user?.likes?.length) {
-      setLikedQuotes([]); // Clear the list if there are no likes
+      setLikedQuotes([]);
       return;
     }
 
-    // Filter the likedQuotes to ensure they match the updated user.likes
     setLikedQuotes((prevQuotes) =>
       prevQuotes.filter((quote) => user.likes.includes(quote.id))
     );
@@ -105,7 +96,7 @@ export default function LikedQuotes() {
   };
 
   const renderEmptyState = (message) => (
-    <View style={styles.emptyContainer}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.push('/profile')}
@@ -116,7 +107,7 @@ export default function LikedQuotes() {
         <Text style={styles.headerTitle}>Liked Quotes</Text>
       </View>
       <Text style={styles.emptyText}>{message}</Text>
-    </View>
+    </SafeAreaView>
   );
 
   if (loading && likedQuotes.length === 0) {
@@ -136,8 +127,7 @@ export default function LikedQuotes() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header Section */}
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.push('/profile')}
@@ -148,7 +138,6 @@ export default function LikedQuotes() {
         <Text style={styles.headerTitle}>Liked Quotes</Text>
       </View>
 
-      {/* Liked Quotes List */}
       <FlatList
         data={likedQuotes}
         keyExtractor={(item) => item.id}
@@ -158,26 +147,26 @@ export default function LikedQuotes() {
           </View>
         )}
         contentContainerStyle={styles.listContent}
-        onEndReached={() => loadLikedQuotes(true)} // Load more quotes when reaching the end
-        onEndReachedThreshold={0.5} // Trigger when 50% of the list is visible
-        ListFooterComponent={renderFooter} // Show loading spinner at the bottom
+        onEndReached={() => loadLikedQuotes(true)}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background, // Use the app's background color
+    backgroundColor: COLORS.background,
   },
   header: {
-    width: '100%', // Ensure the header occupies the full width
+    width: '100%',
     flexDirection: 'row',
-    alignItems: 'center', // Align items vertically in the center of the header
-    justifyContent: 'space-between', // Space between back button and title
+    alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary, // Use the app's primary color for the header
+    backgroundColor: COLORS.primary,
+    justifyContent: 'flex-start',
   },
   backButton: {
     marginRight: 12,
@@ -185,27 +174,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.text, // Use a contrasting color for the text
-    flex: 1, // Allow the title to take up available space
-    textAlign: 'center', // Center the title text
+    color: COLORS.text,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'flex-start', // Align content to the top
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.background,
-  },
   emptyText: {
     fontSize: 18,
     color: COLORS.placeholder,
     textAlign: 'center',
-    marginTop: 20, // Add spacing below the header
+    marginTop: 20,
   },
   listContent: {
     paddingHorizontal: 8,
@@ -214,12 +194,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: COLORS.surface, // Match the background color of the Tile
+    backgroundColor: COLORS.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2, // For Android shadow
+    elevation: 2,
   },
 });
 
