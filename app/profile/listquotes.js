@@ -63,6 +63,37 @@ export default function ListQuotes() {
     }
   };
 
+  const removeDuplicates = (quotes) => {
+    const seen = new Set();
+    return quotes.filter((quote) => {
+      if (seen.has(quote.id)) {
+        return false;
+      }
+      seen.add(quote.id);
+      return true;
+    });
+  };
+
+  const fetchMoreQuotes = async () => {
+    if (loadingMore) return; // Prevent multiple fetches at the same time
+
+    setLoadingMore(true);
+
+    try {
+      const nextBatchIndex = currentBatchIndex + 1;
+      const moreQuotes = await fetchQuotesInBatches(listQuotes, nextBatchIndex);
+
+      if (moreQuotes.length > 0) {
+        setQuoteDetails((prev) => removeDuplicates([...prev, ...moreQuotes]));
+        setCurrentBatchIndex(nextBatchIndex);
+      }
+    } catch (error) {
+      console.error('Error fetching more quotes:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const handleDeleteList = async () => {
     Alert.alert(
       'Delete List',
@@ -229,6 +260,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 8,
+    marginTop: 16,
   },
   tileContainer: {
     marginBottom: 16,

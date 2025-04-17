@@ -27,16 +27,19 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-localization"],
+    "plugins": [
+      "expo-router",
+      "expo-localization"
+    ],
     "scheme": "quotify",
     "extra": {
       "router": {
         "origin": false
       },
       "eas": {
-        "projectId": "72429fcf-5b83-4cb5-b250-ffd6370f59bd"
+        "projectId": "fc00177d-1e80-4186-ad0c-6fcfe15024ba"
       }
-    }
+    },
+    "owner": "meraki-apps"
   }
 }
-

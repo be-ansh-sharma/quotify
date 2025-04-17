@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 8,
+    marginTop: 16,
   },
   listTile: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { COLORS } from 'styles/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router'; // Use Expo Router
+import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
 
 dayjs.extend(utc);
@@ -48,41 +48,53 @@ const TAGS = [
 ];
 
 export default function NotificationSettings() {
-  const router = useRouter(); // Use Expo Router for navigation
+  const router = useRouter();
   const bottomSheetRef = useRef(null);
-  const user = useUserStore((state) => state.user); // Get user from the store
-  const setUser = useUserStore((state) => state.setUser); // Update user in the store
+  const user = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
 
-  // Initialize state with user preferences or default values
   const [selectedTags, setSelectedTags] = useState(
-    user?.preferences?.tags || []
+    user?.preferences?.tags || ['Motivational']
   );
   const [frequency, setFrequency] = useState(
     user?.preferences?.frequency || 'daily'
   );
   const [notificationTime, setNotificationTime] = useState(
-    user?.preferences?.time
-      ? dayjs.tz(user.preferences.time, user.preferences.timeZone)
-      : dayjs().tz(Localization.timezone).hour(9).minute(0)
+    dayjs(user?.preferences?.time, 'hh:mm A') || dayjs().hour(9).minute(0)
+  );
+  const [dndEnabled, setDndEnabled] = useState(
+    user?.preferences?.dndEnabled ?? true
+  );
+  const [dndStartTime, setDndStartTime] = useState(
+    dayjs(user?.preferences?.dndStartTime, 'hh:mm A') ||
+      dayjs().hour(22).minute(0)
+  );
+  const [dndEndTime, setDndEndTime] = useState(
+    dayjs(user?.preferences?.dndEndTime, 'hh:mm A') || dayjs().hour(7).minute(0)
   );
   const [randomQuoteEnabled, setRandomQuoteEnabled] = useState(
     user?.preferences?.randomQuoteEnabled || false
   );
-  const [dndEnabled, setDndEnabled] = useState(
-    user?.preferences?.dndEnabled || false
-  );
-  const [dndStartTime, setDndStartTime] = useState(
-    user?.preferences?.dndStartTime
-      ? dayjs.tz(user.preferences.dndStartTime, user.preferences.timeZone)
-      : dayjs().hour(22).minute(0)
-  );
-  const [dndEndTime, setDndEndTime] = useState(
-    user?.preferences?.dndEndTime
-      ? dayjs.tz(user.preferences.dndEndTime, user.preferences.timeZone)
-      : dayjs().hour(7).minute(0)
-  );
 
-  const timeZone = Localization.timezone;
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [activeTimePicker, setActiveTimePicker] =
+    (useState < 'notification') | 'dndStart' | 'dndEnd' | (null > null);
+
+  const openTimePicker = (type) => {
+    setActiveTimePicker(type);
+    setTimePickerVisible(true);
+  };
+
+  const handleTimeConfirm = ({ hours, minutes }) => {
+    const time = dayjs().hour(hours).minute(minutes).second(0);
+
+    if (activeTimePicker === 'notification') setNotificationTime(time);
+    else if (activeTimePicker === 'dndStart') setDndStartTime(time);
+    else if (activeTimePicker === 'dndEnd') setDndEndTime(time);
+
+    setTimePickerVisible(false);
+    setActiveTimePicker(null);
+  };
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
@@ -90,31 +102,18 @@ export default function NotificationSettings() {
     );
   };
 
-  const handleTimeConfirm = ({ hours, minutes }) => {
-    const time = dayjs().tz(timeZone).hour(hours).minute(minutes).second(0);
-    setNotificationTime(time);
-    setTimePickerVisible(false);
-  };
-
   const savePreferences = () => {
     const preferences = {
       tags: selectedTags,
       frequency,
-      time: notificationTime.utc().format('HH:mm'),
-      timeZone,
+      time: notificationTime.format('hh:mm A'),
       randomQuoteEnabled,
       dndEnabled,
-      dndStartTime: dndStartTime.utc().format('HH:mm'),
-      dndEndTime: dndEndTime.utc().format('HH:mm'),
+      dndStartTime: dndStartTime.format('hh:mm A'),
+      dndEndTime: dndEndTime.format('hh:mm A'),
     };
 
-    // Update user preferences in the store
-    setUser({
-      ...user,
-      preferences,
-    });
-
-    console.log('Notification Preferences:', preferences);
+    setUser({ ...user, preferences });
     alert('Preferences saved successfully!');
   };
 
@@ -133,16 +132,17 @@ export default function NotificationSettings() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
+          onPress={() => router.back()}
           style={styles.backButton}
-          onPress={() => router.back()} // Use router.back() to navigate back
         >
           <Ionicons name='arrow-back' size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notification Settings</Text>
       </View>
 
-      {/* Content */}
+      {/* Main Content */}
       <View style={styles.container}>
+        {/* Frequency */}
         <List.Section>
           <List.Subheader>Notification Frequency</List.Subheader>
           {['daily', 'weekly'].map((freq) => (
@@ -160,15 +160,17 @@ export default function NotificationSettings() {
           ))}
         </List.Section>
 
+        {/* Time */}
         <List.Section>
           <List.Subheader>Notification Time</List.Subheader>
           <List.Item
             title={`Time: ${notificationTime.format('hh:mm A')}`}
             left={(props) => <List.Icon {...props} icon='clock-outline' />}
-            onPress={() => setTimePickerVisible(true)}
+            onPress={() => openTimePicker('notification')}
           />
         </List.Section>
 
+        {/* Tags */}
         <List.Section>
           <List.Subheader>Tags</List.Subheader>
           <List.Item
@@ -178,6 +180,7 @@ export default function NotificationSettings() {
           />
         </List.Section>
 
+        {/* Random Quote Toggle */}
         <List.Section>
           <List.Subheader>Preferences</List.Subheader>
           <List.Item
@@ -192,6 +195,7 @@ export default function NotificationSettings() {
           />
         </List.Section>
 
+        {/* DND */}
         <List.Section>
           <List.Subheader>Do Not Disturb</List.Subheader>
           <List.Item
@@ -209,17 +213,18 @@ export default function NotificationSettings() {
               <List.Item
                 title={`Start Time: ${dndStartTime.format('hh:mm A')}`}
                 left={(props) => <List.Icon {...props} icon='clock-outline' />}
-                onPress={() => setTimePickerVisible(true)} // Add a time picker for start time
+                onPress={() => openTimePicker('dndStart')}
               />
               <List.Item
                 title={`End Time: ${dndEndTime.format('hh:mm A')}`}
                 left={(props) => <List.Icon {...props} icon='clock-outline' />}
-                onPress={() => setTimePickerVisible(true)} // Add a time picker for end time
+                onPress={() => openTimePicker('dndEnd')}
               />
             </>
           )}
         </List.Section>
 
+        {/* Save and Reset Buttons */}
         <Button
           mode='contained'
           onPress={savePreferences}
@@ -231,21 +236,22 @@ export default function NotificationSettings() {
 
         <Button
           mode='text'
-          onPress={() => {
-            setSelectedTags([]);
-            setFrequency('daily');
-            setNotificationTime(dayjs().tz(timeZone).hour(9).minute(0));
-            setRandomQuoteEnabled(false);
-            setDndEnabled(false);
-            console.log('Preferences reset to default');
-          }}
           style={{ marginTop: 16 }}
+          onPress={() => {
+            setSelectedTags(['Motivational']);
+            setFrequency('daily');
+            setNotificationTime(dayjs().hour(9).minute(0));
+            setRandomQuoteEnabled(false);
+            setDndEnabled(true);
+            setDndStartTime(dayjs().hour(22).minute(0));
+            setDndEndTime(dayjs().hour(7).minute(0));
+          }}
         >
           Reset to Default
         </Button>
       </View>
 
-      {/* BottomSheet for Tags */}
+      {/* Tag Selector Sheet */}
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -265,13 +271,25 @@ export default function NotificationSettings() {
         </View>
       </BottomSheet>
 
-      {/* Time Picker Modal */}
+      {/* Time Picker */}
       <TimePickerModal
         visible={timePickerVisible}
         onDismiss={() => setTimePickerVisible(false)}
         onConfirm={handleTimeConfirm}
-        hours={notificationTime.hour()}
-        minutes={notificationTime.minute()}
+        hours={
+          activeTimePicker === 'notification'
+            ? notificationTime.hour()
+            : activeTimePicker === 'dndStart'
+            ? dndStartTime.hour()
+            : dndEndTime.hour()
+        }
+        minutes={
+          activeTimePicker === 'notification'
+            ? notificationTime.minute()
+            : activeTimePicker === 'dndStart'
+            ? dndStartTime.minute()
+            : dndEndTime.minute()
+        }
       />
     </View>
   );
@@ -283,7 +301,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
