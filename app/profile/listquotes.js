@@ -63,6 +63,46 @@ export default function ListQuotes() {
     }
   };
 
+  const handleDeleteList = async () => {
+    Alert.alert(
+      'Delete List',
+      `Are you sure you want to delete the list "${listName}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Remove the list from Firestore
+              await deleteListFromUser(user.uid, listName);
+
+              // Update the user store to remove the list locally
+              const updatedLists = { ...user.lists };
+              delete updatedLists[listName];
+              setUser({
+                ...user,
+                lists: updatedLists,
+              });
+
+              console.log(`List "${listName}" deleted successfully.`);
+              router.push('/profile/bookmarked'); // Navigate back to the bookmarked lists
+            } catch (error) {
+              console.error('Error deleting the list:', error);
+              Alert.alert(
+                'Error',
+                'Failed to delete the list. Please try again.'
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -215,3 +255,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "194086294893",
+    "project_id": "quotify-b565b",
+    "storage_bucket": "quotify-b565b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:194086294893:android:8681cc082b3109610af664",
+        "android_client_info": {
+          "package_name": "com.epoch.quotify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiLyIaVLOlKgiJnX27Hisar5ipXOr9YVs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -928,6 +928,10 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
       tags: ['Motivational'],
       frequency: 'daily',
       time: '09:00 AM',
+      randomQuoteEnabled: false,
+      dndEnabled: true,
+      dndStartTime: '10:00 PM',
+      dndEndTime: '07:00 AM',
     };
 
     const timeZone = Localization.timezone;
@@ -983,6 +987,7 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
           'FCM Token and default preferences stored for new logged-in user.'
         );
       }
+      return defaultPreferences;
     }
   } catch (error) {
     console.error('Error storing FCM token and preferences:', error);
@@ -1001,9 +1006,13 @@ export const handleGuestTokenRefresh = async (oldToken, newToken) => {
     const oldSnap = await getDoc(oldRef);
 
     const defaultPreferences = {
-      tags: ['Motivational'],
-      frequency: 'daily',
-      time: '09:00 AM',
+      tags: ['Motivational'], // Default tags
+      frequency: 'daily', // Default notification frequency
+      time: '09:00 AM', // Default notification time
+      randomQuoteEnabled: false, // Default: Random quote notifications disabled
+      dndEnabled: true, // Default: Do Not Disturb disabled
+      dndStartTime: '10:00 PM', // Default Do Not Disturb start time
+      dndEndTime: '07:00 AM', // Default Do Not Disturb end time
     };
 
     if (oldSnap.exists()) {
@@ -1035,6 +1044,29 @@ export const handleGuestTokenRefresh = async (oldToken, newToken) => {
     }
   } catch (error) {
     console.error('Error handling guest token refresh:', error);
+  }
+};
+
+/**
+ * Fetch the FCM token for a guest user from the database.
+ * @param {string} fcmToken - The FCM token to fetch.
+ * @returns {Promise<object|null>} - The guest user data or null if not found.
+ */
+export const fetchGuestFCMToken = async (fcmToken) => {
+  try {
+    const guestTokenRef = doc(db, 'guest_tokens', fcmToken);
+    const guestTokenSnap = await getDoc(guestTokenRef);
+
+    if (guestTokenSnap.exists()) {
+      console.log('Guest FCM token found:', guestTokenSnap.data());
+      return guestTokenSnap.data();
+    } else {
+      console.log('Guest FCM token not found in the database.');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching guest FCM token:', error);
+    throw error;
   }
 };
 

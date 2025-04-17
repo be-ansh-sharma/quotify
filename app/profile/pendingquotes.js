@@ -14,6 +14,7 @@ import {
   approveQuote,
   rejectQuote,
 } from 'utils/firebase/firestore';
+import { router } from 'expo-router';
 
 export default function PendingQuotes() {
   const [pendingQuotes, setPendingQuotes] = useState([]);

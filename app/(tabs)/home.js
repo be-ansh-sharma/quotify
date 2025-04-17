@@ -41,7 +41,7 @@ export default function Index() {
     try {
       // Request notification permissions
       const { status } = await Notifications.getPermissionsAsync();
-      console.log('statusss', status);
+      console.log('Notification permission status:', status);
       if (status !== 'granted') {
         const { status: newStatus } =
           await Notifications.requestPermissionsAsync();
@@ -53,14 +53,56 @@ export default function Index() {
 
       // Fetch the FCM token
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'quotify-b565b', // Ensure this matches your Firebase Project ID
+        projectId: '72429fcf-5b83-4cb5-b250-ffd6370f59bd', // Ensure this matches your Firebase Project ID
       });
       const fcmToken = tokenData.data;
 
-      console.log('FCM Token:', fcmToken);
+      console.log('Fetched FCM Token:', fcmToken);
 
-      // Store the token in Firestore
-      await storeFCMToken(user?.id || null, fcmToken, isGuest);
+      if (isGuest) {
+        // Fetch guest data from Firestore
+        const guestData = await fetchGuestFCMToken(fcmToken);
+
+        if (guestData) {
+          console.log('Guest FCM token found, storing in user store...');
+          setUser({
+            ...user,
+            fcmToken: guestData.fcmToken,
+            preferences: guestData.preferences,
+          });
+        } else {
+          console.log(
+            'Guest FCM token not found in Firestore, storing new token...'
+          );
+          let defaultPreferences = await storeFCMToken(null, fcmToken, true);
+          setUser({
+            ...user,
+            fcmToken,
+            preferences: defaultPreferences,
+          });
+        }
+      } else if (user?.uid) {
+        if (user?.fcmToken === fcmToken) {
+          console.log(
+            'Logged-in user FCM token already exists in user store. Skipping update.'
+          );
+          return;
+        }
+
+        console.log('Storing logged-in user FCM token in user store...');
+        setUser({
+          ...user,
+          fcmToken,
+        });
+
+        // Optionally store in Firestore if needed
+        let defaultPreferences = await storeFCMToken(user.uid, fcmToken, false);
+        setUser({
+          ...user,
+          fcmToken,
+          preferences: defaultPreferences,
+        });
+      }
     } catch (error) {
       console.error('Error fetching or storing FCM token:', error);
     }
@@ -107,7 +149,6 @@ export default function Index() {
         await fetchAndStoreFCMToken();
       } else if (isGuest) {
         console.log('Guest user detected, fetching FCM token...');
-        // Fetch and store FCM token for guest user
         await fetchAndStoreFCMToken();
       } else {
         console.log('No email found. Redirecting to login/entry...');

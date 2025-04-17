@@ -25,11 +25,11 @@ export default function Layout() {
     if (isGuest) {
       console.log('Setting up token refresh listener for guest user...');
       setupTokenRefreshListener(null, true);
-    } else if (user?.id) {
+    } else if (user?.uid) {
       console.log('Setting up token refresh listener for logged-in user...');
       setupTokenRefreshListener(user.id, false);
     }
-  }, [isGuest, user?.id]);
+  }, [isGuest, user?.uid]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

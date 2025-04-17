@@ -7,7 +7,6 @@ import {
   Dialog,
   Portal,
   useTheme,
-  ActivityIndicator,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useSignInWithEmailAndPassword } from 'react-firebase-hooks/auth';

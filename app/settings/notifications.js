@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,16 @@ import {
   FlatList,
 } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
-import { Checkbox, Button, List } from 'react-native-paper';
+import { Checkbox, Button, List, Switch } from 'react-native-paper';
 import { TimePickerModal } from 'react-native-paper-dates';
 import * as Localization from 'expo-localization';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { COLORS } from 'styles/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router'; // Use Expo Router
+import useUserStore from 'stores/userStore';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -45,18 +48,43 @@ const TAGS = [
 ];
 
 export default function NotificationSettings() {
+  const router = useRouter(); // Use Expo Router for navigation
   const bottomSheetRef = useRef(null);
+  const user = useUserStore((state) => state.user); // Get user from the store
+  const setUser = useUserStore((state) => state.setUser); // Update user in the store
 
-  const [selectedTags, setSelectedTags] = useState(['Motivational']);
-  const [frequency, setFrequency] = useState('daily');
-  const [timePickerVisible, setTimePickerVisible] = useState(false);
-
-  const timeZone = Localization.timezone;
+  // Initialize state with user preferences or default values
+  const [selectedTags, setSelectedTags] = useState(
+    user?.preferences?.tags || []
+  );
+  const [frequency, setFrequency] = useState(
+    user?.preferences?.frequency || 'daily'
+  );
   const [notificationTime, setNotificationTime] = useState(
-    dayjs().tz(timeZone).hour(9).minute(0)
+    user?.preferences?.time
+      ? dayjs.tz(user.preferences.time, user.preferences.timeZone)
+      : dayjs().tz(Localization.timezone).hour(9).minute(0)
+  );
+  const [randomQuoteEnabled, setRandomQuoteEnabled] = useState(
+    user?.preferences?.randomQuoteEnabled || false
+  );
+  const [dndEnabled, setDndEnabled] = useState(
+    user?.preferences?.dndEnabled || false
+  );
+  const [dndStartTime, setDndStartTime] = useState(
+    user?.preferences?.dndStartTime
+      ? dayjs.tz(user.preferences.dndStartTime, user.preferences.timeZone)
+      : dayjs().hour(22).minute(0)
+  );
+  const [dndEndTime, setDndEndTime] = useState(
+    user?.preferences?.dndEndTime
+      ? dayjs.tz(user.preferences.dndEndTime, user.preferences.timeZone)
+      : dayjs().hour(7).minute(0)
   );
 
-  const toggleTag = (tag: string) => {
+  const timeZone = Localization.timezone;
+
+  const toggleTag = (tag) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
@@ -74,7 +102,18 @@ export default function NotificationSettings() {
       frequency,
       time: notificationTime.utc().format('HH:mm'),
       timeZone,
+      randomQuoteEnabled,
+      dndEnabled,
+      dndStartTime: dndStartTime.utc().format('HH:mm'),
+      dndEndTime: dndEndTime.utc().format('HH:mm'),
     };
+
+    // Update user preferences in the store
+    setUser({
+      ...user,
+      preferences,
+    });
+
     console.log('Notification Preferences:', preferences);
     alert('Preferences saved successfully!');
   };
@@ -90,53 +129,123 @@ export default function NotificationSettings() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Notification Settings</Text>
+    <View style={styles.safeArea}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()} // Use router.back() to navigate back
+        >
+          <Ionicons name='arrow-back' size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Notification Settings</Text>
+      </View>
 
-      <List.Section>
-        <List.Subheader>Notification Frequency</List.Subheader>
-        {['daily', 'weekly'].map((freq) => (
+      {/* Content */}
+      <View style={styles.container}>
+        <List.Section>
+          <List.Subheader>Notification Frequency</List.Subheader>
+          {['daily', 'weekly'].map((freq) => (
+            <List.Item
+              key={freq}
+              title={freq.charAt(0).toUpperCase() + freq.slice(1)}
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon={frequency === freq ? 'check-circle' : 'circle-outline'}
+                />
+              )}
+              onPress={() => setFrequency(freq)}
+            />
+          ))}
+        </List.Section>
+
+        <List.Section>
+          <List.Subheader>Notification Time</List.Subheader>
           <List.Item
-            key={freq}
-            title={freq.charAt(0).toUpperCase() + freq.slice(1)}
-            left={(props) => (
-              <List.Icon
-                {...props}
-                icon={frequency === freq ? 'check-circle' : 'circle-outline'}
+            title={`Time: ${notificationTime.format('hh:mm A')}`}
+            left={(props) => <List.Icon {...props} icon='clock-outline' />}
+            onPress={() => setTimePickerVisible(true)}
+          />
+        </List.Section>
+
+        <List.Section>
+          <List.Subheader>Tags</List.Subheader>
+          <List.Item
+            title='Select Tags'
+            left={(props) => <List.Icon {...props} icon='tag-outline' />}
+            onPress={() => bottomSheetRef.current?.expand()}
+          />
+        </List.Section>
+
+        <List.Section>
+          <List.Subheader>Preferences</List.Subheader>
+          <List.Item
+            title='Send me a random quote daily'
+            left={(props) => <List.Icon {...props} icon='bell-outline' />}
+            right={() => (
+              <Switch
+                value={randomQuoteEnabled}
+                onValueChange={() => setRandomQuoteEnabled(!randomQuoteEnabled)}
               />
             )}
-            onPress={() => setFrequency(freq)}
           />
-        ))}
-      </List.Section>
+        </List.Section>
 
-      <List.Section>
-        <List.Subheader>Notification Time</List.Subheader>
-        <List.Item
-          title={`Time: ${notificationTime.format('hh:mm A')}`}
-          left={(props) => <List.Icon {...props} icon='clock-outline' />}
-          onPress={() => setTimePickerVisible(true)}
-        />
-      </List.Section>
+        <List.Section>
+          <List.Subheader>Do Not Disturb</List.Subheader>
+          <List.Item
+            title='Enable Do Not Disturb'
+            left={(props) => <List.Icon {...props} icon='moon-outline' />}
+            right={() => (
+              <Switch
+                value={dndEnabled}
+                onValueChange={() => setDndEnabled(!dndEnabled)}
+              />
+            )}
+          />
+          {dndEnabled && (
+            <>
+              <List.Item
+                title={`Start Time: ${dndStartTime.format('hh:mm A')}`}
+                left={(props) => <List.Icon {...props} icon='clock-outline' />}
+                onPress={() => setTimePickerVisible(true)} // Add a time picker for start time
+              />
+              <List.Item
+                title={`End Time: ${dndEndTime.format('hh:mm A')}`}
+                left={(props) => <List.Icon {...props} icon='clock-outline' />}
+                onPress={() => setTimePickerVisible(true)} // Add a time picker for end time
+              />
+            </>
+          )}
+        </List.Section>
 
-      <List.Section>
-        <List.Subheader>Tags</List.Subheader>
-        <List.Item
-          title='Select Tags'
-          left={(props) => <List.Icon {...props} icon='tag-outline' />}
-          onPress={() => bottomSheetRef.current?.expand()}
-        />
-      </List.Section>
+        <Button
+          mode='contained'
+          onPress={savePreferences}
+          style={styles.saveButton}
+          labelStyle={styles.buttonLabel}
+        >
+          Save Preferences
+        </Button>
 
-      <Button
-        mode='contained'
-        onPress={savePreferences}
-        style={styles.saveButton}
-        labelStyle={styles.buttonLabel}
-      >
-        Save Preferences
-      </Button>
+        <Button
+          mode='text'
+          onPress={() => {
+            setSelectedTags([]);
+            setFrequency('daily');
+            setNotificationTime(dayjs().tz(timeZone).hour(9).minute(0));
+            setRandomQuoteEnabled(false);
+            setDndEnabled(false);
+            console.log('Preferences reset to default');
+          }}
+          style={{ marginTop: 16 }}
+        >
+          Reset to Default
+        </Button>
+      </View>
 
+      {/* BottomSheet for Tags */}
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -156,6 +265,7 @@ export default function NotificationSettings() {
         </View>
       </BottomSheet>
 
+      {/* Time Picker Modal */}
       <TimePickerModal
         visible={timePickerVisible}
         onDismiss={() => setTimePickerVisible(false)}
@@ -168,17 +278,28 @@ export default function NotificationSettings() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
+  header: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: COLORS.primary,
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: COLORS.text,
+  },
+  container: {
+    flex: 1,
+    padding: 16,
   },
   saveButton: {
     marginTop: 30,

@@ -5,16 +5,16 @@ import React, {
   useState,
 } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Portal } from 'react-native-paper';
+import { Portal, Button, TextInput } from 'react-native-paper';
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { TextInput, Button } from 'react-native-paper';
 import { COLORS } from 'styles/theme';
-import { addQuoteToList, fetchUserLists } from 'utils/firebase/firestore';
+import { addQuoteToList, removeQuoteFromList } from 'utils/firebase/firestore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import useUserStore from 'stores/userStore';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Import icons
 
 const MAX_LISTS = 10; // Define the maximum number of lists a user can create
 
@@ -24,12 +24,19 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showInput, setShowInput] = useState(false); // Track whether to show the input box
+  const [tempSelection, setTempSelection] = useState({}); // Temporary selection of lists
   const bookmarklist = user.bookmarklist || {};
   const setUser = useUserStore((state) => state.setUser); // Function to update the user in the store
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     openBottomSheet: () => {
+      setTempSelection(
+        Object.keys(bookmarklist).reduce((acc, listName) => {
+          acc[listName] = bookmarklist[listName]?.includes(quote.id) || false;
+          return acc;
+        }, {})
+      );
       setIsVisible(true);
 
       setTimeout(() => {
@@ -42,78 +49,49 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
     },
   }));
 
-  const renderBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.7}
-      />
-    ),
-    []
-  );
-
-  const handleCreateList = async () => {
-    if (!listName.trim()) {
-      SnackbarService.show('List name cannot be empty');
-      return;
-    }
-
-    if (Object.keys(bookmarklist).length >= MAX_LISTS) {
-      SnackbarService.show(`You can only create up to ${MAX_LISTS} lists.`);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Add the quote to the new list in Firestore
-      await addQuoteToList(user.uid, listName, quote.id);
-
-      const updatedBookmarklist = {
-        ...(state.user.bookmarklist || {}), // Ensure bookmarklist is an object
-        [listName]: [...(state.user.bookmarklist?.[listName] || []), quote.id], // Add the quote ID to the list
-      };
-      // Update the user object in the Zustand store
-      setUser({
-        ...user,
-        bookmarklist: updatedBookmarklist,
-      });
-
-      SnackbarService.show(`Quote added to "${listName}"`);
-      setListName('');
-      setShowInput(false); // Hide the input box after creating the list
-      bottomSheetRef.current?.close();
-      setIsVisible(false);
-    } catch (error) {
-      console.error('Error creating list:', error);
-      SnackbarService.show('Failed to add quote to list');
-    } finally {
-      setLoading(false);
-    }
+  const toggleListSelection = (listName) => {
+    setTempSelection((prev) => ({
+      ...prev,
+      [listName]: !prev[listName],
+    }));
   };
 
-  const handleAddToExistingList = async (listName) => {
+  const handleSaveChanges = async () => {
     setLoading(true);
     try {
-      await addQuoteToList(user.uid, listName, quote.id);
+      const updatedBookmarklist = { ...bookmarklist };
 
-      const updatedBookmarklist = {
-        ...(state.user.bookmarklist || {}),
-        [listName]: [...(state.user.bookmarklist?.[listName] || []), quote.id],
-      };
+      for (const [listName, isSelected] of Object.entries(tempSelection)) {
+        const isQuoteInList = bookmarklist[listName]?.includes(quote.id);
+
+        if (isSelected && !isQuoteInList) {
+          // Add the quote to the list
+          await addQuoteToList(user.uid, listName, quote.id);
+          updatedBookmarklist[listName] = [
+            ...(updatedBookmarklist[listName] || []),
+            quote.id,
+          ];
+        } else if (!isSelected && isQuoteInList) {
+          // Remove the quote from the list
+          await removeQuoteFromList(user.uid, listName, quote.id);
+          updatedBookmarklist[listName] = updatedBookmarklist[listName].filter(
+            (id) => id !== quote.id
+          );
+        }
+      }
+
       // Update the user object in the Zustand store
       setUser({
         ...user,
         bookmarklist: updatedBookmarklist,
       });
 
-      SnackbarService.show(`Quote added to "${listName}"`);
+      SnackbarService.show('Changes saved successfully.');
       bottomSheetRef.current?.close();
       setIsVisible(false);
     } catch (error) {
-      console.error('Error adding quote to list:', error);
-      SnackbarService.show('Failed to add quote to list');
+      console.error('Error saving changes:', error);
+      SnackbarService.show('Failed to save changes.');
     } finally {
       setLoading(false);
     }
@@ -147,14 +125,21 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
         index={-1}
         onChange={handleSheetChanges}
         enablePanDownToClose={true}
-        backdropComponent={renderBackdrop}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={-1}
+            appearsOnIndex={0}
+            opacity={0.7}
+          />
+        )}
         backgroundStyle={styles.bottomSheetBackground}
         handleIndicatorStyle={styles.indicator}
         enableOverDrag={true}
         style={styles.bottomSheet}
       >
         <BottomSheetView style={styles.bottomSheetContent}>
-          <Text style={styles.bottomSheetTitle}>Save Quote to List</Text>
+          <Text style={styles.bottomSheetTitle}>Manage Your Lists</Text>
 
           {/* New List Button or Input */}
           {showInput ? (
@@ -169,7 +154,7 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
               <View style={styles.newListActions}>
                 <Button
                   mode='contained'
-                  onPress={handleCreateList}
+                  onPress={handleSaveChanges}
                   loading={loading}
                   disabled={loading}
                   style={styles.button}
@@ -199,22 +184,42 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
           {/* Existing Lists */}
           <Text style={styles.existingListsTitle}>Your Lists</Text>
           {Object.keys(bookmarklist).length > 0 ? (
-            Object.entries(bookmarklist).map(([name, quotes], index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => handleAddToExistingList(name)}
-                style={styles.listItem}
-              >
-                <Text style={styles.listItemText}>
-                  {name} ({quotes.length}) {/* Display the count */}
-                </Text>
-              </TouchableOpacity>
+            Object.keys(bookmarklist).map((name, index) => (
+              <View key={index} style={styles.listContainer}>
+                <TouchableOpacity
+                  style={styles.listItem}
+                  onPress={() => toggleListSelection(name)}
+                >
+                  <Icon
+                    name={
+                      tempSelection[name]
+                        ? 'checkbox-marked-circle'
+                        : 'checkbox-blank-circle-outline'
+                    }
+                    size={24}
+                    color={tempSelection[name] ? COLORS.primary : COLORS.text}
+                  />
+                  <Text style={styles.listTitle}>{name}</Text>
+                </TouchableOpacity>
+              </View>
             ))
           ) : (
             <Text style={styles.noListsText}>
               You haven't created any lists yet. Create your first list above.
             </Text>
           )}
+
+          {/* Save Button */}
+          <Button
+            mode='contained'
+            onPress={handleSaveChanges}
+            loading={loading}
+            disabled={loading}
+            style={styles.saveButton}
+            color={COLORS.primary}
+          >
+            Save Changes
+          </Button>
         </BottomSheetView>
       </BottomSheet>
     </Portal>
@@ -275,15 +280,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: COLORS.text,
   },
-  listItem: {
-    padding: 16,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    marginBottom: 10,
+  listContainer: {
+    marginBottom: 16,
   },
-  listItemText: {
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  listTitle: {
     fontSize: 16,
     color: COLORS.text,
+    marginLeft: 8,
   },
   noListsText: {
     fontSize: 14,
@@ -292,6 +300,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     paddingVertical: 16,
+  },
+  saveButton: {
+    marginTop: 16,
   },
 });
 
