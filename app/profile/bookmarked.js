@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 12,
@@ -158,3 +158,4 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
 });
+

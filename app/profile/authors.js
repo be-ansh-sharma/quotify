@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -28,18 +29,51 @@ export default function FavoriteAuthors() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Favorite Authors</Text>
       </View>
-      <Text style={styles.emptyText}>{message}</Text>
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>{message}</Text>
+      </View>
     </SafeAreaView>
   );
 
-  const renderAuthor = ({ item }) => (
-    <TouchableOpacity
-      style={styles.authorTile}
-      onPress={() => router.push(`/authors/${item.id}`)}
-    >
-      <Text style={styles.authorName}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const renderAuthor = ({ item }) => {
+    const scale = new Animated.Value(1);
+
+    const handlePressIn = () => {
+      Animated.spring(scale, {
+        toValue: 0.95,
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    return (
+      <TouchableOpacity
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => router.push(`/authors/${item}`)}
+        style={styles.tile}
+      >
+        <Animated.View
+          style={[
+            styles.tileContent,
+            {
+              transform: [{ scale }],
+            },
+          ]}
+        >
+          <Text style={styles.tileText}>{item}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
 
   if (isGuest) {
     return renderEmptyState('Login to follow your favorite authors.');
@@ -63,9 +97,11 @@ export default function FavoriteAuthors() {
 
       <FlatList
         data={user.followedAuthors}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item}-${index}`}
         renderItem={renderAuthor}
-        contentContainerStyle={styles.listContent}
+        numColumns={2} // Display 2 tiles per row
+        columnWrapperStyle={styles.row} // Style for rows
+        contentContainerStyle={styles.grid} // Style for the grid
       />
     </SafeAreaView>
   );
@@ -77,40 +113,68 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 0.5,
+    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 12,
+    padding: 6,
+    borderRadius: 8,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: COLORS.text,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
   },
   emptyText: {
     fontSize: 18,
     color: COLORS.placeholder,
     textAlign: 'center',
-    marginTop: 20,
+    lineHeight: 26,
   },
-  listContent: {
-    paddingHorizontal: 8,
-    paddingBottom: 20,
+  grid: {
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 24,
   },
-  authorTile: {
-    padding: 16,
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  tile: {
+    flex: 1,
+    marginHorizontal: 8,
+    aspectRatio: 1, // Make tiles square
     backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 15,
+    elevation: 6,
+    shadowColor: COLORS.shadow || '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    marginBottom: 16,
   },
-  authorName: {
-    fontSize: 16,
+  tileContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tileText: {
+    fontSize: 18,
     fontWeight: '600',
-    color: COLORS.text,
+    color: COLORS.onSurface,
+    textAlign: 'center',
   },
 });
 

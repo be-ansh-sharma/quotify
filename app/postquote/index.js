@@ -59,7 +59,7 @@ export default function PostQuote() {
         >
           <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Share a Quote</Text>
+        <Text style={styles.headerTitle}>Share Your Quote</Text>
       </View>
 
       {/* Content Section */}
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 16,
   },
   backButton: {
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.onPrimary,
+    color: COLORS.text,
   },
   content: {
     flex: 1,

@@ -11,7 +11,7 @@ export default function FavoriteQuotes() {
   const user = useUserStore((state) => state.user); // Get the user from the store
 
   // Check if the user has favorite authors
-  const hasFavoriteAuthors = user?.favoriteAuthors?.length > 0;
+  const hasfollowedAuthors = user?.followedAuthors?.length > 0;
 
   return (
     <View style={styles.container}>
@@ -27,11 +27,11 @@ export default function FavoriteQuotes() {
       </View>
 
       {/* Conditional Rendering */}
-      {hasFavoriteAuthors ? (
+      {hasfollowedAuthors ? (
         <Quotes
           selectedSort='newest' // Default sort order for favorite quotes
           user={user}
-          favoriteAuthors={true} // Fetch quotes by favorite authors
+          followedAuthors={true} // Fetch quotes by favorite authors
         />
       ) : (
         <View style={styles.noFavoritesContainer}>
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary, // Use the app's primary color for the header
+    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 12,

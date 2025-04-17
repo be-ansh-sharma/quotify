@@ -33,7 +33,7 @@ export default function Settings() {
       {/* Header Section */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.push('/profile')} // Navigate back to the home screen
           style={styles.backButton}
         >
           <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
-    backgroundColor: COLORS.primary, // Use the app's primary color for the header
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 16,
     marginBottom: 16,
   },

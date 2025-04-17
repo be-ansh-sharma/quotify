@@ -205,6 +205,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 16,

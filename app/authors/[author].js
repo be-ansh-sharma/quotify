@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between', // Space between back button, title, and follow button
     padding: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 12,

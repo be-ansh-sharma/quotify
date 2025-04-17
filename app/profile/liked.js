@@ -14,6 +14,7 @@ import { COLORS } from 'styles/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { fetchQuotesByIds } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile';
+import Skelton from 'components/skelton/Skelton';
 
 const PAGE_SIZE = 10;
 
@@ -113,7 +114,7 @@ export default function LikedQuotes() {
   if (loading && likedQuotes.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size='large' color={COLORS.primary} />
+        <Skelton />
       </View>
     );
   }
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
     justifyContent: 'flex-start',
   },
   backButton: {

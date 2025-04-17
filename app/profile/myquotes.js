@@ -13,6 +13,7 @@ import { COLORS } from 'styles/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { fetchQuotesByUser } from 'utils/firebase/firestore'; // Function to fetch quotes by the user
 import Tile from 'components/quotes/tile/Tile'; // Reuse the Tile component for rendering quotes
+import Skelton from 'components/skelton/Skelton';
 
 export default function MyQuotes() {
   const router = useRouter();
@@ -57,7 +58,7 @@ export default function MyQuotes() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size='large' color={COLORS.primary} />
+        <Skelton />
       </View>
     );
   }
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 12,

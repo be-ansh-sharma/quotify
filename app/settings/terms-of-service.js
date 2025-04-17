@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.primary, // Use the app's primary color for the header
+    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 12,

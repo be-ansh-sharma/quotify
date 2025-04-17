@@ -8,13 +8,14 @@ import {
 } from 'react-native';
 import Tile from './tile/Tile';
 import { fetchQuotes, fetchQuotesByAuthors } from 'utils/firebase/firestore'; // Include new function to fetch quotes by authors
+import SkeletonLoader from 'components/skelton/Skelton';
 
 export default Quotes = ({
   selectedSort,
   user,
   author = null, // Filter by specific author
   tag = null, // Filter by specific tag
-  favoriteAuthors = false, // Add favoriteAuthors prop
+  followedAuthors = false, // Add followedAuthors prop
 }) => {
   const [quotes, setQuotes] = useState([]);
   const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
@@ -30,7 +31,7 @@ export default Quotes = ({
     try {
       let fetchedQuotes;
 
-      if (favoriteAuthors && user?.followedAuthors?.length > 0) {
+      if (followedAuthors && user?.followedAuthors?.length > 0) {
         // Fetch quotes by favorite authors
         const {
           newQuotes,
@@ -96,17 +97,18 @@ export default Quotes = ({
   };
 
   useEffect(() => {
-    // Reset and fetch quotes when sort order, author, tag, or favoriteAuthors changes
+    // Reset and fetch quotes when sort order, author, tag, or followedAuthors changes
     setQuotes([]);
     setLastDoc(null);
     setHasMore(true);
     setProcessedChunks(0); // Reset processedChunks when filters change
     loadQuotes();
-  }, [selectedSort, author, tag, favoriteAuthors]);
+  }, [selectedSort, author, tag, followedAuthors]);
 
   const renderFooter = () => {
     if (!loading) return null;
-    return <ActivityIndicator size='large' style={{ marginVertical: 20 }} />;
+    //return <ActivityIndicator size='large' style={{ marginVertical: 20 }} />;
+    return <SkeletonLoader />;
   };
 
   if (!loading && quotes.length === 0) {
@@ -114,7 +116,7 @@ export default Quotes = ({
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>
-          {favoriteAuthors
+          {followedAuthors
             ? 'No quotes found by your favorite authors.'
             : author
             ? `No quotes found by ${author}.`
