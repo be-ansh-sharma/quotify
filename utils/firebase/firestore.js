@@ -21,7 +21,11 @@ import {
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 import * as Localization from 'expo-localization';
-import { convertToUTCTimeBucket } from 'utils/helpers';
+import {
+  calculateTimeSlots,
+  convertToUTCTimeBucket,
+  deepEqual,
+} from 'utils/helpers';
 
 export const uploadQuotes = async () => {
   const quotesRef = collection(db, 'quotes');
@@ -917,7 +921,7 @@ const addToTimeBucket = async (timeBucket, id, isGuest) => {
 };
 
 /**
- * Store the FCM token in Firestore for a user.
+ * Store the FCM token in Firestore for a user or guest and calculate notification slots.
  * @param {string|null} userId - The ID of the user (null for guests).
  * @param {string} fcmToken - The FCM token to store.
  * @param {boolean} isGuest - Whether the user is a guest.
@@ -927,11 +931,11 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
     const defaultPreferences = {
       tags: ['Motivational'],
       frequency: 'daily',
-      time: '09:00 AM',
+      time: '09:00',
       randomQuoteEnabled: false,
       dndEnabled: true,
-      dndStartTime: '10:00 PM',
-      dndEndTime: '07:00 AM',
+      dndStartTime: '22:00',
+      dndEndTime: '07:00',
     };
 
     const timeZone = Localization.timezone;
@@ -949,12 +953,16 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
 
       console.log('FCM Token and default preferences stored for guest user.');
 
-      // Convert the time to UTC and add the guest to the time bucket
-      const timeBucket = convertToUTCTimeBucket(
-        defaultPreferences.time,
-        timeZone
-      );
-      await addToTimeBucket(timeBucket, guestDoc.id, true);
+      // Calculate and save notification slots for the guest
+      const timeSlots = calculateTimeSlots(defaultPreferences, timeZone);
+      for (const slot of timeSlots) {
+        await updateNotificationSlots(
+          guestDoc.id,
+          defaultPreferences,
+          null,
+          timeZone
+        );
+      }
     } else if (userId) {
       // Store the token and default preferences in the users collection
       const userRef = doc(db, 'users', userId);
@@ -973,6 +981,13 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
         });
 
         console.log('FCM Token and preferences updated for logged-in user.');
+
+        // Calculate and save notification slots for the user
+        const preferences = userData.preferences || defaultPreferences;
+        const timeSlots = calculateTimeSlots(preferences, timeZone);
+        for (const slot of timeSlots) {
+          await updateNotificationSlots(userId, preferences, null, timeZone);
+        }
       } else {
         // If the user document doesn't exist, create it with the FCM token and default preferences
         await setDoc(userRef, {
@@ -986,8 +1001,18 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
         console.log(
           'FCM Token and default preferences stored for new logged-in user.'
         );
+
+        // Calculate and save notification slots for the new user
+        const timeSlots = calculateTimeSlots(defaultPreferences, timeZone);
+        for (const slot of timeSlots) {
+          await updateNotificationSlots(
+            userId,
+            defaultPreferences,
+            null,
+            timeZone
+          );
+        }
       }
-      return defaultPreferences;
     }
   } catch (error) {
     console.error('Error storing FCM token and preferences:', error);
@@ -1006,13 +1031,13 @@ export const handleGuestTokenRefresh = async (oldToken, newToken) => {
     const oldSnap = await getDoc(oldRef);
 
     const defaultPreferences = {
-      tags: ['Motivational'], // Default tags
-      frequency: 'daily', // Default notification frequency
-      time: '09:00 AM', // Default notification time
-      randomQuoteEnabled: false, // Default: Random quote notifications disabled
-      dndEnabled: true, // Default: Do Not Disturb disabled
-      dndStartTime: '10:00 PM', // Default Do Not Disturb start time
-      dndEndTime: '07:00 AM', // Default Do Not Disturb end time
+      tags: ['Motivational'],
+      frequency: 'daily',
+      time: '09:00',
+      randomQuoteEnabled: false,
+      dndEnabled: true,
+      dndStartTime: '22:00',
+      dndEndTime: '07:00',
     };
 
     if (oldSnap.exists()) {
@@ -1066,6 +1091,111 @@ export const fetchGuestFCMToken = async (fcmToken) => {
     }
   } catch (error) {
     console.error('Error fetching guest FCM token:', error);
+    throw error;
+  }
+};
+
+/**
+ * Save user preferences to Firestore and update notification slots.
+ * @param {string} userId - The user's unique ID.
+ * @param {object} preferences - The preferences object to save.
+ * @param {object} previousPreferences - The user's previous preferences.
+ * @param {string} timeZone - The user's time zone.
+ * @returns {Promise<void>}
+ */
+export const saveUserPreferences = async (
+  userId,
+  preferences,
+  previousPreferences,
+  timeZone
+) => {
+  try {
+    // Save preferences to Firestore
+    const userDocRef = doc(db, 'users', userId);
+    await setDoc(userDocRef, { preferences }, { merge: true });
+
+    // Update notification slots
+    await updateNotificationSlots(
+      userId,
+      preferences,
+      previousPreferences,
+      timeZone
+    );
+
+    console.log('Preferences and notification slots updated successfully.');
+  } catch (error) {
+    console.error('Error saving preferences to Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Updates the user's notification slots in Firestore.
+ * @param {string} userId - The user's unique ID.
+ * @param {object} preferences - The user's updated preferences.
+ * @param {object} previousPreferences - The user's previous preferences.
+ * @param {string} timeZone - The user's time zone.
+ * @returns {Promise<void>}
+ */
+export const updateNotificationSlots = async (
+  userId,
+  preferences,
+  previousPreferences,
+  timeZone
+) => {
+  const notificationSlotsRef = (slot) => doc(db, 'notificationSlots', slot);
+
+  try {
+    // Validate timeZone
+    if (!timeZone || typeof timeZone !== 'string') {
+      console.warn('Invalid time zone. Falling back to UTC.');
+      timeZone = 'UTC';
+    }
+
+    // Check if the old preferences are the same as the new preferences
+    if (previousPreferences && deepEqual(previousPreferences, preferences)) {
+      console.log(
+        'Old preferences are the same as new preferences. No update needed.'
+      );
+      return;
+    }
+
+    // Calculate old slots (if previous preferences exist)
+    if (previousPreferences) {
+      const oldSlots = calculateTimeSlots(previousPreferences, timeZone);
+
+      for (const slot of oldSlots) {
+        await setDoc(
+          notificationSlotsRef(slot),
+          {
+            users: arrayRemove(userId),
+          },
+          { merge: true } // Ensure the document is created if it doesn't exist
+        );
+      }
+    }
+
+    // Calculate new slots
+    const newSlots = calculateTimeSlots(preferences, timeZone);
+
+    if (newSlots.length === 0) {
+      console.warn('No valid slots to update.');
+      return;
+    }
+
+    for (const slot of newSlots) {
+      await setDoc(
+        notificationSlotsRef(slot),
+        {
+          users: arrayUnion(userId),
+        },
+        { merge: true } // Ensure the document is created if it doesn't exist
+      );
+    }
+
+    console.log(`Notification slots updated for user ${userId}`);
+  } catch (error) {
+    console.error('Error updating notification slots:', error);
     throw error;
   }
 };

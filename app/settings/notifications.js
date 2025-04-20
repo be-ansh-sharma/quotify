@@ -1,26 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   FlatList,
+  TouchableOpacity,
 } from 'react-native';
-import BottomSheet from '@gorhom/bottom-sheet';
-import { Checkbox, Button, List, Switch } from 'react-native-paper';
+import { Chip, Button, List, Switch, Portal } from 'react-native-paper';
 import { TimePickerModal } from 'react-native-paper-dates';
-import * as Localization from 'expo-localization';
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
 import { COLORS } from 'styles/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
+import { saveUserPreferences } from 'utils/firebase/firestore'; // Import the Firestore utility function
+import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import { calculateTimeSlots } from 'utils/helpers';
+// --- Static Data ---
 const TAGS = [
   'Motivational',
   'Happiness',
@@ -47,54 +43,63 @@ const TAGS = [
   'Entertainment',
 ];
 
+// --- Main Component ---
 export default function NotificationSettings() {
   const router = useRouter();
-  const bottomSheetRef = useRef(null);
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
+  const [loading, setLoading] = useState(false);
 
+  // --- State Variables ---
   const [selectedTags, setSelectedTags] = useState(
     user?.preferences?.tags || ['Motivational']
   );
+
   const [frequency, setFrequency] = useState(
     user?.preferences?.frequency || 'daily'
   );
+
+  const [interval, setInterval] = useState(user?.preferences?.interval || 1);
+
+  const initialNotificationTime = user?.preferences?.time
+    ? dayjs(`${dayjs().format('YYYY-MM-DD')}T${user.preferences.time}`)
+    : dayjs().hour(9).minute(0);
   const [notificationTime, setNotificationTime] = useState(
-    dayjs(user?.preferences?.time, 'hh:mm A') || dayjs().hour(9).minute(0)
+    initialNotificationTime.isValid()
+      ? initialNotificationTime
+      : dayjs().hour(9).minute(0)
   );
+
   const [dndEnabled, setDndEnabled] = useState(
     user?.preferences?.dndEnabled ?? true
   );
+
+  const initialDndStartTime = user?.preferences?.dndStartTime
+    ? dayjs(`${dayjs().format('YYYY-MM-DD')}T${user.preferences.dndStartTime}`)
+    : dayjs().hour(22).minute(0);
   const [dndStartTime, setDndStartTime] = useState(
-    dayjs(user?.preferences?.dndStartTime, 'hh:mm A') ||
-      dayjs().hour(22).minute(0)
+    initialDndStartTime.isValid()
+      ? initialDndStartTime
+      : dayjs().hour(22).minute(0)
   );
+
+  const initialDndEndTime = user?.preferences?.dndEndTime
+    ? dayjs(`${dayjs().format('YYYY-MM-DD')}T${user.preferences.dndEndTime}`)
+    : dayjs().hour(7).minute(0);
   const [dndEndTime, setDndEndTime] = useState(
-    dayjs(user?.preferences?.dndEndTime, 'hh:mm A') || dayjs().hour(7).minute(0)
-  );
-  const [randomQuoteEnabled, setRandomQuoteEnabled] = useState(
-    user?.preferences?.randomQuoteEnabled || false
+    initialDndEndTime.isValid() ? initialDndEndTime : dayjs().hour(7).minute(0)
   );
 
   const [timePickerVisible, setTimePickerVisible] = useState(false);
-  const [activeTimePicker, setActiveTimePicker] =
-    (useState < 'notification') | 'dndStart' | 'dndEnd' | (null > null);
+  const [activeTimePicker, setActiveTimePicker] = useState(null);
 
-  const openTimePicker = (type) => {
-    setActiveTimePicker(type);
-    setTimePickerVisible(true);
-  };
+  const [randomQuoteEnabled, setRandomQuoteEnabled] = useState(
+    user?.preferences?.randomQuoteEnabled ?? false
+  );
 
-  const handleTimeConfirm = ({ hours, minutes }) => {
-    const time = dayjs().hour(hours).minute(minutes).second(0);
-
-    if (activeTimePicker === 'notification') setNotificationTime(time);
-    else if (activeTimePicker === 'dndStart') setDndStartTime(time);
-    else if (activeTimePicker === 'dndEnd') setDndEndTime(time);
-
-    setTimePickerVisible(false);
-    setActiveTimePicker(null);
-  };
+  // --- Helper Functions ---
+  const displayTime = (time) =>
+    time?.isValid?.() ? time.format('hh:mm A') : '--:--';
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
@@ -102,31 +107,92 @@ export default function NotificationSettings() {
     );
   };
 
-  const savePreferences = () => {
+  const openTimePicker = (type) => {
+    setActiveTimePicker(type);
+    setTimePickerVisible(true);
+  };
+
+  const handleTimeConfirm = ({ hours, minutes }) => {
+    const newTime = dayjs().hour(hours).minute(minutes).second(0);
+    if (activeTimePicker === 'notification') {
+      setNotificationTime(newTime);
+    } else if (activeTimePicker === 'dndStart') {
+      setDndStartTime(newTime);
+    } else if (activeTimePicker === 'dndEnd') {
+      setDndEndTime(newTime);
+    }
+    setTimePickerVisible(false);
+    setActiveTimePicker(null);
+  };
+
+  const savePreferences = async () => {
+    setLoading(true); // Start loading
+
+    const formattedNotificationTime = notificationTime?.isValid()
+      ? notificationTime.format('HH:mm')
+      : '09:00';
+
     const preferences = {
       tags: selectedTags,
       frequency,
-      time: notificationTime.format('hh:mm A'),
-      randomQuoteEnabled,
+      time: frequency === 'daily' ? formattedNotificationTime : null,
+      interval: frequency === 'Interval' ? interval : null,
       dndEnabled,
-      dndStartTime: dndStartTime.format('hh:mm A'),
-      dndEndTime: dndEndTime.format('hh:mm A'),
+      dndStartTime: dndStartTime?.isValid()
+        ? dndStartTime.format('HH:mm')
+        : '22:00',
+      dndEndTime: dndEndTime?.isValid() ? dndEndTime.format('HH:mm') : '07:00',
+      randomQuoteEnabled,
     };
 
-    setUser({ ...user, preferences });
-    alert('Preferences saved successfully!');
+    // Validate if the notification time falls within the DND range
+    if (frequency === 'daily' && dndEnabled) {
+      const notificationTimeInMinutes =
+        notificationTime.hour() * 60 + notificationTime.minute();
+      const dndStartInMinutes =
+        dndStartTime.hour() * 60 + dndStartTime.minute();
+      const dndEndInMinutes = dndEndTime.hour() * 60 + dndEndTime.minute();
+
+      const isWithinDND =
+        dndStartInMinutes < dndEndInMinutes
+          ? notificationTimeInMinutes >= dndStartInMinutes &&
+            notificationTimeInMinutes < dndEndInMinutes
+          : notificationTimeInMinutes >= dndStartInMinutes ||
+            notificationTimeInMinutes < dndEndInMinutes;
+
+      if (isWithinDND) {
+        setLoading(false); // Stop loading
+        SnackbarService.show(
+          'Notification time cannot fall within the Do Not Disturb hours.'
+        );
+        return;
+      }
+    }
+
+    try {
+      // Save preferences to Firestore
+      await saveUserPreferences(
+        user?.uid,
+        preferences,
+        user?.preferences,
+        user?.timeZone
+      );
+
+      // Update local state
+      setUser({
+        ...user,
+        preferences: { ...user?.preferences, ...preferences },
+      });
+
+      SnackbarService.show('Preferences saved successfully!');
+    } catch (error) {
+      alert('Failed to save preferences. Please try again.');
+    } finally {
+      setLoading(false); // Stop loading
+    }
   };
 
-  const renderTagItem = ({ item }) => (
-    <TouchableOpacity style={styles.tagItem} onPress={() => toggleTag(item)}>
-      <Checkbox
-        status={selectedTags.includes(item) ? 'checked' : 'unchecked'}
-        onPress={() => toggleTag(item)}
-      />
-      <Text style={styles.tagText}>{item}</Text>
-    </TouchableOpacity>
-  );
-
+  // --- Render ---
   return (
     <View style={styles.safeArea}>
       {/* Header */}
@@ -135,166 +201,216 @@ export default function NotificationSettings() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Ionicons name='arrow-back' size={24} color={COLORS.text} />
+          <FontAwesome
+            name='arrow-left'
+            size={20}
+            color={COLORS.onPrimary || '#FFFFFF'}
+          />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notification Settings</Text>
+        <Text style={styles.headerTitle}>Manage Notifications</Text>
       </View>
 
-      {/* Main Content */}
-      <View style={styles.container}>
-        {/* Frequency */}
-        <List.Section>
-          <List.Subheader>Notification Frequency</List.Subheader>
-          {['daily', 'weekly'].map((freq) => (
-            <List.Item
-              key={freq}
-              title={freq.charAt(0).toUpperCase() + freq.slice(1)}
-              left={(props) => (
-                <List.Icon
-                  {...props}
-                  icon={frequency === freq ? 'check-circle' : 'circle-outline'}
+      {/* Settings List */}
+      <FlatList
+        data={[]}
+        ListHeaderComponent={
+          <View style={styles.container}>
+            {/* Frequency Selection */}
+            <List.Section>
+              <List.Subheader>Notification Frequency</List.Subheader>
+              {['daily', 'Interval'].map((freq) => (
+                <List.Item
+                  key={freq}
+                  title={freq.charAt(0).toUpperCase() + freq.slice(1)}
+                  left={(props) => (
+                    <List.Icon
+                      {...props}
+                      icon={
+                        frequency === freq ? 'check-circle' : 'circle-outline'
+                      }
+                      color={frequency === freq ? COLORS.primary : COLORS.text}
+                    />
+                  )}
+                  onPress={() => setFrequency(freq)}
+                  rippleColor={COLORS.primary + '30'}
                 />
+              ))}
+            </List.Section>
+
+            {/* Interval Selection */}
+            {frequency === 'Interval' && (
+              <List.Section>
+                <List.Subheader>Notify Every</List.Subheader>
+                {[1, 2, 3, 4, 5, 6].map((hr) => (
+                  <List.Item
+                    key={hr}
+                    title={`Every ${hr} hour${hr > 1 ? 's' : ''}`}
+                    left={(props) => (
+                      <List.Icon
+                        {...props}
+                        icon={
+                          interval === hr ? 'check-circle' : 'circle-outline'
+                        }
+                        color={interval === hr ? COLORS.primary : COLORS.text}
+                      />
+                    )}
+                    onPress={() => setInterval(hr)}
+                    rippleColor={COLORS.primary + '30'}
+                  />
+                ))}
+              </List.Section>
+            )}
+
+            {/* Notification Time */}
+            {frequency === 'daily' && (
+              <List.Section>
+                <List.Subheader>Notification Time</List.Subheader>
+                <List.Item
+                  title={`Time: ${displayTime(notificationTime)}`}
+                  description='Select the time for daily notifications'
+                  left={(props) => (
+                    <List.Icon {...props} icon='clock-outline' />
+                  )}
+                  onPress={() => openTimePicker('notification')}
+                  rippleColor={COLORS.primary + '30'}
+                />
+              </List.Section>
+            )}
+
+            {/* Quiet Hours */}
+            <List.Section>
+              <List.Subheader>Quiet Hours (Do Not Disturb)</List.Subheader>
+              <List.Item
+                title='Enable Quiet Hours'
+                left={(props) => (
+                  <List.Icon {...props} icon='moon-waning-crescent' />
+                )}
+                right={() => (
+                  <Switch
+                    value={dndEnabled}
+                    onValueChange={setDndEnabled}
+                    color={COLORS.primary}
+                  />
+                )}
+                onPress={() => setDndEnabled(!dndEnabled)}
+                rippleColor={COLORS.primary + '30'}
+              />
+              {dndEnabled && (
+                <>
+                  <List.Item
+                    title={`Start Time: ${displayTime(dndStartTime)}`}
+                    description='Notifications paused after this time'
+                    left={(props) => (
+                      <List.Icon {...props} icon='clock-start' />
+                    )}
+                    onPress={() => openTimePicker('dndStart')}
+                    style={styles.nestedListItem}
+                    rippleColor={COLORS.primary + '30'}
+                  />
+                  <List.Item
+                    title={`End Time: ${displayTime(dndEndTime)}`}
+                    description='Notifications resume after this time'
+                    left={(props) => <List.Icon {...props} icon='clock-end' />}
+                    onPress={() => openTimePicker('dndEnd')}
+                    style={styles.nestedListItem}
+                    rippleColor={COLORS.primary + '30'}
+                  />
+                </>
               )}
-              onPress={() => setFrequency(freq)}
-            />
-          ))}
-        </List.Section>
+            </List.Section>
 
-        {/* Time */}
-        <List.Section>
-          <List.Subheader>Notification Time</List.Subheader>
-          <List.Item
-            title={`Time: ${notificationTime.format('hh:mm A')}`}
-            left={(props) => <List.Icon {...props} icon='clock-outline' />}
-            onPress={() => openTimePicker('notification')}
-          />
-        </List.Section>
-
-        {/* Tags */}
-        <List.Section>
-          <List.Subheader>Tags</List.Subheader>
-          <List.Item
-            title='Select Tags'
-            left={(props) => <List.Icon {...props} icon='tag-outline' />}
-            onPress={() => bottomSheetRef.current?.expand()}
-          />
-        </List.Section>
-
-        {/* Random Quote Toggle */}
-        <List.Section>
-          <List.Subheader>Preferences</List.Subheader>
-          <List.Item
-            title='Send me a random quote daily'
-            left={(props) => <List.Icon {...props} icon='bell-outline' />}
-            right={() => (
-              <Switch
-                value={randomQuoteEnabled}
-                onValueChange={() => setRandomQuoteEnabled(!randomQuoteEnabled)}
-              />
-            )}
-          />
-        </List.Section>
-
-        {/* DND */}
-        <List.Section>
-          <List.Subheader>Do Not Disturb</List.Subheader>
-          <List.Item
-            title='Enable Do Not Disturb'
-            left={(props) => <List.Icon {...props} icon='moon-outline' />}
-            right={() => (
-              <Switch
-                value={dndEnabled}
-                onValueChange={() => setDndEnabled(!dndEnabled)}
-              />
-            )}
-          />
-          {dndEnabled && (
-            <>
+            {/* Random Quotes */}
+            <List.Section>
+              <List.Subheader>Random Daily Quotes</List.Subheader>
               <List.Item
-                title={`Start Time: ${dndStartTime.format('hh:mm A')}`}
-                left={(props) => <List.Icon {...props} icon='clock-outline' />}
-                onPress={() => openTimePicker('dndStart')}
+                title='Enable Random Quotes'
+                description='Receive a random quote daily'
+                left={(props) => (
+                  <List.Icon {...props} icon='format-quote-close' />
+                )}
+                right={() => (
+                  <Switch
+                    value={randomQuoteEnabled}
+                    onValueChange={setRandomQuoteEnabled}
+                    color={COLORS.primary}
+                  />
+                )}
+                onPress={() => setRandomQuoteEnabled(!randomQuoteEnabled)}
+                rippleColor={COLORS.primary + '30'}
               />
-              <List.Item
-                title={`End Time: ${dndEndTime.format('hh:mm A')}`}
-                left={(props) => <List.Icon {...props} icon='clock-outline' />}
-                onPress={() => openTimePicker('dndEnd')}
-              />
-            </>
-          )}
-        </List.Section>
+            </List.Section>
 
-        {/* Save and Reset Buttons */}
-        <Button
-          mode='contained'
-          onPress={savePreferences}
-          style={styles.saveButton}
-          labelStyle={styles.buttonLabel}
-        >
-          Save Preferences
-        </Button>
+            {/* Tags */}
+            <List.Section>
+              <List.Subheader>Notification Content</List.Subheader>
+              <View style={styles.tagContainer}>
+                {TAGS.map((tag) => (
+                  <Chip
+                    key={tag}
+                    style={[
+                      styles.tagChip,
+                      selectedTags.includes(tag) && {
+                        backgroundColor: COLORS.primary,
+                      },
+                    ]}
+                    textStyle={[
+                      styles.tagText,
+                      selectedTags.includes(tag) && { color: COLORS.onPrimary },
+                    ]}
+                    selected={selectedTags.includes(tag)}
+                    onPress={() => toggleTag(tag)}
+                  >
+                    {tag}
+                  </Chip>
+                ))}
+              </View>
+            </List.Section>
 
-        <Button
-          mode='text'
-          style={{ marginTop: 16 }}
-          onPress={() => {
-            setSelectedTags(['Motivational']);
-            setFrequency('daily');
-            setNotificationTime(dayjs().hour(9).minute(0));
-            setRandomQuoteEnabled(false);
-            setDndEnabled(true);
-            setDndStartTime(dayjs().hour(22).minute(0));
-            setDndEndTime(dayjs().hour(7).minute(0));
-          }}
-        >
-          Reset to Default
-        </Button>
-      </View>
-
-      {/* Tag Selector Sheet */}
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        snapPoints={['50%', '90%']}
-        backgroundStyle={styles.bottomSheetBackground}
-      >
-        <View style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Select Tags</Text>
-          <FlatList
-            data={TAGS}
-            keyExtractor={(item) => item}
-            numColumns={2}
-            columnWrapperStyle={styles.tagRow}
-            renderItem={renderTagItem}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
-      </BottomSheet>
-
-      {/* Time Picker */}
-      <TimePickerModal
-        visible={timePickerVisible}
-        onDismiss={() => setTimePickerVisible(false)}
-        onConfirm={handleTimeConfirm}
-        hours={
-          activeTimePicker === 'notification'
-            ? notificationTime.hour()
-            : activeTimePicker === 'dndStart'
-            ? dndStartTime.hour()
-            : dndEndTime.hour()
-        }
-        minutes={
-          activeTimePicker === 'notification'
-            ? notificationTime.minute()
-            : activeTimePicker === 'dndStart'
-            ? dndStartTime.minute()
-            : dndEndTime.minute()
+            {/* Save Button */}
+            <Button
+              mode='contained'
+              onPress={savePreferences}
+              style={styles.saveButton}
+              loading={loading}
+              disabled={loading}
+              labelStyle={styles.buttonLabel}
+              icon='content-save'
+            >
+              Save Preferences
+            </Button>
+          </View>
         }
       />
+
+      {/* Time Picker Modal */}
+      <Portal>
+        <TimePickerModal
+          visible={timePickerVisible}
+          onDismiss={() => setTimePickerVisible(false)}
+          onConfirm={handleTimeConfirm}
+          hours={
+            activeTimePicker === 'notification'
+              ? notificationTime?.hour()
+              : activeTimePicker === 'dndStart'
+              ? dndStartTime?.hour()
+              : dndEndTime?.hour() ?? 7
+          }
+          minutes={
+            activeTimePicker === 'notification'
+              ? notificationTime?.minute()
+              : activeTimePicker === 'dndStart'
+              ? dndStartTime?.minute()
+              : dndEndTime?.minute() ?? 0
+          }
+          use24HourClock={false}
+          locale='en'
+        />
+      </Portal>
     </View>
   );
 }
 
+// --- Styles ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -305,6 +421,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   backButton: {
     marginRight: 12,
@@ -315,46 +433,37 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   container: {
-    flex: 1,
-    padding: 16,
+    paddingBottom: 80,
+  },
+  nestedListItem: {
+    paddingLeft: 30,
   },
   saveButton: {
-    marginTop: 30,
-    borderRadius: 12,
-    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginVertical: 24,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary || '#6200EE',
   },
   buttonLabel: {
-    fontSize: 16,
     fontWeight: '600',
+    fontSize: 16,
+    color: COLORS.onPrimary || '#FFFFFF',
   },
-  bottomSheetBackground: {
-    backgroundColor: COLORS.surface,
-  },
-  sheetContent: {
-    flex: 1,
-    padding: 16,
-  },
-  sheetTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 12,
-    textAlign: 'center',
-    color: COLORS.text,
-  },
-  tagRow: {
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  tagItem: {
+  tagContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    width: '48%',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  tagChip: {
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: '#E0E0E0',
   },
   tagText: {
-    fontSize: 15,
-    marginLeft: 8,
-    flexShrink: 1,
-    color: COLORS.text,
+    fontSize: 14,
+    color: '#000',
   },
 });
 

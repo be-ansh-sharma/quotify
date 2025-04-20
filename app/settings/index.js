@@ -1,13 +1,16 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React from 'react';
+import { View, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import useUserStore from 'stores/userStore'; // Import user store for user-related actions
+import { List, Divider, Surface } from 'react-native-paper';
+
+import useUserStore from 'stores/userStore';
+import { auth } from 'utils/firebase/firebaseconfig';
 import { COLORS } from 'styles/theme';
-import { auth } from 'utils/firebase/firebaseconfig'; // Firebase auth for logout
-import { FontAwesome } from '@expo/vector-icons'; // For back button
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function Settings() {
   const router = useRouter();
-  const resetUser = useUserStore((state) => state.resetUser); // Function to reset user state
+  const resetUser = useUserStore((state) => state.resetUser);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -17,9 +20,9 @@ export default function Settings() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await auth.signOut(); // Sign out from Firebase
-            resetUser(); // Reset user state in the store
-            router.replace('/auth/entry'); // Navigate to the login/entry screen
+            await auth.signOut();
+            resetUser();
+            router.replace('/auth/entry');
           } catch (error) {
             console.error('Error logging out:', error);
           }
@@ -29,11 +32,11 @@ export default function Settings() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header Section */}
+    <View style={styles.safeArea}>
+      {/* Custom Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push('/profile')} // Navigate back to the home screen
+          onPress={() => router.push('/profile')} // Navigate back to the profile screen
           style={styles.backButton}
         >
           <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
@@ -41,57 +44,64 @@ export default function Settings() {
         <Text style={styles.headerTitle}>Settings</Text>
       </View>
 
-      <View style={styles.listContainer}>
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={() => router.push('/settings/notifications')}
-        >
-          <Text style={styles.settingText}>Manage Notifications</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={() => router.push('/settings/privacy-policy')}
-        >
-          <Text style={styles.settingText}>Privacy Policy</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingItem}
-          onPress={() => router.push('/settings/terms-of-service')}
-        >
-          <Text style={styles.settingText}>Terms of Service</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.settingItem, styles.logoutItem]}
-          onPress={handleLogout}
-        >
-          <Text style={[styles.settingText, styles.logoutText]}>Logout</Text>
-        </TouchableOpacity>
+      {/* Main Content */}
+      <View style={styles.container}>
+        <Surface style={styles.card} elevation={2}>
+          <List.Section>
+            <List.Item
+              title='Manage Notifications'
+              left={(props) => (
+                <List.Icon {...props} icon='bell' color={COLORS.icon} />
+              )}
+              onPress={() => router.push('/settings/notifications')}
+            />
+            <Divider />
+            <List.Item
+              title='Privacy Policy'
+              left={(props) => (
+                <List.Icon {...props} icon='shield-lock' color={COLORS.icon} />
+              )}
+              onPress={() => router.push('/settings/privacy-policy')}
+            />
+            <Divider />
+            <List.Item
+              title='Terms of Service'
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon='file-document'
+                  color={COLORS.icon}
+                />
+              )}
+              onPress={() => router.push('/settings/terms-of-service')}
+            />
+            <Divider />
+            <List.Item
+              title='Logout'
+              left={(props) => (
+                <List.Icon {...props} icon='logout' color={COLORS.error} />
+              )}
+              onPress={handleLogout}
+            />
+          </List.Section>
+        </Surface>
       </View>
-      {/* Settings Options */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  listContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    padding: 16,
     backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   backButton: {
     marginRight: 12,
@@ -99,23 +109,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.text, // Use a contrasting color for the text
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  settingText: {
-    fontSize: 16,
     color: COLORS.text,
   },
-  logoutItem: {
-    marginTop: 32,
+  container: {
+    flex: 1,
+    padding: 16,
   },
-  logoutText: {
-    color: COLORS.error,
+  card: {
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 });
 

@@ -58,13 +58,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    //alignItems: 'center',
   },
   card: {
     padding: 24,
     borderRadius: 16,
     minWidth: '75%',
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
   },
   content: {
     alignItems: 'center',
