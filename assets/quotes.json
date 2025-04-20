@@ -798,5 +798,926 @@
     "tags": ["happiness", "goals", "purpose"],
     "shares": 0,
     "language": "en"
+  },
+  {
+    "text": "Just one small positive thought in the morning can change your whole day.",
+    "author": "Dalai Lama",
+    "likes": 0,
+    "tags": ["motivational", "positivity", "morning"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Opportunities don't happen, you create them.",
+    "author": "Chris Grosser",
+    "likes": 0,
+    "tags": ["motivational", "opportunity", "action"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Success is not final, failure is not fatal: It is the courage to continue that counts.",
+    "author": "Winston Churchill",
+    "likes": 0,
+    "tags": ["motivational", "success", "perseverance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Hardships often prepare ordinary people for an extraordinary destiny.",
+    "author": "C.S. Lewis",
+    "likes": 0,
+    "tags": ["motivational", "resilience", "destiny"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Believe you can and you're halfway there.",
+    "author": "Theodore Roosevelt",
+    "likes": 0,
+    "tags": ["motivational", "belief", "confidence"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Happiness is not something ready made. It comes from your own actions.",
+    "author": "Dalai Lama",
+    "likes": 0,
+    "tags": ["happiness", "action", "self-growth"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "For every minute you are angry you lose sixty seconds of happiness.",
+    "author": "Ralph Waldo Emerson",
+    "likes": 0,
+    "tags": ["happiness", "anger", "mindfulness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Happiness depends upon ourselves.",
+    "author": "Aristotle",
+    "likes": 0,
+    "tags": ["happiness", "self", "philosophy"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The most important thing is to enjoy your life—to be happy—it's all that matters.",
+    "author": "Audrey Hepburn",
+    "likes": 0,
+    "tags": ["happiness", "life", "joy"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Happiness is when what you think, what you say, and what you do are in harmony.",
+    "author": "Mahatma Gandhi",
+    "likes": 0,
+    "tags": ["happiness", "peace", "harmony"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Love all, trust a few, do wrong to none.",
+    "author": "William Shakespeare",
+    "likes": 0,
+    "tags": ["love", "trust", "kindness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "To love and be loved is to feel the sun from both sides.",
+    "author": "David Viscott",
+    "likes": 0,
+    "tags": ["love", "life", "happiness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Love is composed of a single soul inhabiting two bodies.",
+    "author": "Aristotle",
+    "likes": 0,
+    "tags": ["love", "philosophy", "connection"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Being deeply loved by someone gives you strength, while loving someone deeply gives you courage.",
+    "author": "Lao Tzu",
+    "likes": 0,
+    "tags": ["love", "strength", "courage"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Where there is love there is life.",
+    "author": "Mahatma Gandhi",
+    "likes": 0,
+    "tags": ["love", "life", "peace"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Success usually comes to those who are too busy to be looking for it.",
+    "author": "Henry David Thoreau",
+    "likes": 0,
+    "tags": ["success", "focus", "hardwork"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Don't be afraid to give up the good to go for the great.",
+    "author": "John D. Rockefeller",
+    "likes": 0,
+    "tags": ["success", "ambition", "growth"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Success is not in what you have, but who you are.",
+    "author": "Bo Bennett",
+    "likes": 0,
+    "tags": ["success", "identity", "values"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The road to success and the road to failure are almost exactly the same.",
+    "author": "Colin R. Davis",
+    "likes": 0,
+    "tags": ["success", "failure", "persistence"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Success is walking from failure to failure with no loss of enthusiasm.",
+    "author": "Winston Churchill",
+    "likes": 0,
+    "tags": ["success", "resilience", "motivation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Friendship is born at that moment when one person says to another, 'What! You too? I thought I was the only one.'",
+    "author": "C.S. Lewis",
+    "likes": 0,
+    "tags": ["friendship", "connection", "companionship"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A real friend is one who walks in when the rest of the world walks out.",
+    "author": "Walter Winchell",
+    "likes": 0,
+    "tags": ["friendship", "loyalty", "support"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "True friendship comes when the silence between two people is comfortable.",
+    "author": "David Tyson",
+    "likes": 0,
+    "tags": ["friendship", "trust", "silence"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "There is nothing on this earth more to be prized than true friendship.",
+    "author": "Thomas Aquinas",
+    "likes": 0,
+    "tags": ["friendship", "value", "truth"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A friend is someone who knows all about you and still loves you.",
+    "author": "Elbert Hubbard",
+    "likes": 0,
+    "tags": ["friendship", "acceptance", "love"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It is health that is real wealth and not pieces of gold and silver.",
+    "author": "Mahatma Gandhi",
+    "likes": 0,
+    "tags": ["health", "wealth", "wellbeing"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The greatest wealth is health.",
+    "author": "Virgil",
+    "likes": 0,
+    "tags": ["health", "wealth", "value"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Take care of your body. It’s the only place you have to live.",
+    "author": "Jim Rohn",
+    "likes": 0,
+    "tags": ["health", "body", "self-care"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A healthy outside starts from the inside.",
+    "author": "Robert Urich",
+    "likes": 0,
+    "tags": ["health", "wellness", "mindfulness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "To keep the body in good health is a duty… otherwise we shall not be able to keep our mind strong and clear.",
+    "author": "Buddha",
+    "likes": 0,
+    "tags": ["health", "body", "mind"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Fitness is not about being better than someone else. It’s about being better than you used to be.",
+    "author": "Khloe Kardashian",
+    "likes": 0,
+    "tags": ["fitness", "self-improvement", "motivation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Take care of your body. It’s the only place you have to live.",
+    "author": "Jim Rohn",
+    "likes": 0,
+    "tags": ["fitness", "health", "body"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The only bad workout is the one that didn’t happen.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["fitness", "workout", "discipline"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Strength does not come from the physical capacity. It comes from an indomitable will.",
+    "author": "Mahatma Gandhi",
+    "likes": 0,
+    "tags": ["fitness", "strength", "willpower"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You don’t have to be extreme, just consistent.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["fitness", "consistency", "habit"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Mindfulness is the key to a happy and balanced life.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["mindfulness", "balance", "happiness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor.",
+    "author": "Thich Nhat Hanh",
+    "likes": 0,
+    "tags": ["mindfulness", "breathing", "peace"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Do every act of your life as though it were the very last act of your life.",
+    "author": "Marcus Aurelius",
+    "likes": 0,
+    "tags": ["mindfulness", "presence", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The present moment is filled with joy and happiness. If you are attentive, you will see it.",
+    "author": "Thich Nhat Hanh",
+    "likes": 0,
+    "tags": ["mindfulness", "present", "joy"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Mindfulness isn’t difficult, we just need to remember to do it.",
+    "author": "Sharon Salzberg",
+    "likes": 0,
+    "tags": ["mindfulness", "habit", "awareness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Productivity is never an accident. It is always the result of a commitment to excellence, intelligent planning, and focused effort.",
+    "author": "Paul J. Meyer",
+    "likes": 0,
+    "tags": ["productivity", "planning", "focus"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It's not always that we need to do more but rather that we need to focus on less.",
+    "author": "Nathan W. Morris",
+    "likes": 0,
+    "tags": ["productivity", "focus", "minimalism"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The way to get started is to quit talking and begin doing.",
+    "author": "Walt Disney",
+    "likes": 0,
+    "tags": ["productivity", "action", "motivation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You may delay, but time will not.",
+    "author": "Benjamin Franklin",
+    "likes": 0,
+    "tags": ["productivity", "time", "discipline"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Simplicity boils down to two steps: Identify the essential. Eliminate the rest.",
+    "author": "Leo Babauta",
+    "likes": 0,
+    "tags": ["productivity", "simplicity", "efficiency"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Choose a job you love, and you will never have to work a day in your life.",
+    "author": "Confucius",
+    "likes": 0,
+    "tags": ["career", "work", "passion"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Opportunities don't happen. You create them.",
+    "author": "Chris Grosser",
+    "likes": 0,
+    "tags": ["career", "opportunity", "success"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Dreams are extremely important. You can’t do it unless you imagine it.",
+    "author": "George Lucas",
+    "likes": 0,
+    "tags": ["career", "dreams", "imagination"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Work to become, not to acquire.",
+    "author": "Elbert Hubbard",
+    "likes": 0,
+    "tags": ["career", "growth", "purpose"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.",
+    "author": "Steve Jobs",
+    "likes": 0,
+    "tags": ["career", "work", "greatness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A leader is one who knows the way, goes the way, and shows the way.",
+    "author": "John C. Maxwell",
+    "likes": 0,
+    "tags": ["leadership", "inspiration", "guidance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Leadership is not about titles, positions, or flowcharts. It is about one life influencing another.",
+    "author": "John C. Maxwell",
+    "likes": 0,
+    "tags": ["leadership", "influence", "impact"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Before you are a leader, success is all about growing yourself. When you become a leader, success is all about growing others.",
+    "author": "Jack Welch",
+    "likes": 0,
+    "tags": ["leadership", "growth", "success"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The greatest leader is not necessarily the one who does the greatest things. He is the one that gets the people to do the greatest things.",
+    "author": "Ronald Reagan",
+    "likes": 0,
+    "tags": ["leadership", "team", "greatness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Innovation distinguishes between a leader and a follower.",
+    "author": "Steve Jobs",
+    "likes": 0,
+    "tags": ["leadership", "innovation", "vision"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Family is not an important thing. It's everything.",
+    "author": "Michael J. Fox",
+    "likes": 0,
+    "tags": ["family", "love", "priority"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The love in our family flows strong and deep, leaving us memories to treasure and keep.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["family", "memories", "love"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "In time of test, family is best.",
+    "author": "Burmese Proverb",
+    "likes": 0,
+    "tags": ["family", "support", "strength"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The family is one of nature’s masterpieces.",
+    "author": "George Santayana",
+    "likes": 0,
+    "tags": ["family", "nature", "beauty"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Rejoice with your family in the beautiful land of life.",
+    "author": "Albert Einstein",
+    "likes": 0,
+    "tags": ["family", "life", "joy"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The best thing to hold onto in life is each other.",
+    "author": "Audrey Hepburn",
+    "likes": 0,
+    "tags": ["relationships", "love", "support"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Assumptions are the termites of relationships.",
+    "author": "Henry Winkler",
+    "likes": 0,
+    "tags": ["relationships", "communication", "understanding"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A great relationship is about two things: first, appreciating the similarities, and second, respecting the differences.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["relationships", "respect", "appreciation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "We are most alive when we're in love.",
+    "author": "John Updike",
+    "likes": 0,
+    "tags": ["relationships", "love", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Ultimately the bond of all companionship, whether in marriage or in friendship, is conversation.",
+    "author": "Oscar Wilde",
+    "likes": 0,
+    "tags": ["relationships", "companionship", "conversation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "No act of kindness, no matter how small, is ever wasted.",
+    "author": "Aesop",
+    "likes": 0,
+    "tags": ["kindness", "compassion", "goodness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Kindness is the language which the deaf can hear and the blind can see.",
+    "author": "Mark Twain",
+    "likes": 0,
+    "tags": ["kindness", "language", "humanity"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You can always give something, even if it is only kindness.",
+    "author": "Anne Frank",
+    "likes": 0,
+    "tags": ["kindness", "giving", "hope"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Carry out a random act of kindness, with no expectation of reward.",
+    "author": "Princess Diana",
+    "likes": 0,
+    "tags": ["kindness", "generosity", "selflessness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A single act of kindness throws out roots in all directions.",
+    "author": "Amelia Earhart",
+    "likes": 0,
+    "tags": ["kindness", "impact", "growth"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "What you do today can improve all your tomorrows.",
+    "author": "Ralph Marston",
+    "likes": 0,
+    "tags": ["self-improvement", "growth", "discipline"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Strive not to be a success, but rather to be of value.",
+    "author": "Albert Einstein",
+    "likes": 0,
+    "tags": ["self-improvement", "value", "purpose"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Be not afraid of growing slowly, be afraid only of standing still.",
+    "author": "Chinese Proverb",
+    "likes": 0,
+    "tags": ["self-improvement", "growth", "perseverance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Improvement begins with I.",
+    "author": "Arnold H. Glasow",
+    "likes": 0,
+    "tags": ["self-improvement", "self", "change"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The only person you are destined to become is the person you decide to be.",
+    "author": "Ralph Waldo Emerson",
+    "likes": 0,
+    "tags": ["self-improvement", "decision", "destiny"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Gratitude turns what we have into enough.",
+    "author": "Aesop",
+    "likes": 0,
+    "tags": ["gratitude", "contentment", "appreciation"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "When I started counting my blessings, my whole life turned around.",
+    "author": "Willie Nelson",
+    "likes": 0,
+    "tags": ["gratitude", "blessings", "perspective"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Gratitude is not only the greatest of virtues, but the parent of all the others.",
+    "author": "Cicero",
+    "likes": 0,
+    "tags": ["gratitude", "virtue", "wisdom"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Enjoy the little things, for one day you may look back and realize they were the big things.",
+    "author": "Robert Brault",
+    "likes": 0,
+    "tags": ["gratitude", "life", "mindfulness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Silent gratitude isn’t much use to anyone.",
+    "author": "G.B. Stern",
+    "likes": 0,
+    "tags": ["gratitude", "expression", "thankfulness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Do not judge me by my success, judge me by how many times I fell down and got back up again.",
+    "author": "Nelson Mandela",
+    "likes": 0,
+    "tags": ["resilience", "perseverance", "courage"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Resilience is knowing that you are the only one that has the power and the responsibility to pick yourself up.",
+    "author": "Mary Holloway",
+    "likes": 0,
+    "tags": ["resilience", "strength", "self-reliance"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Life doesn’t get easier or more forgiving, we get stronger and more resilient.",
+    "author": "Steve Maraboli",
+    "likes": 0,
+    "tags": ["resilience", "growth", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The oak fought the wind and was broken, the willow bent when it must and survived.",
+    "author": "Robert Jordan",
+    "likes": 0,
+    "tags": ["resilience", "adaptability", "strength"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Out of difficulties grow miracles.",
+    "author": "Jean de La Bruyère",
+    "likes": 0,
+    "tags": ["resilience", "hope", "overcoming"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "You do not have a soul. You are a soul. You have a body.",
+    "author": "C.S. Lewis",
+    "likes": 0,
+    "tags": ["spiritual", "soul", "identity"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The spiritual journey is the unlearning of fear and the acceptance of love.",
+    "author": "Marianne Williamson",
+    "likes": 0,
+    "tags": ["spiritual", "journey", "love"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Your sacred space is where you can find yourself again and again.",
+    "author": "Joseph Campbell",
+    "likes": 0,
+    "tags": ["spiritual", "sacred", "self-discovery"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Awakening is not changing who you are, but discarding who you are not.",
+    "author": "Deepak Chopra",
+    "likes": 0,
+    "tags": ["spiritual", "awakening", "truth"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It is in the stillness that the voice of the spirit speaks.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["spiritual", "stillness", "inner-voice"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Peace begins with a smile.",
+    "author": "Mother Teresa",
+    "likes": 0,
+    "tags": ["peace", "smile", "kindness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Nothing can bring you peace but yourself.",
+    "author": "Ralph Waldo Emerson",
+    "likes": 0,
+    "tags": ["peace", "self", "inner-peace"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "When the power of love overcomes the love of power, the world will know peace.",
+    "author": "Jimi Hendrix",
+    "likes": 0,
+    "tags": ["peace", "love", "wisdom"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Peace is not absence of conflict, it is the ability to handle conflict by peaceful means.",
+    "author": "Ronald Reagan",
+    "likes": 0,
+    "tags": ["peace", "conflict", "wisdom"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Do not let the behavior of others destroy your inner peace.",
+    "author": "Dalai Lama",
+    "likes": 0,
+    "tags": ["peace", "inner-calm", "mindfulness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Meditation is the tongue of the soul and the language of our spirit.",
+    "author": "Jeremy Taylor",
+    "likes": 0,
+    "tags": ["meditation", "soul", "spirit"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The thing about meditation is: You become more and more you.",
+    "author": "David Lynch",
+    "likes": 0,
+    "tags": ["meditation", "self", "mindfulness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Meditation is a way for nourishing and blossoming the divinity within you.",
+    "author": "Amit Ray",
+    "likes": 0,
+    "tags": ["meditation", "nourishing", "spirituality"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Through meditation, the higher self is attained.",
+    "author": "Sivananda Saraswati",
+    "likes": 0,
+    "tags": ["meditation", "self", "enlightenment"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The goal of meditation isn’t to control your thoughts; it’s to stop letting them control you.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["meditation", "control", "mindfulness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Laughter is the best medicine.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["humor", "laughter", "joy"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A day without laughter is a day wasted.",
+    "author": "Charlie Chaplin",
+    "likes": 0,
+    "tags": ["humor", "laughter", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Humor is mankind’s greatest blessing.",
+    "author": "Mark Twain",
+    "likes": 0,
+    "tags": ["humor", "blessing", "joy"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "A good laugh is sunshine in the house.",
+    "author": "William Makepeace Thackeray",
+    "likes": 0,
+    "tags": ["humor", "laughter", "positivity"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "If you’re not having fun, you’re doing it wrong.",
+    "author": "Mario Andretti",
+    "likes": 0,
+    "tags": ["humor", "fun", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Life is too important to be taken seriously.",
+    "author": "Oscar Wilde",
+    "likes": 0,
+    "tags": ["fun", "life", "humor"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Do more of what makes you happy.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["fun", "happiness", "joy"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The more you praise and celebrate your life, the more there is in life to celebrate.",
+    "author": "Oprah Winfrey",
+    "likes": 0,
+    "tags": ["fun", "celebration", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "It’s not whether you win or lose, it’s how you play the game.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["fun", "game", "perspective"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The secret to having fun is doing what you love.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["fun", "passion", "happiness"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The purpose of entertainment is not to show us something new, but to help us see something in a new way.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["entertainment", "perspective", "creativity"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Entertainment is the most important thing in the world to some people.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["entertainment", "importance", "life"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The best entertainment is not something that gives you a new perspective, but something that makes you forget your perspective.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["entertainment", "escape", "mind"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "Entertainment is the ability to take people’s minds off their problems for a little while.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["entertainment", "distraction", "comfort"],
+    "shares": 0,
+    "language": "en"
+  },
+  {
+    "text": "The best kind of entertainment is the kind that makes you laugh and makes you think.",
+    "author": "Unknown",
+    "likes": 0,
+    "tags": ["entertainment", "humor", "thought"],
+    "shares": 0,
+    "language": "en"
   }
 ]
+

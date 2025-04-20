@@ -18,19 +18,17 @@ import {
   deleteDoc,
   getDoc,
   deleteField,
+  FieldValue,
+  increment,
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 import * as Localization from 'expo-localization';
-import {
-  calculateTimeSlots,
-  convertToUTCTimeBucket,
-  deepEqual,
-} from 'utils/helpers';
+import { calculateTimeSlots, deepEqual } from 'utils/helpers';
 
 export const uploadQuotes = async () => {
   const quotesRef = collection(db, 'quotes');
   const tagsRef = collection(db, 'tags');
-  const authorsRef = collection(db, 'authors'); // New authors collection
+  const authorsRef = collection(db, 'authors'); // Authors collection
 
   let added = 0;
   let skipped = 0;
@@ -59,11 +57,15 @@ export const uploadQuotes = async () => {
       const newDocRef = doc(quotesRef); // Firebase will auto-generate a unique ID
       const id = newDocRef.id;
 
+      // Generate a random value for the `random` field
+      const randomValue = Math.random();
+
       // Prepare quote data
       const newQuote = {
         ...quote,
         id,
         createdAt: serverTimestamp(),
+        random: randomValue, // Add random field for quotes
       };
 
       // Add quote to batch
@@ -76,8 +78,12 @@ export const uploadQuotes = async () => {
         const tagRef = doc(tagsRef, tag);
         batch.set(
           tagRef,
-          { name: tag, quotes: 1 },
-          { merge: true } // Increment quotes count if tag exists
+          {
+            name: tag,
+            quotes: increment(1), // Increment the quotes count by 1
+            random: Math.random(), // Add random field for tags
+          },
+          { merge: true } // Merge to ensure the document is updated if it exists
         );
       }
 
@@ -113,7 +119,11 @@ export const uploadQuotes = async () => {
       const authorRef = doc(authorsRef, author);
       batch.set(
         authorRef,
-        { name: author, quotes: quoteCount },
+        {
+          name: author,
+          quotes: increment(quoteCount), // Increment the quotes count by the total for this author
+          random: Math.random(), // Add random field for authors
+        },
         { merge: true } // Merge to update quote count if the author already exists
       );
       batchCount++;
@@ -198,7 +208,8 @@ export const createUser = async (userData) => {
       email: userData.email,
       firstName: userData.firstName || '', // Optional fields
       lastName: userData.lastName || '',
-      createdAt: new Date().toISOString(),
+      createdAt: serverTimestamp(), // Use Firestore timestamp
+      updatedAt: serverTimestamp(), // Use Firestore timestamp
       uid: userData.uid,
     });
 
@@ -640,7 +651,6 @@ export const fetchQuotesByIds = async (
  */
 export const updateUserProfile = async (uid, updatedProfile) => {
   try {
-    console.log('ssss', uid);
     if (!uid) {
       throw new Error('UID is required to update the user profile.');
     }
@@ -947,8 +957,8 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
         fcmToken,
         preferences: defaultPreferences,
         timeZone, // Store the user's time zone
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
 
       console.log('FCM Token and default preferences stored for guest user.');

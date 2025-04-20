@@ -15,7 +15,7 @@ import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { SORT_OPTIONS } from 'config/sortConfig';
 import * as Notifications from 'expo-notifications';
 
-const CURRENT_VERSION = '2';
+const CURRENT_VERSION = '4.2';
 
 export default function Index() {
   const storedSort = useUserStore((state) => state.selectedSort);
@@ -113,6 +113,8 @@ export default function Index() {
     const uploadIfVersionChanged = async () => {
       try {
         const savedVersion = await AsyncStorage.getItem('quotes_version');
+        console.log('Current version:', savedVersion);
+        console.log('Stored version:', CURRENT_VERSION);
         if (savedVersion !== CURRENT_VERSION) {
           await uploadQuotes();
           console.log('Quotes uploaded for version:', CURRENT_VERSION);

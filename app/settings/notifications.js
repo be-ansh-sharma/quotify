@@ -18,29 +18,29 @@ import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { calculateTimeSlots } from 'utils/helpers';
 // --- Static Data ---
 const TAGS = [
-  'Motivational',
-  'Happiness',
-  'Love',
-  'Success',
-  'Friendship',
-  'Health',
-  'Fitness',
-  'Mindfulness',
-  'Productivity',
-  'Career',
-  'Leadership',
-  'Family',
-  'Relationships',
-  'Kindness',
-  'Self-Improvement',
-  'Gratitude',
-  'Resilience',
-  'Spiritual',
-  'Peace',
-  'Meditation',
-  'Humor',
-  'Fun',
-  'Entertainment',
+  'motivational',
+  'happiness',
+  'love',
+  'success',
+  'friendship',
+  'health',
+  'fitness',
+  'mindfulness',
+  'productivity',
+  'career',
+  'leadership',
+  'family',
+  'relationships',
+  'kindness',
+  'self-improvement',
+  'gratitude',
+  'resilience',
+  'spiritual',
+  'peace',
+  'meditation',
+  'humor',
+  'fun',
+  'entertainment',
 ];
 
 // --- Main Component ---
@@ -52,7 +52,7 @@ export default function NotificationSettings() {
 
   // --- State Variables ---
   const [selectedTags, setSelectedTags] = useState(
-    user?.preferences?.tags || ['Motivational']
+    user?.preferences?.tags || []
   );
 
   const [frequency, setFrequency] = useState(
@@ -102,8 +102,11 @@ export default function NotificationSettings() {
     time?.isValid?.() ? time.format('hh:mm A') : '--:--';
 
   const toggleTag = (tag) => {
+    const lowerCaseTag = tag.toLowerCase(); // Convert tag to lowercase
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(lowerCaseTag)
+        ? prev.filter((t) => t !== lowerCaseTag)
+        : [...prev, lowerCaseTag]
     );
   };
 
@@ -360,7 +363,7 @@ export default function NotificationSettings() {
                     selected={selectedTags.includes(tag)}
                     onPress={() => toggleTag(tag)}
                   >
-                    {tag}
+                    {capitalize(tag)}
                   </Chip>
                 ))}
               </View>
@@ -402,7 +405,7 @@ export default function NotificationSettings() {
               ? dndStartTime?.minute()
               : dndEndTime?.minute() ?? 0
           }
-          use24HourClock={false}
+          use24HourClock={false} // Change to true for 24-hour format
           locale='en'
         />
       </Portal>
@@ -466,4 +469,6 @@ const styles = StyleSheet.create({
     color: '#000',
   },
 });
+
+const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 

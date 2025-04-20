@@ -88,6 +88,7 @@ export const calculateTimeSlots = (preferences, timeZone) => {
 
     if (preferences.frequency === 'daily' && preferences.time) {
       const utcBucket = convertToUTCTimeBucket(preferences.time, timeZone, 15);
+      console.log('Generated UTC Bucket:', utcBucket);
       if (utcBucket) {
         slots.push(utcBucket);
       } else {
@@ -123,7 +124,23 @@ export const calculateTimeSlots = (preferences, timeZone) => {
     }
 
     if (preferences.randomQuoteEnabled) {
-      slots.push('randomQuotes');
+      // Generate a random time slot
+      const randomHour = Math.floor(Math.random() * 24); // Random hour (0-23)
+      const randomMinute = Math.floor(Math.random() / 15) * 15; // Random minute (0, 15, 30, 45)
+      const randomTime = dayjs()
+        .hour(randomHour)
+        .minute(randomMinute)
+        .second(0);
+
+      // Convert to UTC bucket
+      const randomBucket = randomTime.utc().format('HH-mm');
+      console.log(
+        'Generated random time bucket for randomQuoteEnabled:',
+        randomBucket
+      );
+
+      // Add the user to the randomQuotes list in the bucket
+      slots.push({ bucket: randomBucket, type: 'randomQuotes' });
     }
   } catch (error) {
     console.error('Error calculating time slots:', error);
