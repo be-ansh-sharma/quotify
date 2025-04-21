@@ -35,11 +35,14 @@ export default function LikedQuotes() {
       return;
     }
 
+    console.log('Loading liked quotes...', user.likes);
     if (!user?.likes?.length) {
       setLoading(false);
       setHasMore(false);
       return;
     }
+
+    console.log('Loading liked quotes...', user.likes);
 
     if (isLoadMore && (!hasMore || loadingMore)) return;
 

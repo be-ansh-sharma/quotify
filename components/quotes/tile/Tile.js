@@ -8,29 +8,46 @@ import {
   Share,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { COLORS } from 'styles/theme'; // Import COLORS
+import { COLORS } from 'styles/theme';
 import { useRouter, usePathname } from 'expo-router';
-import ListManager from 'components/listmanager/ListManager'; // Import the new ListManager component
-import { likeQuote, unlikeQuote } from 'utils/firebase/firestore';
+import ListManager from 'components/listmanager/ListManager';
+import {
+  likeQuote,
+  removeUserReaction,
+  unlikeQuote,
+  updateQuoteReactions,
+} from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import ReactionTray from 'components/reactiontray/ReactionTray';
+import { Audio } from 'expo-av';
 
 export default function Tile({ quote, user }) {
-  const [isLiked, setIsLiked] = useState(false); // State to track like status
+  const [isLiked, setIsLiked] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
-  const setUser = useUserStore((state) => state.setUser); // Function to update the user in the store
-  const bookmarklist = user?.bookmarklist || {}; // Access the user's bookmarklist from the user object
+  const trayAnim = useRef(new Animated.Value(0)).current;
+  const isGuest = useUserStore((state) => state.isGuest);
+  const setUser = useUserStore((state) => state.setUser);
+  const bookmarklist = user?.bookmarklist || {};
   const router = useRouter();
-  const currentPath = usePathname(); // Get the current route path
-  const listManagerRef = useRef(null); // Ref for the ListManager component
+  const currentPath = usePathname();
+  const listManagerRef = useRef(null);
+  const [isTrayVisible, setIsTrayVisible] = useState(false);
+  const [reactions, setReactions] = useState(quote.reactions || {});
+  const [selectedReaction, setSelectedReaction] = useState(
+    Object.keys(user?.reactions || {}).find((reactionType) =>
+      user.reactions[reactionType]?.includes(quote.id)
+    ) || null
+  );
+  const isTrayVisibleRef = useRef(false);
 
-  // Check if the quote is already liked or bookmarked by the user
   useEffect(() => {
-    if (!isGuest) {
-      if (Array.isArray(user?.likes) && user.likes.includes(quote.id)) {
-        setIsLiked(true); // Set the initial liked state
-      }
+    if (
+      !isGuest &&
+      Array.isArray(user?.likes) &&
+      user.likes.includes(quote.id)
+    ) {
+      setIsLiked(true);
     }
   }, [user, quote.id]);
 
@@ -38,7 +55,6 @@ export default function Tile({ quote, user }) {
     return Object.values(bookmarklist).some((list) => list.includes(quote.id));
   }, [bookmarklist, quote.id]);
 
-  // Calculate how many lists the quote is part of
   const listCount = useMemo(() => {
     return Object.values(bookmarklist).filter((list) => list.includes(quote.id))
       .length;
@@ -50,36 +66,30 @@ export default function Tile({ quote, user }) {
       return;
     }
 
-    // Trigger the "pop-out" animation
     Animated.sequence([
       Animated.timing(scaleAnim, {
-        toValue: 1.5, // Scale up
+        toValue: 1.5,
         duration: 150,
         useNativeDriver: true,
       }),
       Animated.timing(scaleAnim, {
-        toValue: 1, // Scale back to normal
+        toValue: 1,
         duration: 150,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Toggle the like state
     setIsLiked((prev) => !prev);
 
-    // Call Firestore functions to update likes and update the user in the store
     try {
       if (!isLiked) {
         await likeQuote(user.uid, quote.id);
-        setUser({
-          ...user,
-          likes: [...(user.likes || []), quote.id], // Ensure `user.likes` is an array
-        });
+        setUser({ ...user, likes: [...(user.likes || []), quote.id] });
       } else {
         await unlikeQuote(user.uid, quote.id);
         setUser({
           ...user,
-          likes: (user.likes || []).filter((id) => id !== quote.id), // Ensure `user.likes` is an array
+          likes: (user.likes || []).filter((id) => id !== quote.id),
         });
       }
     } catch (error) {
@@ -93,56 +103,152 @@ export default function Tile({ quote, user }) {
       return;
     }
 
-    if (listManagerRef.current) {
-      listManagerRef.current.openBottomSheet(); // Open the ListManager
-    } else {
-      console.log('listManagerRef.current is null');
-    }
+    listManagerRef.current?.openBottomSheet();
   };
 
   const getInitials = (name) => {
     if (!name) return '';
-    const nameParts = name.split(' ');
-    const initials = nameParts.map((part) => part[0]).join('');
-    return initials.toUpperCase();
+    return name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
   };
 
   const navigateToAuthor = (author) => {
     const targetPath = `/authors/${encodeURIComponent(author)}`;
-    if (currentPath === targetPath) {
-      // If already on the target author screen, replace the route
-      router.replace(targetPath);
-    } else {
-      // Otherwise, push a new route
-      router.push(targetPath);
-    }
+    currentPath === targetPath
+      ? router.replace(targetPath)
+      : router.push(targetPath);
   };
 
   const handleShare = async () => {
     try {
-      const result = await Share.share({
+      await Share.share({
         message: `"${quote.text}" - ${
           quote.author || 'Unknown'
         }\n\nShared via Quotify App`,
       });
-
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log('Shared with activity type:', result.activityType);
-        } else {
-          console.log('Quote shared successfully!');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        console.log('Share dismissed');
-      }
     } catch (error) {
       console.error('Error sharing quote:', error);
     }
   };
 
+  const toggleReactionTray = () => {
+    if (!isTrayVisibleRef.current) {
+      isTrayVisibleRef.current = true;
+      setIsTrayVisible(true);
+      Animated.timing(trayAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(trayAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        isTrayVisibleRef.current = false;
+        setIsTrayVisible(false);
+      });
+    }
+  };
+
+  const handleSelectReaction = async (reactionType) => {
+    if (isGuest) {
+      SnackbarService.show('Please log in to react to quotes');
+      return;
+    }
+
+    try {
+      let updatedReactions = { ...reactions };
+
+      if (selectedReaction === reactionType) {
+        // Remove the existing reaction
+        updatedReactions[reactionType] = Math.max(
+          (updatedReactions[reactionType] || 1) - 1,
+          0
+        );
+        await removeUserReaction(quote.id, user.uid, reactionType);
+        setUser({
+          ...user,
+          reactions: {
+            ...user.reactions,
+            [reactionType]: user.reactions[reactionType]?.filter(
+              (id) => id !== quote.id
+            ),
+          },
+        });
+        setSelectedReaction(null);
+      } else {
+        // Play the sound only when adding a new reaction
+        const { sound } = await Audio.Sound.createAsync(
+          require('assets/sounds/reaction-select.mp3') // Path to your sound file
+        );
+        await sound.playAsync();
+
+        if (selectedReaction) {
+          // Remove the old reaction
+          updatedReactions[selectedReaction] = Math.max(
+            (updatedReactions[selectedReaction] || 1) - 1,
+            0
+          );
+          await removeUserReaction(quote.id, user.uid, selectedReaction);
+          setUser({
+            ...user,
+            reactions: {
+              ...user.reactions,
+              [selectedReaction]: user.reactions[selectedReaction]?.filter(
+                (id) => id !== quote.id
+              ),
+            },
+          });
+        }
+
+        // Add the new reaction
+        updatedReactions[reactionType] =
+          (updatedReactions[reactionType] || 0) + 1;
+
+        await updateQuoteReactions(
+          quote.id,
+          updatedReactions,
+          user.uid,
+          reactionType
+        );
+
+        setUser({
+          ...user,
+          reactions: {
+            ...user.reactions,
+            [reactionType]: [
+              ...(user.reactions?.[reactionType] || []),
+              quote.id,
+            ],
+          },
+        });
+
+        setSelectedReaction(reactionType);
+      }
+
+      // Update the reactions state
+      setReactions(
+        Object.fromEntries(
+          Object.entries(updatedReactions).filter(([_, count]) => count > 0)
+        )
+      );
+
+      // Close the tray after selecting a reaction
+      isTrayVisibleRef.current = false;
+      setIsTrayVisible(false);
+    } catch (error) {
+      console.error('Error updating reactions:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Author Avatar and Name */}
+      {/* Header */}
       <TouchableOpacity
         style={styles.header}
         onPress={() => navigateToAuthor(quote.author)}
@@ -153,7 +259,7 @@ export default function Tile({ quote, user }) {
         <Text style={styles.author}>{quote.author}</Text>
       </TouchableOpacity>
 
-      {/* Quote Text */}
+      {/* Quote */}
       <Text style={styles.text}>{quote.text}</Text>
 
       {/* Tags */}
@@ -168,46 +274,90 @@ export default function Tile({ quote, user }) {
         ))}
       </View>
 
-      {/* Action Icons */}
+      {/* Actions */}
       <View style={styles.actions}>
-        {/* Heart Icon */}
-        <TouchableOpacity style={styles.actionButton} onPress={toggleLike}>
-          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <FontAwesome
-              name={isLiked ? 'heart' : 'heart-o'} // Filled heart if liked
-              size={24}
-              color={isLiked ? COLORS.liked : COLORS.icon} // Highlighted color if liked
-            />
-          </Animated.View>
-          {quote.likes > 100 && (
-            <Text style={styles.actionText}>{quote.likes}</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.leftActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              if (selectedReaction) {
+                // If a reaction is already selected, remove it
+                handleSelectReaction(selectedReaction);
+              } else if (!isTrayVisibleRef.current) {
+                // If no reaction is selected and the tray is not already visible, open the tray
+                toggleReactionTray();
+              }
+            }}
+            onLongPress={() => {
+              // Open the reaction tray on long press
+              if (!isTrayVisibleRef.current) {
+                toggleReactionTray();
+              }
+            }}
+          >
+            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+              <Text style={styles.reactionIcon}>
+                {selectedReaction === 'mindblown' && '🤯'}
+                {selectedReaction === 'fire' && '🔥'}
+                {selectedReaction === 'love' && '❤️'}
+                {selectedReaction === 'funny' && '😂'}
+                {selectedReaction === 'heartEyes' && '😍'}
+                {!selectedReaction && (
+                  <FontAwesome name='heart-o' size={24} color={COLORS.icon} />
+                )}
+              </Text>
+            </Animated.View>
+          </TouchableOpacity>
 
-        {/* Bookmark Icon */}
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={toggleBookmark}
-          activeOpacity={0.7} // Make it more responsive
-        >
-          <View>
-            <FontAwesome
-              name={isBookmarked ? 'bookmark' : 'bookmark-o'} // Filled bookmark if bookmarked
-              size={20}
-              color={isBookmarked ? COLORS.primary : COLORS.icon} // Highlighted color if bookmarked
-            />
-            {listCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{listCount}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
+          {/* Bookmark */}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={toggleBookmark}
+          >
+            <View>
+              <FontAwesome
+                name={isBookmarked ? 'bookmark' : 'bookmark-o'}
+                size={20}
+                color={isBookmarked ? COLORS.primary : COLORS.icon}
+              />
+              {listCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{listCount}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
-          <FontAwesome name='share-alt' size={20} color={COLORS.primary} />
-        </TouchableOpacity>
+          {/* Share */}
+          <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+            <FontAwesome name='share-alt' size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Reaction Counts */}
+        <View style={styles.rightActions}>
+          {Object.entries(reactions)
+            .filter(([_, count]) => count > 0)
+            .map(([type, count]) => (
+              <Text key={type} style={styles.reactionCount}>
+                {type === 'mindblown' && '🤯'}
+                {type === 'fire' && '🔥'}
+                {type === 'love' && '❤️'}
+                {type === 'funny' && '😂'}
+                {type === 'heartEyes' && '😍'} {count}
+              </Text>
+            ))}
+        </View>
       </View>
+
+      {/* Reaction Tray with Animation */}
+      {isTrayVisible && (
+        <ReactionTray
+          animationValue={trayAnim}
+          onSelectReaction={handleSelectReaction}
+          onClose={toggleReactionTray}
+        />
+      )}
 
       {/* List Manager */}
       {user && (
@@ -215,7 +365,7 @@ export default function Tile({ quote, user }) {
           ref={listManagerRef}
           user={user}
           quote={quote}
-          mode={isBookmarked ? 'remove' : 'add'} // Dynamically set the mode
+          mode={isBookmarked ? 'remove' : 'add'}
         />
       )}
     </View>
@@ -275,39 +425,31 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 12,
+  },
+  leftActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 16,
   },
-  actionText: {
-    marginLeft: 4,
-    fontSize: 12,
+  reactionIcon: {
+    fontSize: 20,
+    color: COLORS.icon,
+  },
+  reactionCount: {
+    fontSize: 14,
     color: COLORS.text,
-  },
-  bottomSheetContent: {
-    padding: 16,
-  },
-  bottomSheetTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginBottom: 16,
-  },
-  listItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  listItemText: {
-    fontSize: 16,
+    marginRight: 8,
   },
   badge: {
     position: 'absolute',
@@ -324,6 +466,9 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  shareButton: {
+    marginRight: 16,
   },
 });
 

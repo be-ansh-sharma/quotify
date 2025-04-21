@@ -344,6 +344,7 @@ export const fetchUserProfile = async (email) => {
 
       if (!userSnapshot.empty) {
         const userProfile = userSnapshot.docs[0].data();
+        console.log('User profile fetched successfully::::', userProfile);
         return userProfile;
       } else {
         console.log('User not found');
@@ -1024,6 +1025,7 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
         }
       }
     }
+    return defaultPreferences;
   } catch (error) {
     console.error('Error storing FCM token and preferences:', error);
     throw error;
@@ -1206,6 +1208,57 @@ export const updateNotificationSlots = async (
     console.log(`Notification slots updated for user ${userId}`);
   } catch (error) {
     console.error('Error updating notification slots:', error);
+    throw error;
+  }
+};
+
+export const updateQuoteReactions = async (
+  quoteId,
+  reactions,
+  userId,
+  reactionType
+) => {
+  const quoteRef = doc(db, 'quotes', quoteId);
+  const userRef = doc(db, 'users', userId);
+
+  try {
+    // Update the reactions on the quote
+    await updateDoc(quoteRef, { reactions });
+
+    // Update the user's profile with the reaction
+    await updateDoc(userRef, {
+      [`reactions.${reactionType}`]: arrayUnion(quoteId), // Add the quote to the specific reaction type
+      likes: arrayUnion(quoteId), // Ensure the quote is added to the likes array
+    });
+
+    console.log(`Reactions updated for quote ${quoteId} and user ${userId}`);
+  } catch (error) {
+    console.error('Error updating reactions:', error);
+    throw error;
+  }
+};
+
+export const removeUserReaction = async (quoteId, userId, reactionType) => {
+  const quoteRef = doc(db, 'quotes', quoteId);
+  const userRef = doc(db, 'users', userId);
+
+  try {
+    // Remove the reaction from the quote
+    await updateDoc(quoteRef, {
+      [`reactions.${reactionType}`]: arrayRemove(quoteId),
+    });
+
+    // Remove the reaction from the user's profile
+    await updateDoc(userRef, {
+      [`reactions.${reactionType}`]: arrayRemove(quoteId), // Remove the quote from the specific reaction type
+      likes: arrayRemove(quoteId), // Remove the quote from the likes array
+    });
+
+    console.log(
+      `Reaction "${reactionType}" removed for quote ${quoteId} by user ${userId}`
+    );
+  } catch (error) {
+    console.error('Error removing user reaction:', error);
     throw error;
   }
 };

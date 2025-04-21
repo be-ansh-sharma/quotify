@@ -12,6 +12,7 @@ module.exports = function (api) {
             app: './app',
             stores: './stores',
             styles: './styles',
+            assets: './assets',
           },
         },
       ],
