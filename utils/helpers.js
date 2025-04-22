@@ -186,3 +186,19 @@ export const deepEqual = (obj1, obj2) => {
   return true;
 };
 
+export const getInitials = (name) => {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+};
+
+export const navigateToAuthor = (author, currentPath, router) => {
+  const targetPath = `/authors/${encodeURIComponent(author)}`;
+  currentPath === targetPath
+    ? router.replace(targetPath)
+    : router.push(targetPath);
+};
+

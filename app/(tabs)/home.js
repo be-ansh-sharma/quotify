@@ -82,10 +82,6 @@ export default function Index() {
           });
         }
       } else if (user?.uid) {
-        console.log('user.fcmToken:', user?.fcmToken);
-        console.log('fcmToken:', fcmToken);
-        console.log('user.preferences:', user);
-
         if (user?.fcmToken === fcmToken && user?.preferences) {
           console.log(
             'Logged-in user FCM token already exists in user store. Skipping update.'

@@ -6,27 +6,23 @@ import React, {
 } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Portal, Button, TextInput } from 'react-native-paper';
-import BottomSheet, {
-  BottomSheetBackdrop,
-  BottomSheetView,
-} from '@gorhom/bottom-sheet';
+import BottomSheet from '../shared/BottomSheet'; // Use our custom BottomSheet
 import { COLORS } from 'styles/theme';
 import { addQuoteToList, removeQuoteFromList } from 'utils/firebase/firestore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import useUserStore from 'stores/userStore';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Import icons
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const MAX_LISTS = 10; // Define the maximum number of lists a user can create
+const MAX_LISTS = 10;
 
 const ListManager = React.forwardRef(({ user, quote }, ref) => {
   const bottomSheetRef = useRef(null);
   const [listName, setListName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [showInput, setShowInput] = useState(false); // Track whether to show the input box
-  const [tempSelection, setTempSelection] = useState({}); // Temporary selection of lists
+  const [showInput, setShowInput] = useState(false);
+  const [tempSelection, setTempSelection] = useState({});
   const bookmarklist = user.bookmarklist || {};
-  const setUser = useUserStore((state) => state.setUser); // Function to update the user in the store
+  const setUser = useUserStore((state) => state.setUser);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -37,15 +33,8 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
           return acc;
         }, {})
       );
-      setIsVisible(true);
 
-      setTimeout(() => {
-        if (bottomSheetRef.current) {
-          bottomSheetRef.current.snapToIndex(0);
-        } else {
-          console.error('Bottom sheet ref is not available');
-        }
-      }, 100);
+      bottomSheetRef.current?.expand(); // Use our custom method
     },
   }));
 
@@ -65,14 +54,12 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
         const isQuoteInList = bookmarklist[listName]?.includes(quote.id);
 
         if (isSelected && !isQuoteInList) {
-          // Add the quote to the list
           await addQuoteToList(user.uid, listName, quote.id);
           updatedBookmarklist[listName] = [
             ...(updatedBookmarklist[listName] || []),
             quote.id,
           ];
         } else if (!isSelected && isQuoteInList) {
-          // Remove the quote from the list
           await removeQuoteFromList(user.uid, listName, quote.id);
           updatedBookmarklist[listName] = updatedBookmarklist[listName].filter(
             (id) => id !== quote.id
@@ -80,15 +67,13 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
         }
       }
 
-      // Update the user object in the Zustand store
       setUser({
         ...user,
         bookmarklist: updatedBookmarklist,
       });
 
       SnackbarService.show('Changes saved successfully.');
-      bottomSheetRef.current?.close();
-      setIsVisible(false);
+      bottomSheetRef.current?.close(); // Use our custom method
     } catch (error) {
       console.error('Error saving changes:', error);
       SnackbarService.show('Failed to save changes.');
@@ -102,46 +87,68 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
       SnackbarService.show(`You can only create up to ${MAX_LISTS} lists.`);
       return;
     }
-    setShowInput(true); // Show the input box when the user clicks "+ New List"
+    setShowInput(true);
   };
 
   const handleCancelNewList = () => {
-    setShowInput(false); // Hide the input box when the user cancels
-    setListName(''); // Clear the input field
+    setShowInput(false);
+    setListName('');
   };
 
-  const handleSheetChanges = useCallback((index) => {
-    console.log('Sheet index changed:', index);
-    if (index === -1) {
-      setIsVisible(false);
+  const handleCreateNewList = async () => {
+    if (!listName.trim()) {
+      SnackbarService.show('Please enter a list name');
+      return;
     }
-  }, []);
+
+    setLoading(true);
+    try {
+      // Check if list name already exists
+      if (bookmarklist[listName]) {
+        SnackbarService.show('A list with this name already exists');
+        return;
+      }
+
+      // Create new list and add quote to it
+      const updatedBookmarklist = {
+        ...bookmarklist,
+        [listName]: [quote.id],
+      };
+
+      // Update Firestore
+      await addQuoteToList(user.uid, listName, quote.id);
+
+      // Update local state
+      setUser({
+        ...user,
+        bookmarklist: updatedBookmarklist,
+      });
+
+      // Reset UI
+      setListName('');
+      setShowInput(false);
+
+      // Update selection state to include the new list
+      setTempSelection((prev) => ({
+        ...prev,
+        [listName]: true,
+      }));
+
+      SnackbarService.show('New list created successfully');
+    } catch (error) {
+      console.error('Error creating new list:', error);
+      SnackbarService.show('Failed to create new list');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Portal>
-      <BottomSheet
-        ref={bottomSheetRef}
-        snapPoints={['60%']}
-        index={-1}
-        onChange={handleSheetChanges}
-        enablePanDownToClose={true}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop
-            {...props}
-            disappearsOnIndex={-1}
-            appearsOnIndex={0}
-            opacity={0.7}
-          />
-        )}
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.indicator}
-        enableOverDrag={true}
-        style={styles.bottomSheet}
-      >
-        <BottomSheetView style={styles.bottomSheetContent}>
+      <BottomSheet ref={bottomSheetRef} height='60%'>
+        <View style={styles.bottomSheetContent}>
           <Text style={styles.bottomSheetTitle}>Manage Your Lists</Text>
 
-          {/* New List Button or Input */}
           {showInput ? (
             <View>
               <TextInput
@@ -154,13 +161,13 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
               <View style={styles.newListActions}>
                 <Button
                   mode='contained'
-                  onPress={handleSaveChanges}
+                  onPress={handleCreateNewList} // Call the correct function
                   loading={loading}
                   disabled={loading}
                   style={styles.button}
                   color={COLORS.primary}
                 >
-                  Save
+                  Create List
                 </Button>
                 <Button
                   mode='text'
@@ -181,7 +188,6 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
             </TouchableOpacity>
           )}
 
-          {/* Existing Lists */}
           <Text style={styles.existingListsTitle}>Your Lists</Text>
           {Object.keys(bookmarklist).length > 0 ? (
             Object.keys(bookmarklist).map((name, index) => (
@@ -209,7 +215,6 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
             </Text>
           )}
 
-          {/* Save Button */}
           <Button
             mode='contained'
             onPress={handleSaveChanges}
@@ -220,25 +225,14 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
           >
             Save Changes
           </Button>
-        </BottomSheetView>
+        </View>
       </BottomSheet>
     </Portal>
   );
 });
 
 const styles = StyleSheet.create({
-  bottomSheet: {
-    zIndex: 1000,
-  },
-  bottomSheetBackground: {
-    backgroundColor: COLORS.surface,
-  },
-  indicator: {
-    backgroundColor: COLORS.placeholder,
-    width: 40,
-  },
   bottomSheetContent: {
-    padding: 16,
     flex: 1,
   },
   bottomSheetTitle: {
