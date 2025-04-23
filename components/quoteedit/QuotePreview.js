@@ -1,23 +1,61 @@
-import React, { forwardRef } from 'react';
-import { View, Text, ImageBackground, StyleSheet } from 'react-native';
+import React from 'react';
+import {
+  View,
+  Text,
+  ImageBackground,
+  StyleSheet,
+  Dimensions,
+  Platform,
+} from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import { COLORS } from 'styles/theme';
 
-const QuotePreview = forwardRef(
-  ({ quote, author, backgroundUri, typography, onGesture }, ref) => {
-    const { font, color, size, position } = typography;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-    // Instead of external placeholder, use a local color as fallback
-    const backgroundSource = backgroundUri ? { uri: backgroundUri } : null;
+const QuotePreview = ({
+  quote,
+  author,
+  backgroundUri,
+  typography,
+  onGesture,
+}) => {
+  const { font, color, size, position } = typography;
 
-    return (
-      <View ref={ref} style={styles.preview}>
+  // Instead of external placeholder, use a local color as fallback
+  const backgroundSource = backgroundUri ? { uri: backgroundUri } : null;
+
+  const getFontStyle = () => {
+    // Different handling for different platforms
+    const { font } = typography;
+
+    // For iOS, we can use the font name directly
+    if (Platform.OS === 'ios') {
+      return { fontFamily: font };
+    }
+
+    // For Android, handle specific cases
+    switch (font) {
+      case 'sans-serif':
+        return { fontFamily: 'sans-serif' };
+      case 'serif':
+        return { fontFamily: 'serif' };
+      case 'monospace':
+        return { fontFamily: 'monospace' };
+      case 'sans-serif-condensed':
+        return { fontFamily: 'sans-serif-condensed' };
+      default:
+        return { fontFamily: font };
+    }
+  };
+
+  return (
+    <View style={styles.previewContainer}>
+      <View style={styles.preview}>
         <ImageBackground
           source={backgroundSource}
           style={styles.background}
           imageStyle={styles.backgroundImage}
           resizeMode='cover'
-          // Use a fallback background color if image fails to load
           onError={(e) =>
             console.error(
               'Error loading background image:',
@@ -29,10 +67,10 @@ const QuotePreview = forwardRef(
             <Text
               style={[
                 styles.quoteText,
+                getFontStyle(),
                 {
-                  fontFamily: font,
-                  color: color,
-                  fontSize: size,
+                  color: typography.color,
+                  fontSize: typography.size,
                   transform: [
                     { translateX: position.x },
                     { translateY: position.y },
@@ -45,21 +83,36 @@ const QuotePreview = forwardRef(
           </PanGestureHandler>
         </ImageBackground>
       </View>
-    );
-  }
-);
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
+  previewContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10, // Slightly reduced padding
+    width: '100%', // Ensure container is full width
+  },
   preview: {
-    flex: 3,
+    // Full width as requested
+    width: '100%',
+    height: SCREEN_HEIGHT * 0.6, // Increased height (was 0.28)
     borderWidth: 1,
     borderColor: '#ddd',
+    borderRadius: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   background: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#333333', // Fallback color instead of placeholder image
+    backgroundColor: '#333333', // Fallback color
   },
   backgroundImage: {
     opacity: 0.8, // Slightly dim the image for better text readability

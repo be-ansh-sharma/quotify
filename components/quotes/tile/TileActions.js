@@ -29,9 +29,9 @@ function TileActions({
     }
   };
 
-  // Calculate total reactions
+  // Calculate total reactions - explicitly convert to numbers to prevent string concatenation
   const totalReactions = Object.values(reactions).reduce(
-    (sum, count) => sum + count,
+    (sum, count) => sum + Number(count),
     0
   );
 

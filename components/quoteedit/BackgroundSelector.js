@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ImageBackground,
   StyleSheet,
+  Dimensions,
   Alert,
+  FlatList,
+  TouchableOpacity,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme';
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 function BackgroundSelector({
   backgrounds,
@@ -17,10 +20,28 @@ function BackgroundSelector({
   onSelectBackground,
   isPremiumUser,
 }) {
+  const flatListRef = useRef(null);
+  const selectedIndex = backgrounds.findIndex(
+    (bg) => bg.uri === selectedBackground
+  );
+  const [currentIndex, setCurrentIndex] = useState(
+    selectedIndex !== -1 ? selectedIndex : 0
+  );
+
+  // Scroll to selected item on mount
+  useEffect(() => {
+    if (selectedIndex > 0 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({
+        index: selectedIndex,
+        animated: false,
+      });
+    }
+  }, []);
+
   const handleBackgroundSelection = (background) => {
-    // Show snackbar if guest tries to select premium background
     if (background.type === 'premium' && !isPremiumUser) {
-      SnackbarService.show(
+      Alert.alert(
+        'Premium Feature',
         'This is a premium background. Upgrade to access all backgrounds!'
       );
       return; // Prevent selection
@@ -28,33 +49,50 @@ function BackgroundSelector({
     onSelectBackground(background.uri);
   };
 
-  // Filter out no backgrounds - show ALL backgrounds to ALL users
-  // No filtering here means both free and premium backgrounds are shown
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Background</Text>
-      <View style={styles.grid}>
-        {backgrounds.map((background) => (
+
+      <FlatList
+        ref={flatListRef}
+        data={backgrounds}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        decelerationRate='fast'
+        snapToInterval={SCREEN_WIDTH - 32}
+        snapToAlignment='center'
+        contentContainerStyle={styles.listContent}
+        initialScrollIndex={Math.max(0, selectedIndex)}
+        getItemLayout={(data, index) => ({
+          length: SCREEN_WIDTH - 32,
+          offset: (SCREEN_WIDTH - 32) * index,
+          index,
+        })}
+        onMomentumScrollEnd={(e) => {
+          const contentOffset = e.nativeEvent.contentOffset.x;
+          const index = Math.round(contentOffset / (SCREEN_WIDTH - 32));
+          if (index >= 0 && index < backgrounds.length) {
+            setCurrentIndex(index);
+          }
+        }}
+        renderItem={({ item }) => (
           <TouchableOpacity
-            key={background.id}
+            activeOpacity={0.9}
+            onPress={() => handleBackgroundSelection(item)}
             style={[
-              styles.backgroundOption,
-              selectedBackground === background.uri &&
-                styles.selectedBackground,
+              styles.backgroundItem,
+              selectedBackground === item.uri && styles.selectedBackground,
             ]}
-            onPress={() => handleBackgroundSelection(background)}
           >
             <ImageBackground
               source={
-                typeof background.uri === 'string'
-                  ? { uri: background.uri }
-                  : background.uri
+                typeof item.uri === 'string' ? { uri: item.uri } : item.uri
               }
               style={styles.backgroundPreview}
               imageStyle={styles.previewImage}
             >
-              {background.type === 'premium' && (
+              {item.type === 'premium' && !isPremiumUser && (
                 <View style={styles.premiumBadge}>
                   <FontAwesome name='star' size={12} color='#FFD700' />
                   <Text style={styles.premiumText}>PRO</Text>
@@ -62,6 +100,20 @@ function BackgroundSelector({
               )}
             </ImageBackground>
           </TouchableOpacity>
+        )}
+        keyExtractor={(item, index) => `bg-${index}`}
+      />
+
+      {/* Pagination dots */}
+      <View style={styles.pagination}>
+        {backgrounds.map((_, index) => (
+          <View
+            key={`dot-${index}`}
+            style={[
+              styles.paginationDot,
+              index === currentIndex && styles.paginationDotActive,
+            ]}
+          />
         ))}
       </View>
     </View>
@@ -70,26 +122,26 @@ function BackgroundSelector({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
+    marginVertical: 10, // Reduce vertical margin (was 16)
+    width: '100%',
   },
   title: {
-    fontSize: 16,
+    fontSize: 14, // Smaller title (was 16)
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8, // Reduce spacing (was 12)
+    marginHorizontal: 16,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  listContent: {
+    paddingHorizontal: 16,
   },
-  backgroundOption: {
-    width: '31%',
-    aspectRatio: 1,
-    marginBottom: 10,
-    borderRadius: 8,
+  backgroundItem: {
+    width: SCREEN_WIDTH * 0.4, // Make smaller (was likely SCREEN_WIDTH - 32)
+    height: SCREEN_WIDTH * 0.25,
+    borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
+    marginRight: 16,
   },
   selectedBackground: {
     borderColor: COLORS.primary,
@@ -101,7 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   previewImage: {
-    borderRadius: 6,
+    borderRadius: 8,
   },
   premiumBadge: {
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -110,13 +162,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    margin: 4,
+    margin: 8,
   },
   premiumText: {
     color: '#FFD700',
     fontSize: 10,
     fontWeight: 'bold',
     marginLeft: 2,
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 6, // Less space (was 12)
+  },
+  paginationDot: {
+    width: 6, // Smaller dots (was 8)
+    height: 6, // Smaller dots (was 8)
+    borderRadius: 4,
+    backgroundColor: '#DDD',
+    marginHorizontal: 3, // Closer together (was 4)
+  },
+  paginationDotActive: {
+    backgroundColor: COLORS.primary,
   },
 });
 
