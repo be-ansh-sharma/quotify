@@ -18,76 +18,123 @@ const QuotePreview = ({
   backgroundUri,
   typography,
   onGesture,
+  isExport = false,
 }) => {
   const { font, color, size, position } = typography;
 
-  // Instead of external placeholder, use a local color as fallback
+  // Get background source
   const backgroundSource = backgroundUri ? { uri: backgroundUri } : null;
 
+  // Add the missing getFontStyle function
   const getFontStyle = () => {
-    // Different handling for different platforms
-    const { font } = typography;
-
-    // For iOS, we can use the font name directly
-    if (Platform.OS === 'ios') {
-      return { fontFamily: font };
-    }
-
-    // For Android, handle specific cases
-    switch (font) {
-      case 'sans-serif':
-        return { fontFamily: 'sans-serif' };
-      case 'serif':
-        return { fontFamily: 'serif' };
-      case 'monospace':
-        return { fontFamily: 'monospace' };
-      case 'sans-serif-condensed':
-        return { fontFamily: 'sans-serif-condensed' };
-      default:
-        return { fontFamily: font };
-    }
+    return {
+      fontFamily: font,
+    };
   };
 
+  // Get font style as before
+  const fontStyle = getFontStyle();
+
   return (
-    <View style={styles.previewContainer}>
-      <View style={styles.preview}>
-        <ImageBackground
-          source={backgroundSource}
-          style={styles.background}
-          imageStyle={styles.backgroundImage}
-          resizeMode='cover'
-          onError={(e) =>
-            console.error(
-              'Error loading background image:',
-              e.nativeEvent.error
-            )
-          }
-        >
-          <PanGestureHandler onGestureEvent={onGesture}>
-            <Text
-              style={[
-                styles.quoteText,
-                getFontStyle(),
-                {
-                  color: typography.color,
-                  fontSize: typography.size,
-                  transform: [
-                    { translateX: position.x },
-                    { translateY: position.y },
-                  ],
-                },
-              ]}
-            >
-              "{quote}" - {author}
-            </Text>
-          </PanGestureHandler>
-        </ImageBackground>
-      </View>
+    <View style={styles.container}>
+      <ImageBackground
+        source={backgroundSource}
+        style={styles.backgroundImage}
+        imageStyle={styles.backgroundImageStyle} // Add this
+        resizeMode='cover' // Important! Change from "contain" to "cover"
+      >
+        <View style={styles.overlay}>
+          {isExport ? (
+            <View style={styles.textContainer}>
+              <Text
+                style={[styles.quoteText, fontStyle, { color, fontSize: size }]}
+              >
+                {quote}
+              </Text>
+              {author ? (
+                <Text
+                  style={[
+                    styles.authorText,
+                    fontStyle,
+                    { color, fontSize: size * 0.6 },
+                  ]}
+                >
+                  — {author}
+                </Text>
+              ) : null}
+            </View>
+          ) : (
+            <PanGestureHandler onGestureEvent={onGesture}>
+              <View style={styles.textContainer}>
+                <Text
+                  style={[
+                    styles.quoteText,
+                    fontStyle,
+                    { color, fontSize: size },
+                  ]}
+                >
+                  {quote}
+                </Text>
+                {author ? (
+                  <Text
+                    style={[
+                      styles.authorText,
+                      fontStyle,
+                      { color, fontSize: size * 0.6 },
+                    ]}
+                  >
+                    — {author}
+                  </Text>
+                ) : null}
+              </View>
+            </PanGestureHandler>
+          )}
+        </View>
+      </ImageBackground>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+  },
+  backgroundImageStyle: {
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.1)', // Optional overlay for better text visibility
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textContainer: {
+    padding: 30,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quoteText: {
+    textAlign: 'center',
+    marginBottom: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  authorText: {
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
   previewContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -114,15 +161,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#333333', // Fallback color
   },
-  backgroundImage: {
-    opacity: 0.8, // Slightly dim the image for better text readability
-  },
   quoteText: {
     textAlign: 'center',
     padding: 10,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+  },
+  exportContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  exportTextContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  exportQuoteText: {
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  exportAuthorText: {
+    textAlign: 'center',
   },
 });
 

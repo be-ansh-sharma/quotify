@@ -1,129 +1,52 @@
-import React, { useState } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Share,
-  ActivityIndicator,
-} from 'react-native';
-import { captureRef } from 'react-native-view-shot';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { COLORS } from 'styles/theme';
+import React from 'react';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 
-const ActionButtons = ({ viewRef, quote, author, onClose }) => {
-  const [isSharing, setIsSharing] = useState(false);
-
-  const handleShare = async () => {
-    try {
-      setIsSharing(true);
-
-      // Add a small delay to ensure the view is fully rendered
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Check if viewRef is valid
-      if (!viewRef.current) {
-        console.error('ViewRef is not valid');
-        setIsSharing(false);
-        return;
-      }
-
-      // Capture the view
-      const uri = await captureRef(viewRef, {
-        format: 'png',
-        quality: 1,
-        result: 'file',
-      });
-
-      // Check if file was created successfully
-      const fileInfo = await FileSystem.getInfoAsync(uri);
-      if (!fileInfo.exists) {
-        throw new Error('Failed to capture image');
-      }
-
-      // Share the image
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          dialogTitle: 'Share your quote',
-          UTI: 'public.png',
-        });
-      } else {
-        // Fallback to Share API if Sharing module isn't available
-        await Share.share({
-          title: `Quote by ${author}`,
-          message: `"${quote}" - ${author}`,
-          url: uri,
-        });
-      }
-    } catch (error) {
-      console.error('Error sharing quote:', error);
-      alert('Sorry, there was a problem sharing your quote. Please try again.');
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
+const ActionButtons = ({ onShare }) => {
   return (
-    <View style={styles.container}>
+    <View style={styles.actionButtons}>
       <TouchableOpacity
-        style={[styles.button, styles.cancelButton]}
-        onPress={onClose}
+        style={styles.cancelButton}
+        onPress={() => router.back()}
       >
-        <Text style={styles.cancelButtonText}>Cancel</Text>
+        <Text style={styles.buttonText}>Cancel</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.button,
-          styles.shareButton,
-          isSharing && styles.disabledButton,
-        ]}
-        onPress={handleShare}
-        disabled={isSharing}
-      >
-        {isSharing ? (
-          <ActivityIndicator size='small' color='#fff' />
-        ) : (
-          <Text style={styles.shareButtonText}>Share Quote</Text>
-        )}
+      <TouchableOpacity style={styles.shareButton} onPress={onShare}>
+        <Text style={styles.buttonText}>Share</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginHorizontal: 20,
     marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 30,
   },
-  button: {
+  cancelButton: {
+    backgroundColor: '#ff4d4d',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
     minWidth: '45%',
-  },
-  cancelButton: {
-    backgroundColor: '#F2F2F2',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '600',
+    alignItems: 'center',
   },
   shareButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: '45%',
+    alignItems: 'center',
   },
-  disabledButton: {
-    backgroundColor: `${COLORS.primary}80`, // 50% opacity
-  },
-  shareButtonText: {
-    color: 'white',
-    fontWeight: '600',
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

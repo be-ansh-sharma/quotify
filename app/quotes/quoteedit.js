@@ -4,22 +4,24 @@ import {
   StyleSheet,
   ScrollView,
   Text,
-  TouchableOpacity,
-  Alert,
-  Platform,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { router } from 'expo-router';
 import useUserStore from 'stores/userStore';
 import useBackgrounds from 'hooks/useBackgrounds';
 import QuotePreview from 'components/quoteedit/QuotePreview';
 import BackgroundSelector from 'components/quoteedit/BackgroundSelector';
 import FontControls from 'components/quoteedit/FontControls';
-import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
-import { COLORS } from 'styles/theme';
+import FormatSelector from 'components/quoteedit/FormatSelector';
+import ActionButtons from 'components/quoteedit/ActionButtons';
 import ViewShot from 'react-native-view-shot';
+import { COLORS } from 'styles/theme';
+import { Platform } from 'react-native';
+import { useQuoteFormatting } from 'hooks/useQuoteFormatting';
+import { useShareQuote } from 'hooks/useShareQuote';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function QuoteEdit() {
   const { quote, author } = useLocalSearchParams();
@@ -75,32 +77,28 @@ export default function QuoteEdit() {
     });
   };
 
-  // Share function
-  const handleShare = async () => {
-    try {
-      // Check if the viewRef is valid
-      if (!viewRef.current) {
-        Alert.alert('Error', 'Unable to capture quote. Please try again.');
-        return;
-      }
+  // Use the quote formatting hook
+  const {
+    selectedFormat,
+    setSelectedFormat,
+    previewUri,
+    processing,
+    invisiblePreviewDimensions,
+    invisibleViewRef,
+    createFormattedQuoteImage,
+    getExportTypography,
+    SHARE_FORMATS,
+  } = useQuoteFormatting(viewRef, selectedBackground);
 
-      // Using ViewShot's capture method directly
-      const uri = await viewRef.current.capture();
+  // Use the share quote hook
+  const { handleShare } = useShareQuote();
 
-      // Verify that we got a valid URI
-      if (!uri || typeof uri !== 'string') {
-        throw new Error('Failed to capture image');
-      }
-
-      // Share the image
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/png',
-        dialogTitle: 'Share your quote',
-      });
-    } catch (error) {
-      console.error('Error sharing quote:', error);
-      Alert.alert('Error', 'Failed to share quote. Please try again.');
-    }
+  // Handle share button press
+  const onSharePress = () => {
+    handleShare(
+      () => createFormattedQuoteImage(typography),
+      selectedFormat.name
+    );
   };
 
   if (loading) {
@@ -114,23 +112,37 @@ export default function QuoteEdit() {
 
   return (
     <View style={styles.container}>
-      {/* Wrap QuotePreview with ViewShot */}
-      <ViewShot
-        ref={viewRef}
-        options={{ format: 'png', quality: 1 }}
-        style={{ flex: 1 }}
-      >
-        <QuotePreview
-          quote={quote}
-          author={author}
-          backgroundUri={selectedBackground}
-          typography={typography}
-          onGesture={handleGesture}
-        />
-      </ViewShot>
+      {/* Preview area */}
+      <View style={styles.previewContainer}>
+        <ViewShot
+          ref={viewRef}
+          options={{ format: 'png', quality: 1 }}
+          style={styles.viewShot}
+        >
+          <QuotePreview
+            quote={quote}
+            author={author}
+            backgroundUri={selectedBackground}
+            typography={typography}
+            onGesture={handleGesture}
+          />
+        </ViewShot>
+      </View>
 
-      {/* Controls */}
-      <ScrollView style={styles.scrollContainer}>
+      {/* Controls area */}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true} // Show scroll indicator
+        alwaysBounceVertical={true} // Enable bounce
+      >
+        {/* Format Selector */}
+        <FormatSelector
+          formats={SHARE_FORMATS}
+          selectedFormat={selectedFormat}
+          setSelectedFormat={setSelectedFormat}
+        />
+
         {/* Background Selector */}
         <BackgroundSelector
           backgrounds={backgrounds}
@@ -146,30 +158,69 @@ export default function QuoteEdit() {
         />
 
         {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.buttonText}>Cancel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Text style={styles.buttonText}>Share</Text>
-          </TouchableOpacity>
-        </View>
+        <ActionButtons onShare={onSharePress} />
       </ScrollView>
+
+      {/* Invisible high-resolution preview for capture */}
+      {invisiblePreviewDimensions && (
+        <View style={styles.invisiblePreviewContainer}>
+          <ViewShot
+            ref={invisibleViewRef}
+            options={{ format: 'png', quality: 1 }}
+            style={{
+              width: invisiblePreviewDimensions.width,
+              height: invisiblePreviewDimensions.height,
+            }}
+          >
+            <QuotePreview
+              quote={quote}
+              author={author}
+              backgroundUri={selectedBackground}
+              typography={getExportTypography(typography)}
+              onGesture={null}
+              isExport={true}
+            />
+          </ViewShot>
+        </View>
+      )}
+
+      {processing && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size='large' color={COLORS.primary} />
+          <Text style={styles.loadingText}>Processing image...</Text>
+        </View>
+      )}
     </View>
   );
 }
 
+// Simplified styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
+  previewContainer: {
+    height: Math.max(SCREEN_WIDTH * 1.1, 650), // Dynamic height based on screen width
+    width: '100%',
+    padding: 0,
+    backgroundColor: '#f9f9f9',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    marginBottom: 20,
+  },
+  viewShot: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+  },
   scrollContainer: {
     flex: 1,
+    marginTop: 10,
+  },
+  scrollContent: {
+    paddingTop: 20,
+    paddingBottom: 80, // Increase bottom padding to ensure nothing is cut off
   },
   loadingContainer: {
     flex: 1,
@@ -182,33 +233,19 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 10,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 30,
+  invisiblePreviewContainer: {
+    position: 'absolute',
+    top: -9999,
+    left: -9999,
+    width: 1,
+    height: 1,
   },
-  cancelButton: {
-    backgroundColor: '#ff4d4d',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: '45%',
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  shareButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: '45%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    zIndex: 1000,
   },
 });
 
