@@ -15,6 +15,7 @@ import {
   rejectQuote,
 } from 'utils/firebase/firestore';
 import { router } from 'expo-router';
+import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 
 export default function PendingQuotes() {
   const [pendingQuotes, setPendingQuotes] = useState([]);
@@ -41,12 +42,14 @@ export default function PendingQuotes() {
     }
   };
 
-  const handleReject = async (quoteId) => {
+  const handleReject = async (quote) => {
     try {
-      await rejectQuote(quoteId);
-      setPendingQuotes((prev) => prev.filter((q) => q.id !== quoteId)); // Remove the rejected quote from the list
+      await rejectQuote(quote);
+      setPendingQuotes((prev) => prev.filter((q) => q.id !== quote.id)); // Remove the rejected quote from the list
+      SnackbarService.show('Quote rejected and moved to private.');
     } catch (error) {
       console.error('Error rejecting quote:', error);
+      SnackbarService.show('Failed to reject the quote. Please try again.');
     }
   };
 
@@ -110,7 +113,7 @@ export default function PendingQuotes() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.rejectButton]}
-                onPress={() => handleReject(item.id)}
+                onPress={() => handleReject(item)}
               >
                 <Text style={styles.buttonText}>Reject</Text>
               </TouchableOpacity>

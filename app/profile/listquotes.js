@@ -134,6 +134,56 @@ export default function ListQuotes() {
     );
   };
 
+  const handleRemoveQuote = async (quoteId) => {
+    Alert.alert(
+      'Remove Quote',
+      'Are you sure you want to remove this quote from the list?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Remove the quote from Firestore
+              await removeQuoteFromList(user.uid, listName, quoteId);
+
+              // Update the local state to remove the quote
+              setQuoteDetails((prev) => {
+                const updatedQuotes = prev
+                  ? prev.filter((quote) => quote.id !== quoteId)
+                  : [];
+                return updatedQuotes.length > 0 ? updatedQuotes : []; // Ensure it's always an array
+              });
+
+              // Update the local user object
+              const updatedLists = { ...user.lists };
+              updatedLists[listName] =
+                updatedLists[listName]?.filter((id) => id !== quoteId) || [];
+              setUser({
+                ...user,
+                lists: updatedLists,
+              });
+
+              console.log(
+                `Quote with ID ${quoteId} removed from the list "${listName}".`
+              );
+            } catch (error) {
+              console.error('Error removing quote from the list:', error);
+              Alert.alert(
+                'Error',
+                'Failed to remove the quote. Please try again.'
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>

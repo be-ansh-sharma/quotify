@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
+import { TextInput, Button, Switch } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { COLORS } from 'styles/theme';
-import { addQuote } from 'utils/firebase/firestore';
+import {
+  addQuoteToPendingList,
+  addQuote,
+  countUserPrivateQuotes,
+} from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for the back icon
@@ -14,7 +18,9 @@ export default function PostQuote() {
   const [quoteText, setQuoteText] = useState('');
   const [author, setAuthor] = useState(user?.name || '');
   const [tags, setTags] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false); // New state for private/public toggle
   const [loading, setLoading] = useState(false);
+  const [privateQuoteCount, setPrivateQuoteCount] = useState(0); // New state for private quote count
 
   const handlePostQuote = async () => {
     if (!quoteText.trim() || !author.trim()) {
@@ -24,6 +30,19 @@ export default function PostQuote() {
 
     setLoading(true);
     try {
+      if (isPrivate) {
+        // Check if the user has reached the private quote limit
+        const count = await countUserPrivateQuotes(user?.uid);
+        setPrivateQuoteCount(count);
+        if (count >= 20) {
+          SnackbarService.show(
+            'You have reached the limit of 100 private quotes. Please delete some quotes or upgrade to Pro for more space.'
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       const quoteData = {
         text: quoteText.trim(),
         author: author.trim(),
@@ -35,12 +54,25 @@ export default function PostQuote() {
           .filter(Boolean),
         createdAt: new Date().toISOString(),
         userId: user?.uid || null,
-        approved: false,
+        userQuote: true,
+        approved: !isPrivate, // Only public quotes need admin approval
+        visibility: isPrivate ? 'private' : 'public', // Set visibility based on toggle
       };
 
-      await addQuote(quoteData);
+      if (isPrivate) {
+        await addQuote(quoteData); // Add to "quotes" collection
+        SnackbarService.show('Quote saved privately!');
+      } else {
+        await addQuoteToPendingList(quoteData); // Add to "pendingquotes" collection
+        SnackbarService.show('Quote submitted! It’ll be reviewed soon.');
+      }
 
-      SnackbarService.show('Quote submitted! It’ll be reviewed soon.');
+      if (!isPrivate) {
+        SnackbarService.show(
+          'Quote submitted! It’ll be reviewed soon. If rejected, it will be converted to a private quote.'
+        );
+      }
+
       router.push('/home');
     } catch (error) {
       SnackbarService.show('Failed to submit the quote. Please try again.');
@@ -100,9 +132,46 @@ export default function PostQuote() {
           }}
         />
 
-        <Text style={styles.note}>
-          ✨ No spam or profanity. All submissions are reviewed by admins.
-        </Text>
+        {/* Private/Public Toggle */}
+        <View style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>Make Quote Private</Text>
+          <Switch
+            value={isPrivate}
+            onValueChange={(value) => setIsPrivate(value)}
+            color={COLORS.primary}
+          />
+        </View>
+
+        {/* Inform the user about rejected quotes */}
+        {isPrivate && (
+          <Text style={styles.rejectionNote}>
+            If your quote is rejected, it will be converted to a private quote.
+          </Text>
+        )}
+
+        {/* Warning for Public Quotes */}
+        {!isPrivate && (
+          <Text style={styles.note}>
+            ✨ No spam or profanity. All submissions are reviewed by admins.
+          </Text>
+        )}
+
+        {/* Private Quote Limit Message */}
+        {isPrivate && privateQuoteCount >= 100 && (
+          <View style={styles.limitMessage}>
+            <Text style={styles.limitText}>
+              You have reached the limit of 100 private quotes. Delete some
+              quotes or upgrade to Pro for more space.
+            </Text>
+            <Button
+              mode='contained'
+              onPress={() => router.push('/pro')}
+              style={styles.upgradeButton}
+            >
+              Upgrade to Pro
+            </Button>
+          </View>
+        )}
 
         <Button
           mode='contained'
@@ -162,11 +231,44 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: 'transparent',
   },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  toggleLabel: {
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  rejectionNote: {
+    fontSize: 12,
+    color: COLORS.placeholder,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   note: {
     fontSize: 12,
     color: COLORS.placeholder,
     marginBottom: 24,
     textAlign: 'center',
+  },
+  limitMessage: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  limitText: {
+    fontSize: 14,
+    color: COLORS.placeholder,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  upgradeButton: {
+    marginTop: 8,
+    borderRadius: 8,
   },
   button: {
     marginTop: 8,

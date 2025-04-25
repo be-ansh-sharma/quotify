@@ -64,6 +64,7 @@ export const uploadQuotes = async () => {
       const newQuote = {
         ...quote,
         id,
+        visibility: 'public', // Add visibility field
         createdAt: serverTimestamp(),
         random: randomValue, // Add random field for quotes
       };
@@ -222,7 +223,7 @@ export const createUser = async (userData) => {
 
 export const fetchQuotes = async (
   lastDoc = null,
-  selectedSort,
+  selectedSort = 'newest',
   author = null,
   tag = null
 ) => {
@@ -235,61 +236,97 @@ export const fetchQuotes = async (
       quotesQuery = lastDoc
         ? query(
             quotesRef,
+            where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
             orderBy('createdAt', 'desc'),
             startAfter(lastDoc),
             limit(20)
           )
-        : query(quotesRef, orderBy('createdAt', 'desc'), limit(20));
+        : query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
+            orderBy('createdAt', 'desc'),
+            limit(20)
+          );
       break;
     case 'oldest':
       quotesQuery = lastDoc
         ? query(
             quotesRef,
+            where('visibility', 'in', ['public', null]),
             orderBy('createdAt', 'asc'),
             startAfter(lastDoc),
             limit(20)
           )
-        : query(quotesRef, orderBy('createdAt', 'asc'), limit(20));
+        : query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]),
+            orderBy('createdAt', 'asc'),
+            limit(20)
+          );
       break;
     case 'mostPopular':
       quotesQuery = lastDoc
         ? query(
             quotesRef,
+            where('visibility', 'in', ['public', null]),
             orderBy('likes', 'desc'),
             startAfter(lastDoc),
             limit(20)
           )
-        : query(quotesRef, orderBy('likes', 'desc'), limit(20));
+        : query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]),
+            orderBy('likes', 'desc'),
+            limit(20)
+          );
       break;
     case 'a_z_author':
       quotesQuery = lastDoc
         ? query(
             quotesRef,
+            where('visibility', '!=', 'private'),
             orderBy('author', 'asc'),
             startAfter(lastDoc),
             limit(20)
           )
-        : query(quotesRef, orderBy('author', 'asc'), limit(20));
+        : query(
+            quotesRef,
+            where('visibility', '!=', 'private'),
+            orderBy('author', 'asc'),
+            limit(20)
+          );
       break;
     case 'z_a_author':
       quotesQuery = lastDoc
         ? query(
             quotesRef,
+            where('visibility', '!=', 'private'),
             orderBy('author', 'desc'),
             startAfter(lastDoc),
             limit(20)
           )
-        : query(quotesRef, orderBy('author', 'desc'), limit(20));
+        : query(
+            quotesRef,
+            where('visibility', '!=', 'private'),
+            orderBy('author', 'desc'),
+            limit(20)
+          );
       break;
     default:
       quotesQuery = lastDoc
         ? query(
             quotesRef,
+            where('visibility', 'in', ['public', null]),
             orderBy('likes', 'desc'),
             startAfter(lastDoc),
             limit(20)
           )
-        : query(quotesRef, orderBy('likes', 'desc'), limit(20));
+        : query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]),
+            orderBy('likes', 'desc'),
+            limit(20)
+          );
   }
 
   // Add a filter for the author if provided
@@ -540,6 +577,7 @@ export const fetchQuotesByAuthors = async (
       let quotesQuery = query(
         quotesRef,
         where('author', 'in', chunk),
+        where('visibility', '!=', 'private'), // Exclude private quotes
         orderBy('createdAt', sort === 'newest' ? 'desc' : 'asc'),
         limit(20) // Fetch 20 quotes at a time
       );
@@ -673,14 +711,30 @@ export const updateUserProfile = async (uid, updatedProfile) => {
  * @param {object} quote - The quote object to add.
  * @returns {Promise<void>} - A promise that resolves when the quote is added.
  */
+export const addQuoteToPendingList = async (quote) => {
+  try {
+    const pendingQuotesRef = collection(db, 'pendingquotes');
+    await addDoc(pendingQuotesRef, quote);
+    console.log('Quote added to pendingquotes collection:', quote);
+  } catch (error) {
+    console.error('Error adding quote to pendingquotes collection:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a quote to the main quotes collection.
+ * @param {object} quote - The quote object to add.
+ * @returns {Promise<void>} - A promise that resolves when the quote is added.
+ * */
 export const addQuote = async (quote) => {
   try {
-    const quotesRef = collection(db, 'pendingquotes');
-    await addDoc(quotesRef, quote); // Add the quote to Firestore
-    console.log('Quote added successfully:', quote);
+    const quotesRef = collection(db, 'quotes');
+    await addDoc(quotesRef, quote);
+    console.log('Quote added to quotes collection:', quote);
   } catch (error) {
-    console.error('Error adding quote:', error);
-    throw error; // Rethrow the error to handle it in the calling function
+    console.error('Error adding quote to quotes collection:', error);
+    throw error;
   }
 };
 
@@ -719,6 +773,7 @@ export const approveQuote = async (quote) => {
     // Add the quote to the main quotes collection
     await setDoc(quotesRef, {
       ...quote,
+      visibility: 'public',
       approved: true,
       userQuote: true,
       createdAt: quote.createdAt || new Date().toISOString(),
@@ -735,15 +790,30 @@ export const approveQuote = async (quote) => {
 };
 
 /**
- * Reject a pending quote and delete it from Firestore.
- * @param {string} quoteId - The ID of the quote to reject.
+ * Reject a pending quote, convert it to private, and move it to the quotes collection.
+ * @param {object} quote - The quote object to reject.
  */
-export const rejectQuote = async (quoteId) => {
+export const rejectQuote = async (quote) => {
   try {
-    const pendingQuoteRef = doc(db, 'pendingquotes', quoteId);
+    console.log('Rejecting quote:', quote);
+    const pendingQuoteRef = doc(db, 'pendingquotes', quote.id); // Reference to the pending quote
+    const quotesRef = doc(db, 'quotes', quote.id);
+
+    // Convert the quote to private and move it to the quotes collection
+    const privateQuote = {
+      ...quote,
+      visibility: 'private', // Set visibility to private
+      approved: false, // Mark as not approved
+      createdAt: quote.createdAt || new Date().toISOString(), // Retain or set createdAt
+    };
+
+    // Add the private quote to the quotes collection
+    await setDoc(quotesRef, privateQuote);
+
+    // Remove the quote from the pendingquotes collection
     await deleteDoc(pendingQuoteRef);
 
-    console.log(`Quote rejected and deleted: ${quoteId}`);
+    console.log(`Quote rejected and moved to private: ${quote.id}`);
   } catch (error) {
     console.error('Error rejecting quote:', error);
     throw error;
@@ -751,24 +821,48 @@ export const rejectQuote = async (quoteId) => {
 };
 
 /**
- * Fetch quotes created by a specific user.
+ * Fetch quotes created by a specific user with support for lazy loading and filtering.
  * @param {string} userId - The user's UID.
- * @returns {Promise<Array<object>>} - A promise that resolves to an array of quotes created by the user.
+ * @param {object|null} lastDoc - The last document from the previous query (for lazy loading).
+ * @param {boolean} isPrivate - Whether to fetch private quotes (true) or public quotes (false).
+ * @returns {Promise<{ quotes: Array<object>, lastVisibleDoc: object }>} - A promise that resolves to an array of quotes and the last document.
  */
-export const fetchQuotesByUser = async (userId) => {
+export const fetchQuotesByUser = async (
+  userId,
+  lastDoc = null,
+  isPrivate = false
+) => {
   try {
     const quotesRef = collection(db, 'quotes');
-    const userQuotesQuery = query(
-      quotesRef,
+    let queryConstraints = [
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    const snapshot = await getDocs(userQuotesQuery);
+      orderBy('createdAt', 'desc'),
+      limit(10), // Fetch 10 quotes at a time
+    ];
 
-    return snapshot.docs.map((doc) => ({
+    if (isPrivate) {
+      // Fetch only private quotes
+      queryConstraints.push(where('visibility', '==', 'private'));
+    } else {
+      // Fetch public quotes (or quotes without the visibility field)
+      queryConstraints.push(where('visibility', 'in', ['public', null]));
+    }
+
+    if (lastDoc) {
+      queryConstraints.push(startAfter(lastDoc)); // Start after the last document for pagination
+    }
+
+    const quotesQuery = query(quotesRef, ...queryConstraints);
+    const snapshot = await getDocs(quotesQuery);
+
+    const quotes = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
+
+    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Track the last document for pagination
+
+    return { quotes, lastVisibleDoc };
   } catch (error) {
     console.error('Error fetching user quotes:', error);
     throw error;
@@ -1259,6 +1353,38 @@ export const removeUserReaction = async (quoteId, userId, reactionType) => {
     );
   } catch (error) {
     console.error('Error removing user reaction:', error);
+    throw error;
+  }
+};
+
+export const countUserPrivateQuotes = async (userId) => {
+  try {
+    const quotesRef = collection(db, 'quotes');
+    const privateQuotesQuery = query(
+      quotesRef,
+      where('userId', '==', userId),
+      where('visibility', '==', 'private')
+    );
+    const snapshot = await getDocs(privateQuotesQuery);
+    return snapshot.size; // Returns the count of private quotes
+  } catch (error) {
+    console.error('Error counting private quotes:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a private quote from the Firestore database.
+ * @param {string} quoteId - The ID of the quote to delete.
+ * @returns {Promise<void>}
+ */
+export const deletePrivateQuote = async (quoteId) => {
+  try {
+    const quoteRef = doc(db, 'quotes', quoteId);
+    await deleteDoc(quoteRef);
+    console.log(`Private quote with ID ${quoteId} deleted successfully.`);
+  } catch (error) {
+    console.error('Error deleting private quote:', error);
     throw error;
   }
 };

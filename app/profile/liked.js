@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ export default function LikedQuotes() {
   const [nextIndex, setNextIndex] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [processedChunks, setProcessedChunks] = useState(0);
+  const prevLikesRef = useRef([]);
 
   const loadLikedQuotes = async (isLoadMore = false) => {
     if (isGuest) {
@@ -35,14 +36,11 @@ export default function LikedQuotes() {
       return;
     }
 
-    console.log('Loading liked quotes...', user.likes);
     if (!user?.likes?.length) {
       setLoading(false);
       setHasMore(false);
       return;
     }
-
-    console.log('Loading liked quotes...', user.likes);
 
     if (isLoadMore && (!hasMore || loadingMore)) return;
 
@@ -84,14 +82,80 @@ export default function LikedQuotes() {
   }, []);
 
   useEffect(() => {
-    if (!user?.likes?.length) {
+    // Ensure likes is always a valid array
+    const likes = Array.isArray(user?.likes) ? user.likes : [];
+    // Ensure prevLikes is always a valid array
+    const prevLikes = Array.isArray(prevLikesRef.current)
+      ? prevLikesRef.current
+      : [];
+
+    // Debug
+    console.log('Current likes:', likes);
+    console.log('Previous likes:', prevLikes);
+
+    // Safely check if likes changed
+    let hasLikesChanged = likes.length !== prevLikes.length;
+    if (!hasLikesChanged && likes.length > 0) {
+      try {
+        hasLikesChanged = !likes.every((id, index) => id === prevLikes[index]);
+      } catch (error) {
+        console.error('Error comparing likes arrays:', error);
+        hasLikesChanged = true; // Force update if comparison fails
+      }
+    }
+
+    if (!hasLikesChanged) {
+      return;
+    }
+
+    // Update ref with a copy of the array
+    prevLikesRef.current = [...likes];
+
+    if (!likes.length) {
       setLikedQuotes([]);
       return;
     }
 
-    setLikedQuotes((prevQuotes) =>
-      prevQuotes.filter((quote) => user.likes.includes(quote.id))
-    );
+    // Extra safety when updating state
+    setLikedQuotes((prevQuotes) => {
+      // Ensure prevQuotes is always a valid array
+      const currentQuotes = Array.isArray(prevQuotes) ? prevQuotes : [];
+
+      try {
+        // Safely filter quotes
+        const updatedQuotes = currentQuotes.filter(
+          (quote) => quote && quote.id && likes.includes(quote.id)
+        );
+
+        // Safely get missing quote IDs
+        const missingQuoteIds = likes.filter(
+          (id) => !updatedQuotes.some((quote) => quote && quote.id === id)
+        );
+
+        // Fetch missing quotes asynchronously
+        if (missingQuoteIds.length > 0) {
+          fetchQuotesByIds(missingQuoteIds)
+            .then((newQuotes) => {
+              if (Array.isArray(newQuotes) && newQuotes.length > 0) {
+                setLikedQuotes((currentQuotes) => {
+                  const current = Array.isArray(currentQuotes)
+                    ? currentQuotes
+                    : [];
+                  return [...current, ...newQuotes];
+                });
+              }
+            })
+            .catch((error) => {
+              console.error('Error fetching missing quotes:', error);
+            });
+        }
+
+        return updatedQuotes;
+      } catch (error) {
+        console.error('Error updating liked quotes:', error);
+        return currentQuotes; // Return unchanged if there's an error
+      }
+    });
   }, [user?.likes]);
 
   const renderFooter = () => {
@@ -195,7 +259,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   tileContainer: {
-    marginBottom: 16,
+    marginTop: 16,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: COLORS.surface,
