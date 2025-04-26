@@ -55,17 +55,18 @@ const FormatSelector = ({ formats, selectedFormat, setSelectedFormat }) => {
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 25, // Increase bottom margin to prevent cutoff
+    marginBottom: 25,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
     marginHorizontal: 20,
+    color: COLORS.text,
   },
   formatScrollContainer: {
-    maxHeight: 120, // Increase from 100 to 120
-    marginBottom: 10, // Add additional bottom margin
+    maxHeight: 120,
+    marginBottom: 10,
   },
   formatScrollContent: {
     paddingHorizontal: 16,
@@ -74,12 +75,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 90,
     marginRight: 12,
-    marginBottom: 10, // Add some bottom margin
+    marginBottom: 10,
     padding: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLORS.border || '#ddd',
     borderRadius: 8,
-    overflow: 'hidden', // Add this to prevent content from spilling out
+    overflow: 'hidden',
+    backgroundColor: COLORS.surface,
   },
   selectedFormat: {
     borderColor: COLORS.primary,
@@ -87,26 +89,27 @@ const styles = StyleSheet.create({
     backgroundColor: `${COLORS.primary}10`,
   },
   formatPreviewContainer: {
-    width: '100%', // Full width of parent
-    height: 60, // Fixed height container
+    width: '100%',
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden', // Important - prevents overflow
+    overflow: 'hidden',
   },
   formatPreview: {
-    width: '90%', // Slightly less than container width
-    height: undefined, // Height determined by aspect ratio
-    backgroundColor: '#e0e0e0',
+    width: '90%',
+    height: undefined,
+    backgroundColor: COLORS.backgroundSecondary || '#e0e0e0',
     borderRadius: 4,
-    maxHeight: 50, // Add max height
+    maxHeight: 50,
   },
   formatName: {
     fontSize: 9,
     textAlign: 'center',
     marginTop: 6,
-    height: 30, // Increase height to accommodate text
-    width: '100%', // Full width
+    height: 30,
+    width: '100%',
     paddingHorizontal: 2,
+    color: COLORS.textSecondary || COLORS.text,
   },
 });
 

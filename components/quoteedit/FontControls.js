@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
+    color: COLORS.text,
   },
   fontContainer: {
     paddingVertical: 15,
@@ -297,12 +297,12 @@ const styles = StyleSheet.create({
     height: 90,
     marginRight: 15,
     borderRadius: 8,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 8,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: COLORS.border || '#DDD',
   },
   selectedFont: {
     borderColor: COLORS.primary,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: COLORS.border || '#DDD',
   },
   modalOverlay: {
     flex: 1,
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
   },
   colorPickerContainer: {
     width: SCREEN_WIDTH * 0.85,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow || '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -354,14 +354,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#333',
+    color: COLORS.text,
   },
   colorPreviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 16,
     marginBottom: 20,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: COLORS.surface,
     padding: 10,
     borderRadius: 8,
     width: '100%',
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: COLORS.border || '#DDD',
   },
   colorHexText: {
     fontSize: 16,
@@ -392,17 +392,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F2F2F2',
+    backgroundColor: COLORS.surface,
   },
   cancelButtonText: {
-    color: '#333',
+    color: COLORS.text,
     fontWeight: '600',
   },
   applyButton: {
     backgroundColor: COLORS.primary,
   },
   applyButtonText: {
-    color: 'white',
+    color: COLORS.onPrimary || '#fff',
     fontWeight: '600',
   },
   colorSwatchesContainer: {
@@ -418,17 +418,17 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     margin: 4,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: COLORS.border || '#DDD',
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedSwatch: {
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: COLORS.primary,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: COLORS.border || '#e0e0e0',
     width: '100%',
     marginVertical: 10,
   },
@@ -437,12 +437,8 @@ const styles = StyleSheet.create({
   },
   colorInfoLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.textSecondary || '#666',
     marginBottom: 2,
-  },
-  colorHexText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   fontCarousel: {
     marginVertical: 10,
@@ -460,10 +456,12 @@ const styles = StyleSheet.create({
   fontSample: {
     fontSize: 24,
     marginBottom: 5,
+    color: COLORS.text, // Ensure font sample is visible
   },
   fontName: {
     fontSize: 12,
     textAlign: 'center',
+    color: COLORS.text, // Ensure font name is visible
   },
   fontListContainer: {
     paddingVertical: 10,
@@ -478,7 +476,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#DDD',
+    backgroundColor: COLORS.border || '#DDD',
     marginHorizontal: 3,
   },
   fontPaginationDotActive: {

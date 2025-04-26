@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, AppState } from 'react-native';
+import { View, AppState, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   fetchUserProfile,
   uploadQuotes,
   storeFCMToken,
+  fetchGuestFCMToken, // Make sure this is imported
 } from 'utils/firebase/firestore';
 import Sort from 'components/sort/Sort';
 import useUserStore from 'stores/userStore';
@@ -14,6 +15,7 @@ import { auth } from 'utils/firebase/firebaseconfig';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { SORT_OPTIONS } from 'config/sortConfig';
 import * as Notifications from 'expo-notifications';
+import QuotesFAB from 'components/quotesfab/QuotesFAB';
 
 const CURRENT_VERSION = '4.2';
 
@@ -196,7 +198,7 @@ export default function Index() {
   }, [isGuest]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <Sort
         selectedSort={selectedSort}
         sortHandler={sortHandler}
@@ -205,9 +207,16 @@ export default function Index() {
       <Quotes
         selectedSort={selectedSort}
         user={user}
-        favoriteAuthors={selectedSort === 'favoriteAuthor'} // Pass favoriteAuthors prop
+        favoriteAuthors={selectedSort === 'favoriteAuthor'}
       />
+      <QuotesFAB />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 

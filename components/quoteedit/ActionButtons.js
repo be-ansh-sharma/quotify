@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { COLORS } from 'styles/theme';
 
 const ActionButtons = ({ onShare }) => {
   return (
@@ -28,7 +29,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   cancelButton: {
-    backgroundColor: '#ff4d4d',
+    backgroundColor: COLORS.error || '#ff4d4d',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -36,15 +37,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shareButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary || '#4CAF50',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
     minWidth: '45%',
     alignItems: 'center',
+    marginLeft: 10,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.onPrimary || '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },

@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 import { COLORS } from 'styles/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -36,35 +37,16 @@ const QuotePreview = ({
   const fontStyle = getFontStyle();
 
   return (
-    <View style={styles.container}>
-      <ImageBackground
-        source={backgroundSource}
-        style={styles.backgroundImage}
-        imageStyle={styles.backgroundImageStyle} // Add this
-        resizeMode='cover' // Important! Change from "contain" to "cover"
-      >
-        <View style={styles.overlay}>
-          {isExport ? (
-            <View style={styles.textContainer}>
-              <Text
-                style={[styles.quoteText, fontStyle, { color, fontSize: size }]}
-              >
-                {quote}
-              </Text>
-              {author ? (
-                <Text
-                  style={[
-                    styles.authorText,
-                    fontStyle,
-                    { color, fontSize: size * 0.6 },
-                  ]}
-                >
-                  — {author}
-                </Text>
-              ) : null}
-            </View>
-          ) : (
-            <PanGestureHandler onGestureEvent={onGesture}>
+    <View style={styles.previewContainer}>
+      <View style={styles.preview}>
+        <ImageBackground
+          source={backgroundSource}
+          style={styles.backgroundImage}
+          imageStyle={styles.backgroundImageStyle}
+          resizeMode='cover'
+        >
+          <View style={styles.overlay}>
+            {isExport ? (
               <View style={styles.textContainer}>
                 <Text
                   style={[
@@ -87,10 +69,47 @@ const QuotePreview = ({
                   </Text>
                 ) : null}
               </View>
-            </PanGestureHandler>
-          )}
-        </View>
-      </ImageBackground>
+            ) : (
+              <PanGestureHandler onGestureEvent={onGesture}>
+                <Animated.View
+                  style={[
+                    styles.textContainer,
+                    position
+                      ? {
+                          transform: [
+                            { translateX: position.x },
+                            { translateY: position.y },
+                          ],
+                        }
+                      : {},
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.quoteText,
+                      fontStyle,
+                      { color, fontSize: size },
+                    ]}
+                  >
+                    {quote}
+                  </Text>
+                  {author ? (
+                    <Text
+                      style={[
+                        styles.authorText,
+                        fontStyle,
+                        { color, fontSize: size * 0.6 },
+                      ]}
+                    >
+                      — {author}
+                    </Text>
+                  ) : null}
+                </Animated.View>
+              </PanGestureHandler>
+            )}
+          </View>
+        </ImageBackground>
+      </View>
     </View>
   );
 };
@@ -119,37 +138,36 @@ const styles = StyleSheet.create({
     padding: 30,
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', // Center text vertically
+    alignItems: 'center', // Center text horizontally
   },
   quoteText: {
     textAlign: 'center',
     marginBottom: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowColor: COLORS.shadow || 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   authorText: {
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowColor: COLORS.shadow || 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   previewContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10, // Slightly reduced padding
+    paddingVertical: 0,
     width: '100%', // Ensure container is full width
   },
   preview: {
-    // Full width as requested
     width: '100%',
-    height: SCREEN_HEIGHT * 0.6, // Increased height (was 0.28)
+    height: SCREEN_HEIGHT * 0.6, // Reduced from 0.4 to 0.28 for a smaller background
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLORS.border || '#ddd',
     borderRadius: 8,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow || '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -159,14 +177,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#333333', // Fallback color
-  },
-  quoteText: {
-    textAlign: 'center',
-    padding: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    backgroundColor: COLORS.backgroundDark || '#333333', // Fallback color
   },
   exportContainer: {
     flex: 1,

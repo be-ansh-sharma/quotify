@@ -122,26 +122,28 @@ function BackgroundSelector({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10, // Reduce vertical margin (was 16)
+    marginVertical: 10,
     width: '100%',
   },
   title: {
-    fontSize: 14, // Smaller title (was 16)
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 8, // Reduce spacing (was 12)
+    marginBottom: 8,
     marginHorizontal: 16,
+    color: COLORS.text,
   },
   listContent: {
     paddingHorizontal: 16,
   },
   backgroundItem: {
-    width: SCREEN_WIDTH * 0.4, // Make smaller (was likely SCREEN_WIDTH - 32)
+    width: SCREEN_WIDTH * 0.4,
     height: SCREEN_WIDTH * 0.25,
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
     marginRight: 16,
+    backgroundColor: COLORS.surface,
   },
   selectedBackground: {
     borderColor: COLORS.primary,
@@ -156,7 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   premiumBadge: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: COLORS.overlayDark || 'rgba(0, 0, 0, 0.6)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 6,
@@ -165,7 +167,7 @@ const styles = StyleSheet.create({
     margin: 8,
   },
   premiumText: {
-    color: '#FFD700',
+    color: COLORS.premiumGold || '#FFD700',
     fontSize: 10,
     fontWeight: 'bold',
     marginLeft: 2,
@@ -173,14 +175,14 @@ const styles = StyleSheet.create({
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 6, // Less space (was 12)
+    marginTop: 6,
   },
   paginationDot: {
-    width: 6, // Smaller dots (was 8)
-    height: 6, // Smaller dots (was 8)
+    width: 6,
+    height: 6,
     borderRadius: 4,
-    backgroundColor: '#DDD',
-    marginHorizontal: 3, // Closer together (was 4)
+    backgroundColor: COLORS.border || '#DDD',
+    marginHorizontal: 3,
   },
   paginationDotActive: {
     backgroundColor: COLORS.primary,

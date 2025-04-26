@@ -6,8 +6,9 @@ import {
   Text,
   ActivityIndicator,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import useUserStore from 'stores/userStore';
 import useBackgrounds from 'hooks/useBackgrounds';
 import QuotePreview from 'components/quoteedit/QuotePreview';
@@ -20,10 +21,11 @@ import { COLORS } from 'styles/theme';
 import { Platform } from 'react-native';
 import { useQuoteFormatting } from 'hooks/useQuoteFormatting';
 import { useShareQuote } from 'hooks/useShareQuote';
+import { FontAwesome } from '@expo/vector-icons';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function QuoteEdit() {
+export default function QuoteShare() {
   const { quote, author } = useLocalSearchParams();
   const viewRef = useRef();
 
@@ -112,6 +114,15 @@ export default function QuoteEdit() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.push('/home')}
+          style={styles.backButton}
+        >
+          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Share Quote</Text>
+      </View>
       {/* Preview area */}
       <View style={styles.previewContainer}>
         <ViewShot
@@ -198,16 +209,15 @@ export default function QuoteEdit() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
   },
   previewContainer: {
-    height: Math.max(SCREEN_WIDTH * 1.1, 650), // Dynamic height based on screen width
+    height: SCREEN_HEIGHT * 0.6, // Match the preview height
     width: '100%',
     padding: 0,
-    backgroundColor: '#f9f9f9',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    marginBottom: 20,
+    borderBottomColor: COLORS.surface,
+    marginBottom: 0, // Remove extra margin if you want no gap
   },
   viewShot: {
     width: '100%',
@@ -220,17 +230,17 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 20,
-    paddingBottom: 80, // Increase bottom padding to ensure nothing is cut off
+    paddingBottom: 80,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    color: COLORS.placeholder,
     marginTop: 10,
   },
   invisiblePreviewContainer: {
@@ -242,10 +252,27 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: COLORS.surface,
+    opacity: 0.8,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+  },
+  header: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'flex-start',
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
   },
 });
 

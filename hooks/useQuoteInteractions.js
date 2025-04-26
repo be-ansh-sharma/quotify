@@ -191,7 +191,7 @@ export default function useQuoteInteractions({
   const handleShareAsPhoto = useCallback(() => {
     shareSheetRef.current?.closeBottomSheet();
     router.push({
-      pathname: '/quotes/quoteedit',
+      pathname: '/quotes/quoteshare',
       params: { quote: quote.text, author: quote.author },
     });
   }, [quote, router, shareSheetRef]);

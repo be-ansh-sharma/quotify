@@ -1389,3 +1389,18 @@ export const deletePrivateQuote = async (quoteId) => {
   }
 };
 
+export const getQuoteOfTheDay = async () => {
+  const metaRef = doc(db, 'meta', 'quoteOfTheDay');
+  const metaSnap = await getDoc(metaRef);
+
+  if (!metaSnap.exists()) throw new Error('Quote of the Day not found');
+  const quoteId = metaSnap.data().currentQuote?.quoteId;
+  if (!quoteId) throw new Error('No quoteId found in meta');
+
+  const quoteRef = doc(db, 'quotes', quoteId);
+  const quoteSnap = await getDoc(quoteRef);
+
+  if (!quoteSnap.exists()) throw new Error('Quote not found');
+  return quoteSnap.data();
+};
+
