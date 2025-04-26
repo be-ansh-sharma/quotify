@@ -82,7 +82,6 @@ export default function useQuoteInteractions({
           await removeUserReaction(quote.id, user.uid, reactionType);
           setUser({
             ...user,
-            likes: user.likes.filter((id) => id !== quote.id),
             reactions: {
               ...user.reactions,
               [reactionType]: user.reactions[reactionType]?.filter(
@@ -129,7 +128,6 @@ export default function useQuoteInteractions({
 
           setUser({
             ...user,
-            likes: [...(user.likes || []), quote.id],
             reactions: {
               ...user.reactions,
               [reactionType]: [

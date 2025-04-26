@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { COLORS } from 'styles/theme';
-import { getTopQuote } from 'utils/firebase/firestore'; // You'll need to create this function
+import { getTopQuote } from 'utils/firebase/firestore';
 
 export default function TopQuote() {
   const [topQuote, setTopQuote] = useState(null);
@@ -10,15 +10,9 @@ export default function TopQuote() {
   useEffect(() => {
     const fetchQuote = async () => {
       try {
-        // For now, let's simulate the API call
-        // In reality, you would implement getTopQuote() in your firestore.js
-        setTimeout(() => {
-          setTopQuote({
-            text: 'The best way to predict the future is to create it.',
-            author: 'Abraham Lincoln',
-          });
-          setLoading(false);
-        }, 1000);
+        const fetchedQuote = await getTopQuote();
+        setTopQuote(fetchedQuote);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching Top Quote:', error);
         setLoading(false);
@@ -42,6 +36,9 @@ export default function TopQuote() {
     <View style={styles.container}>
       <Text style={styles.quoteText}>"{topQuote.text}"</Text>
       <Text style={styles.authorText}>— {topQuote.author}</Text>
+      <Text style={styles.reactionsText}>
+        ♥ {topQuote.totalReactions || 0} reactions
+      </Text>
     </View>
   );
 }
@@ -63,6 +60,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontStyle: 'italic',
     color: COLORS.placeholder,
+    marginBottom: 4,
+  },
+  reactionsText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    marginTop: 4,
   },
   loadingContainer: {
     padding: 24,

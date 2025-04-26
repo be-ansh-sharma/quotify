@@ -28,7 +28,29 @@ export default function LikedQuotes() {
   const [nextIndex, setNextIndex] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [processedChunks, setProcessedChunks] = useState(0);
-  const prevLikesRef = useRef([]);
+  const prevReactionsRef = useRef([]);
+
+  const getUserReactedQuoteIds = () => {
+    if (!user || !user.reactions) return [];
+
+    // Get all reaction types dynamically from the user object
+    const reactionTypes = Object.keys(user.reactions || {});
+
+    // Combine all reaction types into a single array of quote IDs
+    const allReactedQuoteIds = [];
+
+    reactionTypes.forEach((type) => {
+      if (Array.isArray(user.reactions[type])) {
+        user.reactions[type].forEach((id) => {
+          if (!allReactedQuoteIds.includes(id)) {
+            allReactedQuoteIds.push(id);
+          }
+        });
+      }
+    });
+
+    return allReactedQuoteIds;
+  };
 
   const loadLikedQuotes = async (isLoadMore = false) => {
     if (isGuest) {
@@ -36,7 +58,9 @@ export default function LikedQuotes() {
       return;
     }
 
-    if (!user?.likes?.length) {
+    const reactedQuoteIds = getUserReactedQuoteIds();
+
+    if (reactedQuoteIds.length === 0) {
       setLoading(false);
       setHasMore(false);
       return;
@@ -53,18 +77,32 @@ export default function LikedQuotes() {
         nextIndex: newNextIndex,
         processedChunks: updatedChunks,
       } = await fetchQuotesByIds(
-        user.likes,
+        reactedQuoteIds,
         nextIndex,
         PAGE_SIZE,
         processedChunks
       );
 
       setLikedQuotes((prevQuotes) => {
-        const existingIds = new Set(prevQuotes.map((quote) => quote.id));
-        const filteredNewQuotes = quotes.filter(
-          (quote) => !existingIds.has(quote.id)
-        );
-        return [...prevQuotes, ...filteredNewQuotes];
+        // Create map of existing quotes by ID
+        const quotesById = {};
+
+        // Process existing quotes first
+        prevQuotes.forEach((quote) => {
+          if (quote && quote.id) {
+            quotesById[quote.id] = quote;
+          }
+        });
+
+        // Then add new quotes, overwriting duplicates with newer versions
+        quotes.forEach((quote) => {
+          if (quote && quote.id) {
+            quotesById[quote.id] = quote;
+          }
+        });
+
+        // Convert back to array
+        return Object.values(quotesById);
       });
 
       setNextIndex(newNextIndex);
@@ -82,36 +120,35 @@ export default function LikedQuotes() {
   }, []);
 
   useEffect(() => {
-    // Ensure likes is always a valid array
-    const likes = Array.isArray(user?.likes) ? user.likes : [];
-    // Ensure prevLikes is always a valid array
-    const prevLikes = Array.isArray(prevLikesRef.current)
-      ? prevLikesRef.current
+    // Get all reacted quote IDs
+    const reactedQuoteIds = getUserReactedQuoteIds();
+
+    // Ensure prevReactionsRef is always a valid array
+    const prevReactions = Array.isArray(prevReactionsRef.current)
+      ? prevReactionsRef.current
       : [];
 
-    // Debug
-    console.log('Current likes:', likes);
-    console.log('Previous likes:', prevLikes);
-
-    // Safely check if likes changed
-    let hasLikesChanged = likes.length !== prevLikes.length;
-    if (!hasLikesChanged && likes.length > 0) {
+    // Safely check if reactions changed
+    let hasReactionsChanged = reactedQuoteIds.length !== prevReactions.length;
+    if (!hasReactionsChanged && reactedQuoteIds.length > 0) {
       try {
-        hasLikesChanged = !likes.every((id, index) => id === prevLikes[index]);
+        hasReactionsChanged = !reactedQuoteIds.every(
+          (id, index) => id === prevReactions[index]
+        );
       } catch (error) {
-        console.error('Error comparing likes arrays:', error);
-        hasLikesChanged = true; // Force update if comparison fails
+        console.error('Error comparing reaction arrays:', error);
+        hasReactionsChanged = true; // Force update if comparison fails
       }
     }
 
-    if (!hasLikesChanged) {
+    if (!hasReactionsChanged) {
       return;
     }
 
     // Update ref with a copy of the array
-    prevLikesRef.current = [...likes];
+    prevReactionsRef.current = [...reactedQuoteIds];
 
-    if (!likes.length) {
+    if (reactedQuoteIds.length === 0) {
       setLikedQuotes([]);
       return;
     }
@@ -124,18 +161,18 @@ export default function LikedQuotes() {
       try {
         // Safely filter quotes
         const updatedQuotes = currentQuotes.filter(
-          (quote) => quote && quote.id && likes.includes(quote.id)
+          (quote) => quote && quote.id && reactedQuoteIds.includes(quote.id)
         );
 
         // Safely get missing quote IDs
-        const missingQuoteIds = likes.filter(
+        const missingQuoteIds = reactedQuoteIds.filter(
           (id) => !updatedQuotes.some((quote) => quote && quote.id === id)
         );
 
         // Fetch missing quotes asynchronously
         if (missingQuoteIds.length > 0) {
           fetchQuotesByIds(missingQuoteIds)
-            .then((newQuotes) => {
+            .then(({ quotes: newQuotes }) => {
               if (Array.isArray(newQuotes) && newQuotes.length > 0) {
                 setLikedQuotes((currentQuotes) => {
                   const current = Array.isArray(currentQuotes)
@@ -156,7 +193,7 @@ export default function LikedQuotes() {
         return currentQuotes; // Return unchanged if there's an error
       }
     });
-  }, [user?.likes]);
+  }, [user?.reactions, user?.likes]); // Watch both reactions and likes
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -172,7 +209,7 @@ export default function LikedQuotes() {
         >
           <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Liked Quotes</Text>
+        <Text style={styles.headerTitle}>Your Reactions</Text>
       </View>
       <Text style={styles.emptyText}>{message}</Text>
     </SafeAreaView>
@@ -187,11 +224,11 @@ export default function LikedQuotes() {
   }
 
   if (isGuest) {
-    return renderEmptyState('Login to view your liked quotes.');
+    return renderEmptyState('Login to view your reactions to quotes.');
   }
 
   if (!likedQuotes.length) {
-    return renderEmptyState("You haven't liked any quotes yet.");
+    return renderEmptyState("You haven't reacted to any quotes yet.");
   }
 
   return (
@@ -203,11 +240,15 @@ export default function LikedQuotes() {
         >
           <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Liked Quotes</Text>
+        <Text style={styles.headerTitle}>Your Reactions</Text>
       </View>
 
       <FlatList
-        data={likedQuotes}
+        data={likedQuotes.filter(
+          (quote, index, self) =>
+            // Only keep the first occurrence of each ID
+            index === self.findIndex((q) => q.id === quote.id)
+        )}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.tileContainer}>

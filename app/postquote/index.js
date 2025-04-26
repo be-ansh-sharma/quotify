@@ -46,7 +46,6 @@ export default function PostQuote() {
       const quoteData = {
         text: quoteText.trim(),
         author: author.trim(),
-        likes: 0,
         shares: 0,
         tags: tags
           .split(',')

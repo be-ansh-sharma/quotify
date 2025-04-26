@@ -9,6 +9,7 @@ import {
 import Tile from './tile/Tile';
 import { fetchQuotes, fetchQuotesByAuthors } from 'utils/firebase/firestore'; // Include new function to fetch quotes by authors
 import SkeletonLoader from 'components/skelton/Skelton';
+import { saveQuotesToCache, getQuotesFromCache } from 'utils/quotesCache';
 
 export default Quotes = ({
   selectedSort,
@@ -21,8 +22,7 @@ export default Quotes = ({
   const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [processedChunks, setProcessedChunks] = useState(0); // Track processed chunks for favorite authors
-  console.log(user);
+  const [processedChunks, setProcessedChunks] = useState(0);
 
   const loadQuotes = async () => {
     if (loading || !hasMore) return;
@@ -42,36 +42,36 @@ export default Quotes = ({
           user.followedAuthors,
           lastDoc,
           selectedSort,
-          processedChunks // Pass the current processedChunks
+          processedChunks
         );
         fetchedQuotes = newQuotes;
         setLastDoc(lastVisibleDoc);
         setHasMore(hasMoreQuotes);
-        setProcessedChunks(updatedChunks); // Update the processedChunks state
+        setProcessedChunks(updatedChunks);
       } else if (author) {
         // Fetch quotes by a specific author
         const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
           lastDoc,
           selectedSort,
           author,
-          null // No tag filtering
+          null
         );
         fetchedQuotes = newQuotes;
         setLastDoc(lastVisibleDoc);
         setHasMore(hasMoreQuotes);
       } else if (tag) {
-        // Fetch quotes by a specific tag
+        // Fetch quotes by tag
         const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
           lastDoc,
           selectedSort,
-          null, // No author filtering
+          null,
           tag
         );
         fetchedQuotes = newQuotes;
         setLastDoc(lastVisibleDoc);
         setHasMore(hasMoreQuotes);
       } else {
-        // Fetch general quotes (no author or tag filtering)
+        // General quotes
         const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
           lastDoc,
           selectedSort
@@ -81,14 +81,21 @@ export default Quotes = ({
         setHasMore(hasMoreQuotes);
       }
 
-      // Ensure no duplicate quotes are added
-      setQuotes((prevQuotes) => {
-        const existingIds = new Set(prevQuotes.map((quote) => quote.id));
-        const filteredNewQuotes = fetchedQuotes.filter(
-          (quote) => !existingIds.has(quote.id)
-        );
-        return [...prevQuotes, ...filteredNewQuotes];
-      });
+      // Set quotes - ONLY ONCE per fetch cycle
+      if (lastDoc === null) {
+        // First page: replace quotes
+        setQuotes(fetchedQuotes);
+        // Cache can be re-enabled later
+      } else {
+        // Pagination: append quotes, deduplicated
+        setQuotes((prevQuotes) => {
+          const existingIds = new Set(prevQuotes.map((quote) => quote.id));
+          const filteredNewQuotes = fetchedQuotes.filter(
+            (quote) => !existingIds.has(quote.id)
+          );
+          return [...prevQuotes, ...filteredNewQuotes];
+        });
+      }
     } catch (error) {
       console.error('Error fetching quotes:', error);
     } finally {
@@ -97,12 +104,23 @@ export default Quotes = ({
   };
 
   useEffect(() => {
-    // Reset and fetch quotes when sort order, author, tag, or followedAuthors changes
+    // Reset state when filter/sort changes
     setQuotes([]);
     setLastDoc(null);
     setHasMore(true);
-    setProcessedChunks(0); // Reset processedChunks when filters change
-    loadQuotes();
+    setProcessedChunks(0);
+
+    // Important: set loading to true BEFORE fetching
+    setLoading(true);
+
+    // Use a slightly longer timeout to ensure state is updated
+    setTimeout(() => {
+      loadQuotes();
+    }, 50);
+
+    return () => {
+      // cleanup
+    };
   }, [selectedSort, author, tag, followedAuthors]);
 
   const renderFooter = () => {

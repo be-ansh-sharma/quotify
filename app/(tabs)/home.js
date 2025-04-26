@@ -205,6 +205,7 @@ export default function Index() {
         sortOptions={SORT_OPTIONS}
       />
       <Quotes
+        key={selectedSort}
         selectedSort={selectedSort}
         user={user}
         favoriteAuthors={selectedSort === 'favoriteAuthor'}

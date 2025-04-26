@@ -9,11 +9,10 @@ const useUserStore = create(
         uid: null,
         email: null,
         name: null,
-        likes: [], // Initialize as an empty array
         bookmarked: [], // Initialize as an empty array
       },
       isGuest: false,
-      selectedSort: 'mostPopular',
+      selectedSort: 'newest',
       hasCheckedProfileOnce: false, // 👈 New flag
       setSelectedSort: (sort) => set({ selectedSort: sort }),
       setUser: (user) => set({ user }),
@@ -24,7 +23,6 @@ const useUserStore = create(
             uid: null,
             email: null,
             name: null,
-            likes: [],
           },
         }),
       resetUser: () =>
@@ -33,7 +31,6 @@ const useUserStore = create(
             uid: null,
             email: null,
             name: null,
-            likes: [],
           },
           isGuest: false,
         }),
@@ -44,7 +41,6 @@ const useUserStore = create(
             uid: null,
             email: null,
             name: null,
-            likes: [],
           },
         }),
       setHasCheckedProfileOnce: (val) => set({ hasCheckedProfileOnce: val }), // 👈 Setter

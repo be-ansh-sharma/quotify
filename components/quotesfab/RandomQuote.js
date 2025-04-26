@@ -8,39 +8,24 @@ import {
 } from 'react-native';
 import { COLORS } from 'styles/theme';
 import { FontAwesome } from '@expo/vector-icons';
-import { getRandomQuote } from 'utils/firebase/firestore'; // You'll need to create this function
+import { getRandomQuote } from 'utils/firebase/firestore';
 
 export default function RandomQuote() {
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchNewQuote = async () => {
     setLoading(true);
+    setError(null);
+
     try {
-      // For now, let's simulate the API call
-      // In reality, you would implement getRandomQuote() in your firestore.js
-      setTimeout(() => {
-        // Simulate different quotes
-        const quotes = [
-          {
-            text: 'The only way to do great work is to love what you do.',
-            author: 'Steve Jobs',
-          },
-          {
-            text: "Life is what happens when you're busy making other plans.",
-            author: 'John Lennon',
-          },
-          {
-            text: 'The future belongs to those who believe in the beauty of their dreams.',
-            author: 'Eleanor Roosevelt',
-          },
-        ];
-        const randomIndex = Math.floor(Math.random() * quotes.length);
-        setQuote(quotes[randomIndex]);
-        setLoading(false);
-      }, 1000);
+      const randomQuote = await getRandomQuote();
+      setQuote(randomQuote);
     } catch (error) {
       console.error('Error fetching random quote:', error);
+      setError('Could not load a random quote. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -53,6 +38,18 @@ export default function RandomQuote() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size='large' color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={fetchNewQuote}>
+          <FontAwesome name='refresh' size={18} color={COLORS.primary} />
+          <Text style={styles.refreshText}>Try Again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -90,6 +87,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: COLORS.placeholder,
     marginBottom: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: COLORS.error,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   loadingContainer: {
     padding: 24,

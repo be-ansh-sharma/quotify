@@ -269,14 +269,14 @@ export const fetchQuotes = async (
         ? query(
             quotesRef,
             where('visibility', 'in', ['public', null]),
-            orderBy('likes', 'desc'),
+            orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
             startAfter(lastDoc),
             limit(20)
           )
         : query(
             quotesRef,
             where('visibility', 'in', ['public', null]),
-            orderBy('likes', 'desc'),
+            orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
             limit(20)
           );
       break;
@@ -393,42 +393,6 @@ export const fetchUserProfile = async (email) => {
     }
   } catch (e) {
     console.log(e);
-  }
-};
-
-/**
- * Add a quote to the user's likes in Firestore.
- * @param {string} userId - The user's UID.
- * @param {string} quoteId - The quote's UID.
- */
-export const likeQuote = async (userId, quoteId) => {
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    await updateDoc(userDocRef, {
-      likes: arrayUnion(quoteId), // Add the quote UID to the likes array
-    });
-    console.log(`Quote ${quoteId} liked by user ${userId}`);
-  } catch (error) {
-    console.error('Error liking quote:', error);
-    throw error;
-  }
-};
-
-/**
- * Remove a quote from the user's likes in Firestore.
- * @param {string} userId - The user's UID.
- * @param {string} quoteId - The quote's UID.
- */
-export const unlikeQuote = async (userId, quoteId) => {
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    await updateDoc(userDocRef, {
-      likes: arrayRemove(quoteId), // Remove the quote UID from the likes array
-    });
-    console.log(`Quote ${quoteId} unliked by user ${userId}`);
-  } catch (error) {
-    console.error('Error unliking quote:', error);
-    throw error;
   }
 };
 
@@ -1316,13 +1280,43 @@ export const updateQuoteReactions = async (
   const userRef = doc(db, 'users', userId);
 
   try {
-    // Update the reactions on the quote
-    await updateDoc(quoteRef, { reactions });
+    // Get the current user data to check if they already reacted
+    const userSnap = await getDoc(userRef);
+    let isNewReaction = true;
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      // Check if user already has this reaction to this quote
+      if (
+        userData.reactions &&
+        userData.reactions[reactionType] &&
+        Array.isArray(userData.reactions[reactionType]) &&
+        userData.reactions[reactionType].includes(quoteId)
+      ) {
+        isNewReaction = false;
+      }
+    }
+
+    // Convert reaction counts to numbers before saving
+    const numericReactions = {};
+    for (const [key, value] of Object.entries(reactions)) {
+      numericReactions[key] = Number(value);
+    }
+
+    // Update quote with reactions and totalReactions counter
+    if (isNewReaction) {
+      await updateDoc(quoteRef, {
+        reactions: numericReactions, // Use the converted numeric values
+        totalReactions: increment(1), // Increment total reactions
+      });
+    } else {
+      // Just update reactions if user already reacted
+      await updateDoc(quoteRef, { reactions: numericReactions });
+    }
 
     // Update the user's profile with the reaction
     await updateDoc(userRef, {
-      [`reactions.${reactionType}`]: arrayUnion(quoteId), // Add the quote to the specific reaction type
-      likes: arrayUnion(quoteId), // Ensure the quote is added to the likes array
+      [`reactions.${reactionType}`]: arrayUnion(quoteId), // Add quote to user's reaction list
     });
 
     console.log(`Reactions updated for quote ${quoteId} and user ${userId}`);
@@ -1337,20 +1331,59 @@ export const removeUserReaction = async (quoteId, userId, reactionType) => {
   const userRef = doc(db, 'users', userId);
 
   try {
-    // Remove the reaction from the quote
-    await updateDoc(quoteRef, {
-      [`reactions.${reactionType}`]: arrayRemove(quoteId),
-    });
+    // Check if user actually had this reaction by checking user document
+    const userSnap = await getDoc(userRef);
+    let hadReaction = false;
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      if (
+        userData.reactions &&
+        userData.reactions[reactionType] &&
+        Array.isArray(userData.reactions[reactionType]) &&
+        userData.reactions[reactionType].includes(quoteId)
+      ) {
+        hadReaction = true;
+      }
+    }
+
+    // Update the quote by decrementing counts
+    if (hadReaction) {
+      // Get current reaction counts
+      const quoteSnap = await getDoc(quoteRef);
+      if (quoteSnap.exists()) {
+        const quoteData = quoteSnap.data();
+        const reactions = { ...quoteData.reactions };
+        const currentTotal = quoteData.totalReactions || 0;
+
+        // Decrement the specific reaction count
+        if (reactions[reactionType] && reactions[reactionType] > 0) {
+          reactions[reactionType]--;
+        }
+
+        // Prevent totalReactions from going negative
+        if (currentTotal > 0) {
+          // Use decrement for atomic operation
+          await updateDoc(quoteRef, {
+            reactions,
+            totalReactions: increment(-1), // Decrement total reactions
+          });
+        } else {
+          // Set explicitly to 0 if it would become negative
+          await updateDoc(quoteRef, {
+            reactions,
+            totalReactions: 0,
+          });
+        }
+      }
+    }
 
     // Remove the reaction from the user's profile
     await updateDoc(userRef, {
-      [`reactions.${reactionType}`]: arrayRemove(quoteId), // Remove the quote from the specific reaction type
-      likes: arrayRemove(quoteId), // Remove the quote from the likes array
+      [`reactions.${reactionType}`]: arrayRemove(quoteId), // Remove from user's reactions
     });
 
-    console.log(
-      `Reaction "${reactionType}" removed for quote ${quoteId} by user ${userId}`
-    );
+    console.log(`Reaction removed for quote ${quoteId} by user ${userId}`);
   } catch (error) {
     console.error('Error removing user reaction:', error);
     throw error;
@@ -1404,3 +1437,71 @@ export const getQuoteOfTheDay = async () => {
   return quoteSnap.data();
 };
 
+/**
+ * Fetches the quote with the highest total reactions count from Firestore.
+ * @returns {Promise<Object>} The top quote document
+ */
+export const getTopQuote = async () => {
+  try {
+    const quotesRef = collection(db, 'quotes');
+    const topQuoteQuery = query(
+      quotesRef,
+      where('visibility', 'in', ['public', null]),
+      orderBy('totalReactions', 'desc'),
+      limit(1)
+    );
+
+    const snapshot = await getDocs(topQuoteQuery);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    // Get the first (and only) document
+    const topQuoteDoc = snapshot.docs[0];
+
+    // Return the quote data with id
+    return {
+      id: topQuoteDoc.id,
+      ...topQuoteDoc.data(),
+    };
+  } catch (error) {
+    console.error('Error fetching top quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches a random quote from Firestore.
+ * @returns {Promise<Object>} A random quote document
+ */
+export const getRandomQuote = async () => {
+  try {
+    const quotesRef = collection(db, 'quotes');
+
+    // Query for public quotes
+    const publicQuotesQuery = query(
+      quotesRef,
+      where('visibility', 'in', ['public', null]),
+      limit(100) // Limit to 100 quotes for performance
+    );
+
+    const snapshot = await getDocs(publicQuotesQuery);
+
+    if (snapshot.empty) {
+      throw new Error('No quotes found');
+    }
+
+    // Select a random quote from the result set
+    const randomIndex = Math.floor(Math.random() * snapshot.size);
+    const quoteDoc = snapshot.docs[randomIndex];
+
+    return {
+      id: quoteDoc.id,
+      ...quoteDoc.data(),
+    };
+  } catch (error) {
+    console.error('Error fetching random quote:', error);
+    throw error;
+  }
+};
