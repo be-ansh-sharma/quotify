@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+import { useTheme } from 'react-native-paper'; // Import useTheme
 import { FontAwesome } from '@expo/vector-icons';
 import Tile from 'components/quotes/tile/Tile';
 import {
@@ -30,6 +30,7 @@ export default function ListQuotes() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  const theme = useTheme(); // Access the current theme
 
   // Initial fetch
   useEffect(() => {
@@ -187,34 +188,34 @@ export default function ListQuotes() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size='large' color={COLORS.primary} />
+        <ActivityIndicator size='large' color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header Section */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <TouchableOpacity
           onPress={() => router.push('/profile/bookmarked')}
           style={styles.backButton}
         >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
+          <FontAwesome name='arrow-left' size={20} color={theme.colors.icon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{listName}</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{listName}</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
             onPress={handleShareList}
             style={styles.shareButton}
           >
-            <FontAwesome name='share-alt' size={20} color={COLORS.icon} />
+            <FontAwesome name='share-alt' size={20} color={theme.colors.icon} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDeleteList}
             style={styles.deleteListButton}
           >
-            <FontAwesome name='trash' size={20} color={COLORS.icon} />
+            <FontAwesome name='trash' size={20} color={theme.colors.icon} />
           </TouchableOpacity>
         </View>
       </View>
@@ -222,7 +223,7 @@ export default function ListQuotes() {
       {/* Quotes in the List */}
       {quoteDetails.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyText, { color: theme.colors.placeholder }]}>
             This list is empty. Add quotes to it!
           </Text>
         </View>
@@ -231,7 +232,7 @@ export default function ListQuotes() {
           data={quoteDetails}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.tileContainer}>
+            <View style={[styles.tileContainer, { backgroundColor: theme.colors.surface }]}>
               <View style={{ flex: 1 }}>
                 <Tile quote={item} user={user} />
               </View>
@@ -239,7 +240,7 @@ export default function ListQuotes() {
                 style={styles.removeButton}
                 onPress={() => handleRemoveQuote(item.id)}
               >
-                <FontAwesome name='trash' size={20} color={COLORS.error} />
+                <FontAwesome name='trash' size={20} color={theme.colors.error} />
               </TouchableOpacity>
             </View>
           )}
@@ -249,7 +250,7 @@ export default function ListQuotes() {
           ListFooterComponent={
             loadingMore && (
               <View style={styles.loadingMoreContainer}>
-                <ActivityIndicator size='small' color={COLORS.primary} />
+                <ActivityIndicator size='small' color={theme.colors.primary} />
               </View>
             )
           }
@@ -262,14 +263,12 @@ export default function ListQuotes() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: COLORS.surface,
   },
   backButton: {
     marginRight: 12,
@@ -277,7 +276,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -301,11 +299,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.background,
   },
   emptyText: {
     fontSize: 18,
-    color: COLORS.placeholder,
     textAlign: 'center',
   },
   listContent: {
@@ -316,7 +312,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: COLORS.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

@@ -2,13 +2,13 @@ import 'utils/firebase/firebaseconfig';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Import GestureHandlerRootView
 import { PaperProvider } from 'react-native-paper';
 import { Slot } from 'expo-router';
-import customDarkTheme, { COLORS } from 'styles/theme';
+import { customDarkTheme, customLightTheme, COLORS } from 'styles/theme'; // Import themes
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { SnackbarProvider } from 'components/snackbar/SnackbarProvider'; // adjust path as needed
 import useUserStore from 'stores/userStore';
 import { useEffect } from 'react';
 import { setupTokenRefreshListener } from 'utils/services/notifications/notifications'; // Import the token refresh listener
-import { StatusBar } from 'react-native'; // Import StatusBar
+import { StatusBar, useColorScheme } from 'react-native'; // Import StatusBar and useColorScheme
 import * as Notifications from 'expo-notifications';
 
 export default function Layout() {
@@ -17,6 +17,8 @@ export default function Layout() {
   );
   const user = useUserStore((state) => state.user);
   const isGuest = useUserStore((state) => state.isGuest);
+  const colorScheme = useColorScheme(); // Detect system theme
+  const theme = colorScheme === 'dark' ? customDarkTheme : customLightTheme; // Select theme
 
   useEffect(() => {
     // Reset flag on cold start
@@ -86,10 +88,12 @@ export default function Layout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* Set the status bar color */}
-      <StatusBar backgroundColor={COLORS.background} barStyle='light-content' />
-      <PaperProvider theme={customDarkTheme}>
-        <ThemeProvider value={DarkTheme}>
+      <StatusBar
+        backgroundColor={theme.colors.background} // Use dynamic background color
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+      />
+      <PaperProvider theme={theme}>
+        <ThemeProvider value={theme}>
           <SnackbarProvider>
             <Slot />
           </SnackbarProvider>
