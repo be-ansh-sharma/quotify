@@ -202,3 +202,244 @@ export const navigateToAuthor = (author, currentPath, router) => {
     : router.push(targetPath);
 };
 
+/**
+ * Determines the most appropriate mood for a quote based on content analysis
+ * @param {Object} quote - The quote object to analyze
+ * @return {string} The determined mood
+ */
+export const determineMood = (quote) => {
+  // Pre-process text and tags once (lowercase everything upfront)
+  const text = quote.text?.toLowerCase() || '';
+  const tags = Array.isArray(quote.tags)
+    ? quote.tags.map((tag) => tag.toLowerCase())
+    : [];
+  const author = quote.author?.toLowerCase() || '';
+
+  // Mood map with keywords, related forms, and tags
+  const moodMap = {
+    motivational: {
+      keywords: [
+        'achiev',
+        'goal',
+        'success',
+        'action',
+        'overcom',
+        'challeng',
+        'strive',
+        'motivat',
+      ],
+      tags: ['motivational', 'motivation', 'success', 'goals', 'achievement'],
+    },
+    inspirational: {
+      keywords: [
+        'inspir',
+        'dream',
+        'imagin',
+        'believ',
+        'vision',
+        'path',
+        'journey',
+        'possib',
+      ],
+      tags: ['inspiration', 'inspire', 'dreams', 'believe'],
+    },
+    wise: {
+      keywords: [
+        'wisdom',
+        'knowledge',
+        'understand',
+        'learn',
+        'truth',
+        'insight',
+        'teach',
+      ],
+      tags: ['wisdom', 'knowledge', 'truth', 'philosophy', 'learning'],
+    },
+    peaceful: {
+      keywords: [
+        'peace',
+        'calm',
+        'tranquil',
+        'serene',
+        'harmon',
+        'balanc',
+        'quiet',
+        'still',
+      ],
+      tags: [
+        'peace',
+        'calm',
+        'mindfulness',
+        'tranquility',
+        'balance',
+        'meditation',
+      ],
+    },
+    happy: {
+      keywords: [
+        'happ',
+        'joy',
+        'smile',
+        'laugh',
+        'delight',
+        'cheer',
+        'enjoy',
+        'content',
+      ],
+      tags: ['happiness', 'joy', 'positivity', 'optimism'],
+    },
+    loving: {
+      keywords: [
+        'love',
+        'heart',
+        'compassion',
+        'kind',
+        'care',
+        'affect',
+        'empath',
+      ],
+      tags: ['love', 'kindness', 'compassion', 'relationships', 'heart'],
+    },
+    ambitious: {
+      keywords: [
+        'ambit',
+        'destin',
+        'great',
+        'excel',
+        'potent',
+        'futur',
+        'creat',
+      ],
+      tags: [
+        'ambition',
+        'success',
+        'goals',
+        'future',
+        'achievement',
+        'creation',
+      ],
+    },
+    resilient: {
+      keywords: [
+        'strength',
+        'courag',
+        'brave',
+        'endur',
+        'persever',
+        'overcom',
+        'resilien',
+      ],
+      tags: ['resilience', 'strength', 'courage', 'perseverance', 'endurance'],
+    },
+    grateful: {
+      keywords: ['gratitude', 'thank', 'appreciat', 'bless', 'gift', 'grace'],
+      tags: ['gratitude', 'thankfulness', 'appreciation', 'blessings'],
+    },
+    reflective: {
+      keywords: [
+        'reflect',
+        'think',
+        'contempl',
+        'ponder',
+        'consider',
+        'wonder',
+      ],
+      tags: [
+        'reflection',
+        'thinking',
+        'contemplation',
+        'introspection',
+        'philosophy',
+      ],
+    },
+  };
+
+  // Score each mood
+  const moodScores = {};
+  Object.keys(moodMap).forEach((mood) => {
+    moodScores[mood] = 0;
+  });
+
+  // Score based on tags (strong signal)
+  tags.forEach((tag) => {
+    Object.entries(moodMap).forEach(([mood, criteria]) => {
+      if (criteria.tags.includes(tag)) {
+        moodScores[mood] += 2;
+      }
+    });
+  });
+
+  // Score based on keywords using partial matches
+  Object.entries(moodMap).forEach(([mood, criteria]) => {
+    criteria.keywords.forEach((keyword) => {
+      // Partial matching using RegExp
+      const regex = new RegExp('\\b' + keyword, 'i');
+      if (regex.test(text)) {
+        moodScores[mood] += 1;
+      }
+    });
+  });
+
+  // Author-based adjustments
+  const wiseAuthors = [
+    'buddha',
+    'dalai lama',
+    'confucius',
+    'socrates',
+    'aristotle',
+    'plato',
+  ];
+  const peacefulAuthors = ['gandhi', 'mother teresa', 'thich nhat hanh'];
+  const motivationalAuthors = [
+    'tony robbins',
+    'zig ziglar',
+    'les brown',
+    'jim rohn',
+  ];
+
+  if (wiseAuthors.some((a) => author.includes(a))) {
+    moodScores.wise += 1;
+  }
+  if (peacefulAuthors.some((a) => author.includes(a))) {
+    moodScores.peaceful += 1;
+  }
+  if (motivationalAuthors.some((a) => author.includes(a))) {
+    moodScores.motivational += 1;
+  }
+
+  // Specific phrases (with partial matching)
+  if (/follow your (heart|dream)/.test(text)) {
+    moodScores.inspirational += 1;
+  }
+  if (/never give up|keep going/.test(text)) {
+    moodScores.resilient += 1;
+  }
+  if (/be grateful|count your blessing/.test(text)) {
+    moodScores.grateful += 1;
+  }
+
+  // Find highest scoring mood
+  let highestScore = 0;
+  let resultMood = 'inspirational'; // Default
+
+  Object.entries(moodScores).forEach(([mood, score]) => {
+    if (score > highestScore) {
+      highestScore = score;
+      resultMood = mood;
+    }
+  });
+
+  // If no strong signal, apply default logic
+  if (highestScore <= 0.5) {
+    if (text.length > 100) {
+      return 'reflective'; // Longer quotes tend to be reflective
+    }
+    if (text.includes('!')) {
+      return 'motivational'; // Exclamation points suggest motivation
+    }
+    return 'inspirational'; // Default
+  }
+
+  return resultMood;
+};
+

@@ -5,9 +5,11 @@ import {
   fetchUserProfile,
   uploadQuotes,
   storeFCMToken,
-  fetchGuestFCMToken, // Make sure this is imported
+  fetchGuestFCMToken,
 } from 'utils/firebase/firestore';
 import Sort from 'components/sort/Sort';
+// Add this import
+import MoodSelector from 'components/mood/selector/MoodSelector';
 import useUserStore from 'stores/userStore';
 import Quotes from 'components/quotes/Quotes';
 import { router } from 'expo-router';
@@ -21,6 +23,8 @@ const CURRENT_VERSION = '4.2';
 
 export default function Index() {
   const storedSort = useUserStore((state) => state.selectedSort);
+  // Add this to get mood from userStore if you want to persist it
+  const storedMood = useUserStore((state) => state.selectedMood || 'all');
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
   const isGuest = useUserStore((state) => state.isGuest);
@@ -32,11 +36,20 @@ export default function Index() {
   );
 
   const [selectedSort, setSelectedSort] = useState(storedSort);
+  // Add state for selected mood
+  const [selectedMood, setSelectedMood] = useState(storedMood);
   const appState = useRef(AppState.currentState);
 
   const sortHandler = (sort) => {
     setSelectedSort(sort);
     useUserStore.setState({ selectedSort: sort });
+  };
+
+  // Add mood handler
+  const moodHandler = (mood) => {
+    setSelectedMood(mood);
+    // Store in userStore if you want to persist it
+    useUserStore.setState({ selectedMood: mood });
   };
 
   const fetchAndStoreFCMToken = async () => {
@@ -204,9 +217,12 @@ export default function Index() {
         sortHandler={sortHandler}
         sortOptions={SORT_OPTIONS}
       />
+      {/* Add MoodSelector component here */}
+      <MoodSelector selectedMood={selectedMood} onSelectMood={moodHandler} />
       <Quotes
-        key={selectedSort}
+        key={`${selectedSort}-${selectedMood}`} // Add mood to key to force refresh when it changes
         selectedSort={selectedSort}
+        selectedMood={selectedMood} // Pass selected mood to Quotes component
         user={user}
         favoriteAuthors={selectedSort === 'favoriteAuthor'}
       />

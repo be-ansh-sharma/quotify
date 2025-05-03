@@ -23,7 +23,7 @@ import {
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 import * as Localization from 'expo-localization';
-import { calculateTimeSlots, deepEqual } from 'utils/helpers';
+import { calculateTimeSlots, deepEqual, determineMood } from 'utils/helpers';
 
 export const uploadQuotes = async () => {
   const quotesRef = collection(db, 'quotes');
@@ -225,121 +225,136 @@ export const fetchQuotes = async (
   lastDoc = null,
   selectedSort = 'newest',
   author = null,
-  tag = null
+  tag = null,
+  mood = null // New parameter for mood filtering
 ) => {
-  const quotesRef = collection(db, 'quotes');
-  let quotesQuery;
-
-  // Determine the sorting logic based on selectedSort
-  switch (selectedSort) {
-    case 'newest':
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
-            orderBy('createdAt', 'desc'),
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
-            orderBy('createdAt', 'desc'),
-            limit(20)
-          );
-      break;
-    case 'oldest':
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            orderBy('createdAt', 'asc'),
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            orderBy('createdAt', 'asc'),
-            limit(20)
-          );
-      break;
-    case 'mostPopular':
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
-            limit(20)
-          );
-      break;
-    case 'a_z_author':
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', '!=', 'private'),
-            orderBy('author', 'asc'),
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', '!=', 'private'),
-            orderBy('author', 'asc'),
-            limit(20)
-          );
-      break;
-    case 'z_a_author':
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', '!=', 'private'),
-            orderBy('author', 'desc'),
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', '!=', 'private'),
-            orderBy('author', 'desc'),
-            limit(20)
-          );
-      break;
-    default:
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            orderBy('likes', 'desc'),
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            orderBy('likes', 'desc'),
-            limit(20)
-          );
-  }
-
-  // Add a filter for the author if provided
-  if (author) {
-    quotesQuery = query(quotesQuery, where('author', '==', author));
-  }
-
-  // Add a filter for the tag if provided
-  if (tag) {
-    quotesQuery = query(quotesQuery, where('tags', 'array-contains', tag));
-  }
-
   try {
+    console.log('Fetching quotes with parameters:');
+    const quotesRef = collection(db, 'quotes');
+    let quotesQuery;
+
+    // Determine the sorting logic based on selectedSort
+    switch (selectedSort) {
+      case 'newest':
+        quotesQuery = lastDoc
+          ? query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
+              orderBy('createdAt', 'desc'),
+              startAfter(lastDoc),
+              limit(20)
+            )
+          : query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
+              orderBy('createdAt', 'desc'),
+              limit(20)
+            );
+        break;
+      case 'oldest':
+        quotesQuery = lastDoc
+          ? query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]),
+              orderBy('createdAt', 'asc'),
+              startAfter(lastDoc),
+              limit(20)
+            )
+          : query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]),
+              orderBy('createdAt', 'asc'),
+              limit(20)
+            );
+        break;
+      case 'mostPopular':
+        quotesQuery = lastDoc
+          ? query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]),
+              orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
+              startAfter(lastDoc),
+              limit(20)
+            )
+          : query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]),
+              orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
+              limit(20)
+            );
+        break;
+      case 'a_z_author':
+        quotesQuery = lastDoc
+          ? query(
+              quotesRef,
+              where('visibility', '!=', 'private'),
+              orderBy('author', 'asc'),
+              startAfter(lastDoc),
+              limit(20)
+            )
+          : query(
+              quotesRef,
+              where('visibility', '!=', 'private'),
+              orderBy('author', 'asc'),
+              limit(20)
+            );
+        break;
+      case 'z_a_author':
+        quotesQuery = lastDoc
+          ? query(
+              quotesRef,
+              where('visibility', '!=', 'private'),
+              orderBy('author', 'desc'),
+              startAfter(lastDoc),
+              limit(20)
+            )
+          : query(
+              quotesRef,
+              where('visibility', '!=', 'private'),
+              orderBy('author', 'desc'),
+              limit(20)
+            );
+        break;
+      default:
+        quotesQuery = lastDoc
+          ? query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]),
+              orderBy('likes', 'desc'),
+              startAfter(lastDoc),
+              limit(20)
+            )
+          : query(
+              quotesRef,
+              where('visibility', 'in', ['public', null]),
+              orderBy('likes', 'desc'),
+              limit(20)
+            );
+    }
+
+    // Add filters in this order
+    // First visibility
+    quotesQuery = query(
+      quotesQuery,
+      where('visibility', 'in', ['public', null])
+    );
+
+    // Then mood if specified
+    if (mood) {
+      quotesQuery = query(quotesQuery, where('mood', '==', mood));
+    }
+
+    // Then author if specified
+    if (author) {
+      quotesQuery = query(quotesQuery, where('author', '==', author));
+    }
+
+    // Then tag if specified
+    if (tag) {
+      quotesQuery = query(quotesQuery, where('tags', 'array-contains', tag));
+    }
+
+    console.log('Quotes query:', quotesQuery);
     const snapshot = await getDocs(quotesQuery);
 
     if (!snapshot.empty) {
@@ -1505,3 +1520,217 @@ export const getRandomQuote = async () => {
     throw error;
   }
 };
+
+/**
+ * Updates all quotes in Firebase with the mood attribute
+ * @returns {Promise<{updated: number, skipped: number, errors: number}>} Stats about the operation
+ */
+export const addMoodToAllQuotes = async () => {
+  try {
+    console.log('Starting mood attribute update for all quotes...');
+    const quotesRef = collection(db, 'quotes');
+    const pageSize = 200; // Process quotes in batches
+    let lastDoc = null;
+    let totalUpdated = 0;
+    let totalSkipped = 0;
+    let totalErrors = 0;
+
+    // Process quotes in batches
+    while (true) {
+      // Create query for the next batch
+      const quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            orderBy('createdAt'),
+            startAfter(lastDoc),
+            limit(pageSize)
+          )
+        : query(quotesRef, orderBy('createdAt'), limit(pageSize));
+
+      const snapshot = await getDocs(quotesQuery);
+      if (snapshot.empty) {
+        console.log('No more quotes to process.');
+        break;
+      }
+
+      console.log(`Processing batch of ${snapshot.size} quotes...`);
+
+      // Create a batch for updates (max 500 operations per batch)
+      let batch = writeBatch(db);
+      let batchItemCount = 0;
+      let currentBatch = 1;
+
+      // Process each quote in the batch
+      for (const quoteDoc of snapshot.docs) {
+        try {
+          const quoteData = quoteDoc.data();
+
+          // Skip quotes that already have a mood
+          if (quoteData.mood) {
+            totalSkipped++;
+            continue;
+          }
+
+          // Determine mood for the quote
+          const mood = determineMood(quoteData);
+
+          // Add to batch update
+          const quoteRef = doc(db, 'quotes', quoteDoc.id);
+          batch.update(quoteRef, { mood });
+
+          batchItemCount++;
+
+          // Commit batch when it reaches limit
+          if (batchItemCount === 500) {
+            await batch.commit();
+            totalUpdated += batchItemCount;
+            console.log(
+              `Committed batch ${currentBatch}: ${batchItemCount} quotes updated`
+            );
+
+            // Reset batch
+            batch = writeBatch(db);
+            batchItemCount = 0;
+            currentBatch++;
+          }
+        } catch (error) {
+          console.error(`Error processing quote ${quoteDoc.id}:`, error);
+          totalErrors++;
+        }
+      }
+
+      // Commit any remaining operations
+      if (batchItemCount > 0) {
+        await batch.commit();
+        totalUpdated += batchItemCount;
+        console.log(
+          `Committed final batch ${currentBatch}: ${batchItemCount} quotes updated`
+        );
+      }
+
+      // Get the last document for pagination
+      lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+      console.log(
+        `Progress: ${totalUpdated} updated, ${totalSkipped} already had mood, ${totalErrors} errors`
+      );
+
+      // Break if we've reached the end
+      if (snapshot.size < pageSize) {
+        break;
+      }
+    }
+
+    console.log(
+      `✅ Mood update complete: ${totalUpdated} quotes updated, ${totalSkipped} skipped, ${totalErrors} errors`
+    );
+    return {
+      updated: totalUpdated,
+      skipped: totalSkipped,
+      errors: totalErrors,
+    };
+  } catch (error) {
+    console.error('Error updating quote moods:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches quotes filtered by mood
+ * @param {string} mood The mood to filter by, or 'all' for unfiltered
+ * @param {DocumentSnapshot} lastDoc Last document for pagination
+ * @param {string} selectedSort Sort option for the quotes
+ * @returns {Promise<{newQuotes: Array, lastVisibleDoc: DocumentSnapshot, hasMoreQuotes: boolean}>}
+ */
+export const fetchQuotesByMood = async (
+  mood = 'all',
+  lastDoc = null,
+  selectedSort = 'newest'
+) => {
+  try {
+    const quotesRef = collection(db, 'quotes');
+    let quotesQuery;
+
+    // Determine base query with sort order
+    switch (selectedSort) {
+      case 'newest':
+        quotesQuery = orderBy('createdAt', 'desc');
+        break;
+      case 'oldest':
+        quotesQuery = orderBy('createdAt', 'asc');
+        break;
+      case 'mostPopular':
+        quotesQuery = orderBy('totalReactions', 'desc');
+        break;
+      case 'a_z_author':
+        quotesQuery = orderBy('author', 'asc');
+        break;
+      case 'z_a_author':
+        quotesQuery = orderBy('author', 'desc');
+        break;
+      default:
+        quotesQuery = orderBy('likes', 'desc');
+    }
+
+    // If 'all' mood is selected, don't filter by mood
+    if (mood === 'all') {
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]),
+            quotesQuery,
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]),
+            quotesQuery,
+            limit(20)
+          );
+    } else {
+      // Filter by the selected mood
+      quotesQuery = lastDoc
+        ? query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]),
+            where('mood', '==', mood),
+            quotesQuery,
+            startAfter(lastDoc),
+            limit(20)
+          )
+        : query(
+            quotesRef,
+            where('visibility', 'in', ['public', null]),
+            where('mood', '==', mood),
+            quotesQuery,
+            limit(20)
+          );
+    }
+
+    const snapshot = await getDocs(quotesQuery);
+
+    if (!snapshot.empty) {
+      const newQuotes = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+      return {
+        newQuotes,
+        lastVisibleDoc,
+        hasMoreQuotes: newQuotes.length === 20,
+      };
+    } else {
+      return {
+        newQuotes: [],
+        lastVisibleDoc: null,
+        hasMoreQuotes: false,
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching quotes by mood:', error);
+    throw error;
+  }
+};
+
