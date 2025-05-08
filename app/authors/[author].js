@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router'; // Import router for navigation
+import { View, StyleSheet, Alert } from 'react-native';
+import { useLocalSearchParams } from 'expo-router'; // Import router for navigation
 import { COLORS } from 'styles/theme';
-import Quotes from 'components/quotes/Quotes'; // Import the refactored Quotes component
+import Quotes from 'components/quotes/Quotes';
 import Sort from 'components/sort/Sort';
 import { AUTHOR_SORT_OPTIONS } from 'config/sortConfig';
-import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for icons
+import Header from 'components/header/Header'; // Import the reusable Header component
 import useUserStore from 'stores/userStore';
 import { followAuthor, unfollowAuthor } from 'utils/firebase/firestore'; // Import Firestore functions
 
@@ -52,23 +52,14 @@ export default function AuthorScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Banner Section */}
-      <View style={styles.banner}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.bannerText}>{decodedAuthor}</Text>
-        <TouchableOpacity onPress={toggleFollow} style={styles.followButton}>
-          <FontAwesome
-            name={isFollowing ? 'heart' : 'heart-o'} // Filled heart if following, outline if not
-            size={20}
-            color={isFollowing ? COLORS.liked : COLORS.onSurface}
-          />
-        </TouchableOpacity>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header
+        title={decodedAuthor}
+        backRoute='/authors'
+        rightIcon={isFollowing ? 'heart' : 'heart-outline'}
+        rightAction={toggleFollow}
+        rightIconColor={isFollowing ? COLORS.liked : COLORS.onSurface}
+      />
 
       {/* Sort Options */}
       <Sort
@@ -87,25 +78,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between', // Space between back button, title, and follow button
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  bannerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
-    flex: 1, // Take up remaining space
-  },
-  followButton: {
-    marginLeft: 12,
   },
 });
 

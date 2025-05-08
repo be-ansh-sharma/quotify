@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  Modal,
   StyleSheet,
   TouchableOpacity,
   Text,
   Animated,
+  Dimensions,
   ScrollView,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme';
+import { Modal, Portal, Text as PaperText } from 'react-native-paper';
 import QuoteOfTheDay from './QuoteOfTheDay';
 import TopQuote from './TopQuote';
 import RandomQuote from './RandomQuote';
@@ -20,76 +21,63 @@ export default function QuotesFAB() {
   const [activeQuote, setActiveQuote] = useState(null);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        if (isOpen) setIsOpen(false);
-      }, 8000); // Auto close after 8 seconds if no interaction
+  const openQuoteModal = (quoteType) => {
+    animation.setValue(0);
+    setIsOpen(false);
+    setActiveQuote(quoteType);
+    requestAnimationFrame(() => {
+      setShowModal(true);
+    });
+  };
 
-      return () => clearTimeout(timer);
+  useEffect(() => {
+    let timerId;
+    if (isOpen) {
+      timerId = setTimeout(() => {
+        if (isOpen) {
+          animation.setValue(0);
+          setIsOpen(false);
+        }
+      }, 8000);
     }
+    return () => {
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+    };
   }, [isOpen]);
 
   const toggleMenu = () => {
     const toValue = isOpen ? 0 : 1;
-
-    Animated.spring(animation, {
-      toValue,
-      friction: 6,
-      useNativeDriver: true,
-    }).start();
-
+    animation.setValue(toValue);
     setIsOpen(!isOpen);
   };
 
-  const openQuoteModal = (quoteType) => {
-    setActiveQuote(quoteType);
-    setShowModal(true);
-    setIsOpen(false);
-  };
-
-  // Add this function to properly close both the modal and animate the FAB menu closed
   const closeEverything = () => {
-    // Close modal first
+    setActiveQuote(null);
     setShowModal(false);
-
-    // Then animate the FAB menu closed
-    Animated.spring(animation, {
-      toValue: 0,
-      friction: 6,
-      useNativeDriver: true,
-    }).start();
-
-    // Update the isOpen state
+    animation.setValue(0);
     setIsOpen(false);
   };
 
-  // Calculate rotations and translations
   const rotation = animation.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '45deg'],
   });
-
-  // Daily quote animation
   const dailyQuoteTranslateY = animation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -80],
   });
-
-  // Top quote animation
   const topQuoteTranslateY = animation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -140],
   });
-
-  // Random quote animation
   const randomQuoteTranslateY = animation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -200],
   });
 
-  const renderContent = () => {
+  const renderActualContent = () => {
     switch (activeQuote) {
       case 'daily':
         return <QuoteOfTheDay />;
@@ -98,24 +86,20 @@ export default function QuotesFAB() {
       case 'random':
         return <RandomQuote />;
       default:
-        return <QuoteOfTheDay />;
+        return null;
     }
   };
 
   return (
     <>
-      {/* Backdrop for closing the menu when tapped outside */}
       {isOpen && (
         <TouchableOpacity
           style={styles.backdrop}
-          activeOpacity={0}
-          onPress={() => setIsOpen(false)}
+          activeOpacity={1}
+          onPress={toggleMenu}
         />
       )}
-
-      {/* Expandable FAB Menu */}
       <View style={styles.fabContainer}>
-        {/* Random Quote Button */}
         <Animated.View
           style={[
             styles.fabItem,
@@ -126,17 +110,22 @@ export default function QuotesFAB() {
           ]}
         >
           <View style={styles.fabItemLabel}>
-            <Text style={styles.fabItemText}>Random Quote</Text>
+            <Text style={styles.fabItemText}>Random</Text>
           </View>
           <TouchableOpacity
-            style={[styles.fabItemButton, { backgroundColor: '#9C27B0' }]}
+            style={[
+              styles.fabItemButton,
+              { backgroundColor: COLORS.accent2 || '#9C27B0' },
+            ]}
             onPress={() => openQuoteModal('random')}
           >
-            <FontAwesome name='random' size={18} color='#fff' />
+            <FontAwesome
+              name='random'
+              size={18}
+              color={COLORS.onAccent2 || '#fff'}
+            />
           </TouchableOpacity>
         </Animated.View>
-
-        {/* Top Quote Button */}
         <Animated.View
           style={[
             styles.fabItem,
@@ -147,17 +136,22 @@ export default function QuotesFAB() {
           ]}
         >
           <View style={styles.fabItemLabel}>
-            <Text style={styles.fabItemText}>Top Quote</Text>
+            <Text style={styles.fabItemText}>Top</Text>
           </View>
           <TouchableOpacity
-            style={[styles.fabItemButton, { backgroundColor: '#FF9800' }]}
+            style={[
+              styles.fabItemButton,
+              { backgroundColor: COLORS.accent1 || '#FF9800' },
+            ]}
             onPress={() => openQuoteModal('top')}
           >
-            <FontAwesome name='trophy' size={18} color='#fff' />
+            <FontAwesome
+              name='trophy'
+              size={18}
+              color={COLORS.onAccent1 || '#fff'}
+            />
           </TouchableOpacity>
         </Animated.View>
-
-        {/* Daily Quote Button */}
         <Animated.View
           style={[
             styles.fabItem,
@@ -168,62 +162,72 @@ export default function QuotesFAB() {
           ]}
         >
           <View style={styles.fabItemLabel}>
-            <Text style={styles.fabItemText}>Quote of the Day</Text>
+            <Text style={styles.fabItemText}>Daily</Text>
           </View>
           <TouchableOpacity
-            style={[styles.fabItemButton, { backgroundColor: '#4CAF50' }]}
+            style={[
+              styles.fabItemButton,
+              { backgroundColor: COLORS.tertiary || '#4CAF50' },
+            ]}
             onPress={() => openQuoteModal('daily')}
           >
-            <FontAwesome name='calendar' size={18} color='#fff' />
+            <FontAwesome
+              name='calendar'
+              size={18}
+              color={COLORS.onTertiary || '#fff'}
+            />
           </TouchableOpacity>
         </Animated.View>
-
-        {/* Main FAB */}
         <Animated.View style={{ transform: [{ rotate: rotation }] }}>
           <TouchableOpacity
             style={styles.fab}
             onPress={toggleMenu}
             activeOpacity={0.8}
           >
-            <FontAwesome name='quote-left' size={24} color='#fff' />
+            <FontAwesome
+              name='quote-left'
+              size={24}
+              color={COLORS.onPrimary || '#fff'}
+            />
           </TouchableOpacity>
         </Animated.View>
       </View>
 
-      {/* Modal for selected quote */}
-      <Modal
-        visible={showModal}
-        animationType='fade'
-        transparent
-        onRequestClose={closeEverything}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {activeQuote === 'daily'
-                  ? 'Quote of the Day'
-                  : activeQuote === 'top'
-                  ? 'Top Quote'
-                  : 'Random Quote'}
-              </Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={closeEverything}
-              >
-                <FontAwesome name='close' size={20} color='#fff' />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              style={styles.quoteContainer}
-              contentContainerStyle={styles.quoteContentContainer}
-            >
-              {renderContent()}
-            </ScrollView>
+      <Portal>
+        <Modal
+          visible={showModal}
+          onDismiss={closeEverything}
+          contentContainerStyle={styles.paperModalContent}
+        >
+          <View style={styles.modalHeaderPaper}>
+            <PaperText variant='titleMedium' style={styles.modalTitlePaper}>
+              {activeQuote
+                ? activeQuote.charAt(0).toUpperCase() + activeQuote.slice(1)
+                : 'Quote'}
+            </PaperText>
+            <TouchableOpacity onPress={closeEverything} style={{ padding: 8 }}>
+              <FontAwesome
+                name='close'
+                size={22}
+                color={COLORS.onPrimary || '#ffffff'}
+              />
+            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+          {activeQuote ? (
+            <ScrollView
+              style={styles.modalBodyScrollView}
+              contentContainerStyle={styles.modalBodyContentContainer}
+              key={activeQuote}
+            >
+              {renderActualContent()}
+            </ScrollView>
+          ) : (
+            <View style={styles.modalBodyContentContainer}>
+              <PaperText style={{ textAlign: 'center' }}></PaperText>
+            </View>
+          )}
+        </Modal>
+      </Portal>
     </>
   );
 }
@@ -232,34 +236,34 @@ const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 998,
   },
   fabContainer: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
+    bottom: 25,
+    right: 25,
+    alignItems: 'flex-end',
+    zIndex: 999,
   },
   fab: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 28,
+    backgroundColor: COLORS.primary || '#6200ee',
     width: 56,
     height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
+    elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    zIndex: 999,
-    alignSelf: 'flex-end', // Align to the right
   },
   fabItem: {
     position: 'absolute',
-    flexDirection: 'row', // Arrange children horizontally
+    flexDirection: 'row',
     alignItems: 'center',
-    right: 4, // Small offset from right
-    justifyContent: 'flex-end', // Align children to the right
-    width: 200, // Fixed width to contain both label and button
+    right: 4,
+    justifyContent: 'flex-end',
   },
   fabItemButton: {
     width: 48,
@@ -267,110 +271,54 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    marginLeft: 10,
   },
   fabItemLabel: {
-    // Remove marginTop, add marginRight
-    marginRight: 8,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
   },
   fabItemText: {
-    color: '#fff',
-    fontSize: 12,
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '500',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: COLORS.surface,
+  paperModalContent: {
+    backgroundColor: COLORS.surface || 'white',
+    padding: 0,
+    marginHorizontal: 20,
+    marginVertical: '10%',
     borderRadius: 16,
-    width: '85%',
-    maxWidth: 400,
+    alignSelf: 'center',
     maxHeight: '80%',
+    width: '90%',
+    maxWidth: 400,
     overflow: 'hidden',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    elevation: 10,
   },
-  modalHeader: {
+  modalHeaderPaper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: COLORS.primary || '#6200ee',
   },
-  modalTitle: {
-    color: COLORS.text,
+  modalTitlePaper: {
+    color: COLORS.onPrimary || '#ffffff',
+    fontWeight: 'bold',
     fontSize: 18,
-    fontWeight: 'bold',
   },
-  closeButton: {
-    padding: 5,
-  },
-  quoteContainer: {
-    maxHeight: 400,
-  },
-  quoteContentContainer: {
-    padding: 8,
-  },
-  // Tab styles
-  tabsContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border || '#eee',
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 6,
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary,
-  },
-  tabText: {
-    color: COLORS.placeholder,
-    fontSize: 14,
-  },
-  activeTabText: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
-  },
-  // Placeholder styles
-  placeholderContainer: {
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    margin: 8,
-  },
-  placeholderText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  comingSoonText: {
-    fontSize: 16,
-    color: COLORS.placeholder,
-    fontStyle: 'italic',
+  modalBodyScrollView: {},
+  modalBodyContentContainer: {
+    padding: 20,
+    flexGrow: 1,
   },
 });
 

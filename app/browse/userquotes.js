@@ -1,18 +1,16 @@
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  TouchableOpacity,
 } from 'react-native';
 import { COLORS } from 'styles/theme';
 import { fetchUserQuotesPaginated } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile'; // Import the Tile component
 import useUserStore from 'stores/userStore';
-import { FontAwesome } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function UserQuotes() {
   const [userQuotes, setUserQuotes] = useState([]);
@@ -82,15 +80,6 @@ export default function UserQuotes() {
   if (!loading && userQuotes.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <View style={styles.banner}>
-          <TouchableOpacity
-            onPress={() => router.replace('/browse')}
-            style={styles.backButton}
-          >
-            <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-          </TouchableOpacity>
-          <Text style={styles.bannerText}>Tags</Text>
-        </View>
         <Text style={styles.emptyText}>
           No user-submitted quotes available.
         </Text>
@@ -100,15 +89,9 @@ export default function UserQuotes() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.banner}>
-        <TouchableOpacity
-          onPress={() => router.replace('/browse')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.bannerText}>Tags</Text>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header title='User Quotes' backRoute='/browse' />
+
       <FlatList
         data={userQuotes}
         keyExtractor={(item) => item.id}
@@ -126,21 +109,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
-  },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  bannerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
   },
   loadingContainer: {
     flex: 1,

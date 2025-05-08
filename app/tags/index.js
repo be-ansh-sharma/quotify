@@ -6,14 +6,12 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  BackHandler,
   Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { fetchTags } from 'utils/firebase/firestore'; // Function to fetch tags
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for the back icon
+import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function Tags() {
   const router = useRouter();
@@ -40,23 +38,6 @@ export default function Tags() {
       setLoading(false);
     }
   };
-
-  // Handle back button press to navigate to the browse screen
-  useFocusEffect(
-    React.useCallback(() => {
-      const onBackPress = () => {
-        router.replace('/browse'); // Navigate back to the browse screen
-        return true; // Prevent default back behavior
-      };
-
-      const subscription = BackHandler.addEventListener(
-        'hardwareBackPress',
-        onBackPress
-      );
-
-      return () => subscription.remove(); // Cleanup the event listener
-    }, [router])
-  );
 
   useEffect(() => {
     loadTags(); // Load tags when the component mounts
@@ -107,16 +88,8 @@ export default function Tags() {
 
   return (
     <View style={styles.container}>
-      {/* Banner Section */}
-      <View style={styles.banner}>
-        <TouchableOpacity
-          onPress={() => router.replace('/browse')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.bannerText}>Tags</Text>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header title='Tags' backRoute='/browse' />
 
       {/* Tags List */}
       <FlatList
@@ -138,20 +111,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  bannerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
   },
   grid: {
     justifyContent: 'center',

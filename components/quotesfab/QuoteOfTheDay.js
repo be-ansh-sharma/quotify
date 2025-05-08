@@ -50,7 +50,6 @@ export default function QuoteOfTheDay() {
 
   // Share as photo (placeholder, implement with ViewShot if needed)
   const handleShareAsPhoto = async () => {
-    // Implement ViewShot logic here if you want to share as image
     shareSheetRef.current?.closeBottomSheet();
     router.push({
       pathname: '/quotes/quoteshare',

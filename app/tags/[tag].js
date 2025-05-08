@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Sort from 'components/sort/Sort';
 import Quotes from 'components/quotes/Quotes';
 import useUserStore from 'stores/userStore';
 import { TAG_SORT_OPTIONS } from 'config/sortConfig';
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Text } from 'react-native-paper';
+import Header from 'components/header/Header'; // Import the reusable Header component
+import { useLocalSearchParams } from 'expo-router';
 
 export default function TagScreen() {
   const { tag } = useLocalSearchParams();
@@ -22,15 +21,9 @@ export default function TagScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.banner}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.bannerText}>#{tag}</Text>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header title={`#${tag}`} backRoute='/browse' />
+
       {/* Sort Options */}
       <Sort
         selectedSort={selectedSort}
@@ -48,20 +41,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  bannerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
   },
 });
 

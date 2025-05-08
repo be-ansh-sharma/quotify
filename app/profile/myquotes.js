@@ -8,12 +8,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Header from 'components/header/Header'; // Import Header component
 import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons';
-import { fetchQuotesByUser } from 'utils/firebase/firestore'; // Function to fetch quotes by the user
-import Tile from 'components/quotes/tile/Tile'; // Reuse the Tile component for rendering quotes
-import { deletePrivateQuote } from 'utils/firebase/firestore'; // Import the new function
+import { MaterialIcons } from '@expo/vector-icons'; // Switch to MaterialIcons
+import { fetchQuotesByUser } from 'utils/firebase/firestore';
+import Tile from 'components/quotes/tile/Tile';
+import { deletePrivateQuote } from 'utils/firebase/firestore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 
 export default function MyQuotes() {
@@ -23,10 +24,11 @@ export default function MyQuotes() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [lastDoc, setLastDoc] = useState(null); // Track the last document for lazy loading
-  const [hasMoreQuotes, setHasMoreQuotes] = useState(true); // Check if more quotes are available
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMoreQuotes, setHasMoreQuotes] = useState(true);
   const [filter, setFilter] = useState('public'); // 'public' or 'private'
 
+  // Existing functions and effects...
   const loadQuotes = async (isLoadMore = false) => {
     if (isLoadMore && !hasMoreQuotes) return; // Stop if no more quotes to load
 
@@ -51,8 +53,8 @@ export default function MyQuotes() {
 
   const handleDeletePrivateQuote = async (quoteId) => {
     try {
-      await deletePrivateQuote(quoteId); // Call the extracted function
-      setQuotes((prev) => prev.filter((quote) => quote.id !== quoteId)); // Update the state
+      await deletePrivateQuote(quoteId);
+      setQuotes((prev) => prev.filter((quote) => quote.id !== quoteId));
       SnackbarService.show('Private quote deleted successfully.');
     } catch (error) {
       console.error('Error deleting private quote:', error);
@@ -64,11 +66,52 @@ export default function MyQuotes() {
     if (!isGuest) {
       loadQuotes();
     }
-  }, [filter]); // Reload quotes when the filter changes
+  }, [filter]);
 
   const renderEmptyState = (message) => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>{message}</Text>
+    <View style={styles.container}>
+      {/* Use Header component */}
+      <Header title='My Quotes' backRoute='/profile' />
+
+      {/* Filter Section */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filter === 'public' && styles.activeFilter,
+          ]}
+          onPress={() => setFilter('public')}
+        >
+          <Text
+            style={[
+              styles.filterText,
+              filter === 'public' && styles.activeFilterText,
+            ]}
+          >
+            Public
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filter === 'private' && styles.activeFilter,
+          ]}
+          onPress={() => setFilter('private')}
+        >
+          <Text
+            style={[
+              styles.filterText,
+              filter === 'private' && styles.activeFilterText,
+            ]}
+          >
+            Private
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>{message}</Text>
+      </View>
     </View>
   );
 
@@ -84,15 +127,15 @@ export default function MyQuotes() {
               style={styles.deleteButton}
               onPress={() => handleDeletePrivateQuote(item.id)}
             >
-              <FontAwesome name='trash' size={16} color={COLORS.error} />
+              <MaterialIcons name='delete' size={16} color={COLORS.error} />
               <Text style={styles.deleteButtonText}>Delete</Text>
             </TouchableOpacity>
           )}
         </View>
       )}
       contentContainerStyle={styles.listContent}
-      onEndReached={() => loadQuotes(true)} // Load more quotes when reaching the end
-      onEndReachedThreshold={0.5} // Trigger when 50% from the bottom
+      onEndReached={() => loadQuotes(true)}
+      onEndReachedThreshold={0.5}
       ListFooterComponent={
         loadingMore && <ActivityIndicator size='small' color={COLORS.primary} />
       }
@@ -113,16 +156,8 @@ export default function MyQuotes() {
 
   return (
     <View style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Quotes</Text>
-      </View>
+      {/* Use Header component instead of custom header */}
+      <Header title='My Quotes' backRoute='/profile' />
 
       {/* Filter Section */}
       <View style={styles.filterContainer}>
@@ -133,7 +168,14 @@ export default function MyQuotes() {
           ]}
           onPress={() => setFilter('public')}
         >
-          <Text style={styles.filterText}>Public</Text>
+          <Text
+            style={[
+              styles.filterText,
+              filter === 'public' && styles.activeFilterText,
+            ]}
+          >
+            Public
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
@@ -142,7 +184,14 @@ export default function MyQuotes() {
           ]}
           onPress={() => setFilter('private')}
         >
-          <Text style={styles.filterText}>Private</Text>
+          <Text
+            style={[
+              styles.filterText,
+              filter === 'private' && styles.activeFilterText,
+            ]}
+          >
+            Private
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -163,28 +212,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    flex: 1,
-    textAlign: 'center',
-  },
+  // Remove header styles since we use the Header component
   filterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     backgroundColor: COLORS.surface,
     paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.disabled + '20', // Slightly transparent border
   },
   filterButton: {
     paddingVertical: 8,
@@ -198,10 +233,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text,
   },
+  activeFilterText: {
+    color: COLORS.icon, // Use icon color for text on primary background
+    fontWeight: '600',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.background,
   },
   emptyContainer: {
     flex: 1,
@@ -216,13 +256,14 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 8,
+    paddingBottom: 16, // Add padding at the bottom for better spacing
   },
   tileContainer: {
     marginTop: 16,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: COLORS.surface,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow, // Use theme shadow color
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -230,15 +271,17 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     flexDirection: 'row',
-    alignItems: 'center', // Align icon and text vertically
-    justifyContent: 'flex-start', // Align content to the left
-    marginTop: 8,
-    paddingHorizontal: 8, // Add padding for better spacing
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    padding: 12, // Increased padding for better tap target
+    borderTopWidth: 1,
+    borderTopColor: COLORS.disabled + '20', // Slightly transparent border
   },
   deleteButtonText: {
-    marginLeft: 4,
-    fontSize: 14, // Slightly larger font for better readability
+    marginLeft: 8,
+    fontSize: 14,
     color: COLORS.error,
+    fontWeight: '500',
   },
 });
 

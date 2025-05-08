@@ -2,11 +2,10 @@ import React from 'react';
 import { View, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { List, Divider, Surface } from 'react-native-paper';
-
+import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons';
 
 export default function Settings() {
   const router = useRouter();
@@ -33,55 +32,57 @@ export default function Settings() {
 
   return (
     <View style={styles.safeArea}>
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')} // Navigate back to the profile screen
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-      </View>
+      <Header title='Settings' backRoute='/profile' />
 
-      {/* Main Content */}
       <View style={styles.container}>
         <Surface style={styles.card} elevation={2}>
           <List.Section>
             <List.Item
               title='Manage Notifications'
+              titleStyle={styles.listItemTitle}
               left={(props) => (
-                <List.Icon {...props} icon='bell' color={COLORS.icon} />
+                <List.Icon {...props} icon='bell' color={COLORS.primary} />
               )}
               onPress={() => router.push('/settings/notifications')}
+              rippleColor={`${COLORS.primary}20`}
             />
-            <Divider />
+            <Divider style={styles.divider} />
             <List.Item
               title='Privacy Policy'
+              titleStyle={styles.listItemTitle}
               left={(props) => (
-                <List.Icon {...props} icon='shield-lock' color={COLORS.icon} />
+                <List.Icon
+                  {...props}
+                  icon='shield-lock'
+                  color={COLORS.primary}
+                />
               )}
               onPress={() => router.push('/settings/privacy-policy')}
+              rippleColor={`${COLORS.primary}20`}
             />
-            <Divider />
+            <Divider style={styles.divider} />
             <List.Item
               title='Terms of Service'
+              titleStyle={styles.listItemTitle}
               left={(props) => (
                 <List.Icon
                   {...props}
                   icon='file-document'
-                  color={COLORS.icon}
+                  color={COLORS.primary}
                 />
               )}
               onPress={() => router.push('/settings/terms-of-service')}
+              rippleColor={`${COLORS.primary}20`}
             />
-            <Divider />
+            <Divider style={styles.divider} />
             <List.Item
               title='Logout'
+              titleStyle={styles.logoutText}
               left={(props) => (
                 <List.Icon {...props} icon='logout' color={COLORS.error} />
               )}
               onPress={handleLogout}
+              rippleColor={`${COLORS.error}20`}
             />
           </List.Section>
         </Surface>
@@ -95,22 +96,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
   container: {
     flex: 1,
     padding: 16,
@@ -118,6 +103,23 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 8,
     overflow: 'hidden',
+    backgroundColor: COLORS.surface,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  divider: {
+    backgroundColor: `${COLORS.disabled}40`,
+  },
+  listItemTitle: {
+    color: COLORS.text,
+    fontSize: 16,
+  },
+  logoutText: {
+    color: COLORS.error,
+    fontSize: 16,
   },
 });
 

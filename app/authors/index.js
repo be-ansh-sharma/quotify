@@ -6,14 +6,12 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  BackHandler,
   Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { fetchAuthors } from 'utils/firebase/firestore'; // Function to fetch authors
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for the back icon
+import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function Authors() {
   const router = useRouter();
@@ -42,23 +40,6 @@ export default function Authors() {
       setLoading(false);
     }
   };
-
-  // Handle back button press to navigate to the browse screen
-  useFocusEffect(
-    React.useCallback(() => {
-      const onBackPress = () => {
-        router.replace('/browse'); // Navigate back to the browse screen
-        return true; // Prevent default back behavior
-      };
-
-      const subscription = BackHandler.addEventListener(
-        'hardwareBackPress',
-        onBackPress
-      );
-
-      return () => subscription.remove(); // Cleanup the event listener
-    }, [router])
-  );
 
   useEffect(() => {
     loadAuthors(); // Load authors when the component mounts
@@ -109,16 +90,8 @@ export default function Authors() {
 
   return (
     <View style={styles.container}>
-      {/* Banner Section */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/browse')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header title='Authors' backRoute='/browse' />
 
       {/* Authors List */}
       <FlatList
@@ -140,22 +113,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
   },
   grid: {
     justifyContent: 'center',
@@ -187,7 +144,7 @@ const styles = StyleSheet.create({
   tileText: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.onSurface,
+    color: COLORS.text,
     textAlign: 'center',
   },
 });

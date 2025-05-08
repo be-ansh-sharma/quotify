@@ -13,6 +13,7 @@ import { COLORS } from 'styles/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
+import Header from 'components/header/Header'; // Import the reusable Header component
 import { saveUserPreferences } from 'utils/firebase/firestore'; // Import the Firestore utility function
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { calculateTimeSlots } from 'utils/helpers';
@@ -198,20 +199,8 @@ export default function NotificationSettings() {
   // --- Render ---
   return (
     <View style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <FontAwesome
-            name='arrow-left'
-            size={20}
-            color={COLORS.onPrimary || '#FFFFFF'}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Manage Notifications</Text>
-      </View>
+      {/* Replace custom header with reusable Header component */}
+      <Header title='Manage Notifications' backRoute='/settings' />
 
       {/* Settings List */}
       <FlatList
@@ -418,22 +407,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
   },
   container: {
     paddingBottom: 80,

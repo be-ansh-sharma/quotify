@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import {
-  View,
-  StyleSheet,
+  TextInput,
+  Button,
+  HelperText,
+  Divider,
   Text,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
-import { TextInput, Button, HelperText, Divider } from 'react-native-paper';
+} from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { updateProfile } from 'firebase/auth';
 import { updateUserProfile } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function EditProfile() {
   const router = useRouter();
@@ -80,16 +80,8 @@ export default function EditProfile() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header title='Edit Profile' backRoute='/profile' />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Profile Fields */}
@@ -178,21 +170,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.onPrimary || '#fff',
   },
   content: {
     padding: 16,

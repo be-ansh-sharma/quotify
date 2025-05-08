@@ -1,30 +1,13 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons'; // For back button
-import { useRouter } from 'expo-router';
+import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function TermsOfService() {
-  const router = useRouter();
-
   return (
     <View style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()} // Navigate back to the previous screen
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Terms of Service</Text>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header title='Terms of Service' backRoute='/settings' />
 
       {/* Terms of Service Content */}
       <ScrollView contentContainerStyle={styles.contentContainer}>
@@ -91,20 +74,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background, // Use the app's background color
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text, // Use a contrasting color for the text
   },
   contentContainer: {
     padding: 16,

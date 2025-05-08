@@ -77,7 +77,7 @@ const MoodItem = ({ mood, isSelected, onSelect }) => {
 };
 
 // Main MoodSelector component that was missing
-const MoodSelector = ({ selectedMood, onSelectMood }) => {
+const MoodSelector = ({ selectedMood, onSelectMood, showTitle = true }) => {
   const scrollRef = useRef(null);
 
   const handleSelectMood = (mood) => {
@@ -86,15 +86,16 @@ const MoodSelector = ({ selectedMood, onSelectMood }) => {
     // Find the index of the selected mood to scroll to it
     const moodIndex = moods.findIndex((m) => m.key === mood);
     if (scrollRef.current && moodIndex > 1) {
-      // Calculate approximate scroll position (can be adjusted based on your item widths)
-      const scrollX = moodIndex * 120; // Assuming each item is ~120px wide
+      const scrollX = moodIndex * 120;
       scrollRef.current.scrollTo({ x: scrollX, animated: true });
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>How are you feeling today?</Text>
+      {showTitle && (
+        <Text style={styles.title}>How are you feeling today?</Text>
+      )}
       <ScrollView
         ref={scrollRef}
         horizontal

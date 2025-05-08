@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function BookmarkedLists() {
   const user = useUserStore((state) => state.user);
@@ -35,16 +36,10 @@ export default function BookmarkedLists() {
 
   const renderEmptyState = (message) => (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Lists</Text>
+      <Header title='Your Lists' backRoute='/profile' />
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>{message}</Text>
       </View>
-      <Text style={styles.emptyText}>{message}</Text>
     </View>
   );
 
@@ -74,16 +69,8 @@ export default function BookmarkedLists() {
 
   return (
     <View style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Lists</Text>
-      </View>
+      {/* Using our reusable Header component */}
+      <Header title='Your Lists' backRoute='/profile' />
 
       {/* Lists */}
       <FlatList
@@ -94,10 +81,17 @@ export default function BookmarkedLists() {
             style={styles.listTile}
             onPress={() => handleListPress(item.name, item.quotes)}
           >
-            <Text style={styles.listTileText}>
-              {item.name} ({item.quotes.length})
-            </Text>
-            <FontAwesome name='chevron-right' size={16} color={COLORS.icon} />
+            <View style={styles.listTileContent}>
+              <MaterialIcons name='list' size={20} color={COLORS.primary} />
+              <Text style={styles.listTileText}>
+                {item.name} ({item.quotes.length})
+              </Text>
+            </View>
+            <MaterialIcons
+              name='chevron-right'
+              size={24}
+              color={COLORS.primary}
+            />
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContent}
@@ -111,34 +105,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   emptyText: {
     fontSize: 18,
     color: COLORS.placeholder,
     textAlign: 'center',
-    marginTop: 20,
   },
   listContent: {
-    paddingHorizontal: 8,
-    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   listTile: {
     flexDirection: 'row',
@@ -147,16 +134,22 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: COLORS.surface,
     borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
+    marginBottom: 12,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
+  listTileContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   listTileText: {
     fontSize: 16,
     color: COLORS.text,
+    marginLeft: 12,
+    fontWeight: '500',
   },
 });
 

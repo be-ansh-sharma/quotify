@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { TextInput, Button, Switch } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { COLORS } from 'styles/theme';
@@ -10,7 +10,7 @@ import {
 } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
-import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for the back icon
+import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function PostQuote() {
   const router = useRouter();
@@ -66,12 +66,6 @@ export default function PostQuote() {
         SnackbarService.show('Quote submitted! It’ll be reviewed soon.');
       }
 
-      if (!isPrivate) {
-        SnackbarService.show(
-          'Quote submitted! It’ll be reviewed soon. If rejected, it will be converted to a private quote.'
-        );
-      }
-
       router.push('/home');
     } catch (error) {
       SnackbarService.show('Failed to submit the quote. Please try again.');
@@ -82,16 +76,8 @@ export default function PostQuote() {
 
   return (
     <View style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.icon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Share Your Quote</Text>
-      </View>
+      {/* Use the reusable Header component */}
+      <Header title='Share Your Quote' backRoute='/home' />
 
       {/* Content Section */}
       <View style={styles.content}>
@@ -199,21 +185,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
   },
   content: {
     flex: 1,

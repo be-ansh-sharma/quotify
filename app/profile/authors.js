@@ -9,9 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Header from 'components/header/Header'; // Import the Header component
 import useUserStore from 'stores/userStore';
 import { COLORS } from 'styles/theme';
-import { FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons'; // Switch to MaterialIcons for consistency
 
 export default function FavoriteAuthors() {
   const router = useRouter();
@@ -20,15 +21,9 @@ export default function FavoriteAuthors() {
 
   const renderEmptyState = (message) => (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Favorite Authors</Text>
-      </View>
+      {/* Replace the custom header with the Header component */}
+      <Header title='Favorite Authors' backRoute='/profile' />
+
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>{message}</Text>
       </View>
@@ -85,15 +80,8 @@ export default function FavoriteAuthors() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Favorite Authors</Text>
-      </View>
+      {/* Replace the custom header with the Header component */}
+      <Header title='Favorite Authors' backRoute='/profile' />
 
       <FlatList
         data={user.followedAuthors}
@@ -112,24 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 0.5,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 6,
-    borderRadius: 8,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
+  // Remove header styles since we're using the Header component
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -144,23 +115,22 @@ const styles = StyleSheet.create({
   },
   grid: {
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
   },
   row: {
     justifyContent: 'space-between',
-    marginBottom: 16,
   },
   tile: {
     flex: 1,
     marginHorizontal: 8,
-    aspectRatio: 1, // Make tiles square
+    aspectRatio: 1,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 15,
     elevation: 6,
-    shadowColor: COLORS.shadow || '#000',
+    shadowColor: COLORS.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -173,8 +143,9 @@ const styles = StyleSheet.create({
   tileText: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.onSurface,
+    color: COLORS.text, // Use COLORS.text instead of COLORS.onSurface for consistency
     textAlign: 'center',
+    paddingHorizontal: 8,
   },
 });
 

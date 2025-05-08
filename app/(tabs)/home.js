@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, AppState, StyleSheet } from 'react-native';
+import { View, AppState, StyleSheet, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   fetchUserProfile,
@@ -18,6 +18,7 @@ import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import { SORT_OPTIONS } from 'config/sortConfig';
 import * as Notifications from 'expo-notifications';
 import QuotesFAB from 'components/quotesfab/QuotesFAB';
+import { COLORS } from 'styles/theme';
 
 const CURRENT_VERSION = '4.2';
 
@@ -212,17 +213,27 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Sort
-        selectedSort={selectedSort}
-        sortHandler={sortHandler}
-        sortOptions={SORT_OPTIONS}
+      <View style={styles.headerContainer}>
+        {/* Swap the order - Text first, then Sort component */}
+        <Text style={styles.moodTitle}>How are you feeling today?</Text>
+        <Sort
+          selectedSort={selectedSort}
+          sortHandler={sortHandler}
+          sortOptions={SORT_OPTIONS}
+          style={styles.sortComponent}
+        />
+      </View>
+
+      <MoodSelector
+        selectedMood={selectedMood}
+        onSelectMood={moodHandler}
+        showTitle={false}
       />
-      {/* Add MoodSelector component here */}
-      <MoodSelector selectedMood={selectedMood} onSelectMood={moodHandler} />
+
       <Quotes
-        key={`${selectedSort}-${selectedMood}`} // Add mood to key to force refresh when it changes
+        key={`${selectedSort}-${selectedMood}`}
         selectedSort={selectedSort}
-        selectedMood={selectedMood} // Pass selected mood to Quotes component
+        selectedMood={selectedMood}
         user={user}
         favoriteAuthors={selectedSort === 'favoriteAuthor'}
       />
@@ -234,6 +245,21 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 0,
+  },
+  moodTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    flex: 1,
+    textAlign: 'left', // Change from 'right' to 'left'
   },
 });
 
