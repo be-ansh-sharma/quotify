@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  Alert, // Import Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from 'components/header/Header'; // Import Header component
@@ -52,14 +53,32 @@ export default function MyQuotes() {
   };
 
   const handleDeletePrivateQuote = async (quoteId) => {
-    try {
-      await deletePrivateQuote(quoteId);
-      setQuotes((prev) => prev.filter((quote) => quote.id !== quoteId));
-      SnackbarService.show('Private quote deleted successfully.');
-    } catch (error) {
-      console.error('Error deleting private quote:', error);
-      SnackbarService.show('Failed to delete the quote. Please try again.');
-    }
+    Alert.alert(
+      'Confirm Delete', // Title
+      'Are you sure you want to delete this private quote? This action cannot be undone.', // Message
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          onPress: async () => {
+            try {
+              await deletePrivateQuote(quoteId);
+              setQuotes((prev) => prev.filter((quote) => quote.id !== quoteId));
+              SnackbarService.show('Private quote deleted successfully.');
+            } catch (error) {
+              console.error('Error deleting private quote:', error);
+              SnackbarService.show(
+                'Failed to delete the quote. Please try again.'
+              );
+            }
+          },
+        },
+      ],
+      { cancelable: true } // Allows dismissing by tapping outside on Android
+    );
   };
 
   useEffect(() => {

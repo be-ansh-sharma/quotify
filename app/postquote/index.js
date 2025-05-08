@@ -128,7 +128,7 @@ export default function PostQuote() {
         </View>
 
         {/* Inform the user about rejected quotes */}
-        {isPrivate && (
+        {!isPrivate && (
           <Text style={styles.rejectionNote}>
             If your quote is rejected, it will be converted to a private quote.
           </Text>
