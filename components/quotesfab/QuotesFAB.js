@@ -14,12 +14,14 @@ import { Modal, Portal, Text as PaperText } from 'react-native-paper';
 import QuoteOfTheDay from './QuoteOfTheDay';
 import TopQuote from './TopQuote';
 import RandomQuote from './RandomQuote';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function QuotesFAB() {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [activeQuote, setActiveQuote] = useState(null);
   const animation = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
   const openQuoteModal = (quoteType) => {
     animation.setValue(0);
@@ -99,7 +101,12 @@ export default function QuotesFAB() {
           onPress={toggleMenu}
         />
       )}
-      <View style={styles.fabContainer}>
+      <View
+        style={[
+          styles.fabContainer,
+          { bottom: 70 + insets.bottom }, // Tab height (56) + padding + safe area
+        ]}
+      >
         <Animated.View
           style={[
             styles.fabItem,

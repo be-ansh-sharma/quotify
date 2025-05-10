@@ -8,6 +8,7 @@ import {
 } from 'utils/firebase/firestore';
 import SkeletonLoader from 'components/skelton/Skelton';
 import { saveQuotesToCache, getQuotesFromCache } from 'utils/quotesCache';
+import { useTabBar } from 'context/TabBarContext';
 
 export default Quotes = ({
   selectedSort,
@@ -26,6 +27,32 @@ export default Quotes = ({
   // Add this to track mood changes
   const prevMoodRef = useRef(selectedMood);
   const prevSortRef = useRef(selectedSort);
+
+  const { showTabBar, hideTabBar } = useTabBar();
+  const scrollOffset = useRef(0);
+  const scrollDirection = useRef('up');
+
+  const handleScroll = (event) => {
+    const currentOffset = event.nativeEvent.contentOffset.y;
+    const direction = currentOffset > scrollOffset.current ? 'down' : 'up';
+
+    // Only trigger changes when direction actually changes or at top/bottom
+    if (
+      direction !== scrollDirection.current ||
+      currentOffset <= 0 ||
+      (direction === 'down' && currentOffset > 200)
+    ) {
+      scrollDirection.current = direction;
+
+      if (direction === 'down' && currentOffset > 20) {
+        hideTabBar();
+      } else if (direction === 'up') {
+        showTabBar();
+      }
+    }
+
+    scrollOffset.current = currentOffset;
+  };
 
   const loadQuotes = async () => {
     if (loading || !hasMore) return;
@@ -186,6 +213,7 @@ export default Quotes = ({
         ListFooterComponent={renderFooter}
         decelerationRate='normal'
         scrollEventThrottle={16}
+        onScroll={handleScroll} // Add scroll handler
       />
     </View>
   );

@@ -4,13 +4,17 @@ import { COLORS } from 'styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import useUserStore from 'stores/userStore'; // Import user store
+import AnimatedTabBar from 'components/animatedtabbar/AnimatedTabBar';
+import { useTabBar } from 'context/TabBarContext';
 
 export default function Layout() {
   const router = useRouter();
   const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
+  const { visible } = useTabBar();
 
   return (
     <Tabs
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
         headerStyle: {
           backgroundColor: COLORS.background, // Same dark color as body
@@ -37,7 +41,9 @@ export default function Layout() {
           />
         ),
         tabBarStyle: {
-          backgroundColor: COLORS.background, // Tab bar background color
+          position: 'absolute', // Important for animation
+          height: 56,
+          backgroundColor: 'transparent', // Let our custom tab bar handle it
         },
         tabBarActiveTintColor: COLORS.primary, // Active tab color
         tabBarInactiveTintColor: COLORS.placeholder, // Inactive tab color

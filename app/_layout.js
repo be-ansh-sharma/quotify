@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { setupTokenRefreshListener } from 'utils/services/notifications/notifications';
 import { StatusBar, useColorScheme } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { TabBarProvider } from 'context/TabBarContext';
 
 export default function Layout() {
   const setHasCheckedProfileOnce = useUserStore(
@@ -85,16 +86,21 @@ export default function Layout() {
   }, [isGuest, user?.uid]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar backgroundColor={COLORS.background} barStyle='light-content' />
-      <PaperProvider theme={customDarkTheme}>
-        <ThemeProvider value={DarkTheme}>
-          <SnackbarProvider>
-            <Slot />
-          </SnackbarProvider>
-        </ThemeProvider>
-      </PaperProvider>
-    </GestureHandlerRootView>
+    <TabBarProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <StatusBar
+          backgroundColor={COLORS.background}
+          barStyle='light-content'
+        />
+        <PaperProvider theme={customDarkTheme}>
+          <ThemeProvider value={DarkTheme}>
+            <SnackbarProvider>
+              <Slot />
+            </SnackbarProvider>
+          </ThemeProvider>
+        </PaperProvider>
+      </GestureHandlerRootView>
+    </TabBarProvider>
   );
 }
 
