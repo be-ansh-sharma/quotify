@@ -35,14 +35,21 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: COLORS.avatarText,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   author: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.onSurface,
+  },
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
 });
 
 export default React.memo(TileHeader);
+

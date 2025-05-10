@@ -103,14 +103,20 @@ export default function Tile({ quote, user }) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: 12, // Reduced from 16px to 12px
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    marginTop: 16,
+    borderRadius: 8, // Slightly reduced from 10px
+    marginTop: 12, // Reduced from 16px
+    marginBottom: 2, // Added small bottom margin
     shadowColor: COLORS.shadow,
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowOpacity: 0.15, // Slightly increased for more impact
+    shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
+    borderLeftWidth: 3, // Add an accent border on the left
+    borderLeftColor: COLORS.secondary || COLORS.accent1 || '#9C27B0', // Use an accent color
+    // Optional: Add a very subtle inner border
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.05)', // Very subtle white border for depth
   },
 });
 

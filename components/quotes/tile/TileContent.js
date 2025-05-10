@@ -7,11 +7,16 @@ function TileContent({ quote }) {
 }
 
 const styles = StyleSheet.create({
-  text: {
-    fontSize: 14,
-    color: COLORS.text,
-    marginBottom: 8,
+  container: {
+    marginBottom: 8, // Reduced spacing
   },
+  text: {
+    fontSize: 15, // Slightly reduced if it was larger
+    color: COLORS.onSurface,
+    lineHeight: 22, // Optimized line height
+  },
+  // Other styles...
 });
 
 export default React.memo(TileContent);
+

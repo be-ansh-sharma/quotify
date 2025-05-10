@@ -41,6 +41,8 @@ export default function Layout() {
         },
         tabBarActiveTintColor: COLORS.primary, // Active tab color
         tabBarInactiveTintColor: COLORS.placeholder, // Inactive tab color
+        tabBarPressColor: 'transparent', // <-- Remove ripple on Android
+        tabBarPressOpacity: 1, // <-- Remove opacity change on iOS
       }}
     >
       <Tabs.Screen

@@ -1,8 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  BackHandler,
+  Platform,
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 const Header = ({
   title,
@@ -13,6 +20,7 @@ const Header = ({
   rightAction,
 }) => {
   const router = useRouter();
+
   const handleLeftAction = () => {
     if (leftAction) {
       leftAction();
@@ -22,6 +30,41 @@ const Header = ({
       router.back();
     }
   };
+
+  // Handle system back button/gesture
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only add the handler if we have a custom backRoute
+      if (backRoute) {
+        const onBackPress = () => {
+          router.push(backRoute);
+          return true; // Prevent default back behavior
+        };
+
+        // Add back handler for Android
+        if (Platform.OS === 'android') {
+          BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        }
+
+        // Clean up when the component is unmounted or blurred
+        return () => {
+          if (Platform.OS === 'android') {
+            BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+          }
+        };
+      }
+      return undefined;
+    }, [backRoute, router])
+  );
+
+  // For iOS gesture handling through navigation props
+  useEffect(() => {
+    if (Platform.OS === 'ios' && backRoute) {
+      // This is limited without direct access to the navigation object
+      // A full solution would require customizing the navigator in _layout.js
+      // But this serves as a placeholder for where that code would go
+    }
+  }, [backRoute]);
 
   return (
     <View style={styles.header}>

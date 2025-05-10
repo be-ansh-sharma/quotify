@@ -200,6 +200,14 @@ const styles = StyleSheet.create({
     width: 64, // Match the width of populated reaction stack + count
     height: 24,
   },
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4, // Reduced top margin
+  },
+  button: {
+    padding: 6, // Reduced padding
+  },
 });
 
 export default React.memo(TileActions);

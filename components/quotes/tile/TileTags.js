@@ -4,10 +4,12 @@ import { COLORS } from 'styles/theme';
 
 function TileTags({ tags, onTagPress }) {
   return (
-    <View style={styles.tags}>
+    <View style={styles.container}>
       {tags.map((tag, index) => (
         <TouchableOpacity key={index} onPress={() => onTagPress(tag)}>
-          <Text style={styles.tag}>#{tag}</Text>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>#{tag}</Text>
+          </View>
         </TouchableOpacity>
       ))}
     </View>
@@ -15,15 +17,22 @@ function TileTags({ tags, onTagPress }) {
 }
 
 const styles = StyleSheet.create({
-  tags: {
+  container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 12,
+    marginTop: 4, // Reduced spacing
   },
   tag: {
-    fontSize: 12,
-    color: COLORS.tag,
-    marginRight: 8,
+    backgroundColor: COLORS.tag,
+    borderRadius: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  tagText: {
+    fontSize: 12, // Make tag text smaller
+    color: COLORS.text,
   },
 });
 

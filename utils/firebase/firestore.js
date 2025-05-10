@@ -1228,7 +1228,19 @@ export const updateNotificationSlots = async (
   previousPreferences,
   timeZone
 ) => {
-  const notificationSlotsRef = (slot) => doc(db, 'notificationSlots', slot);
+  // Helper function to get the correct reference with proper field name
+  const getSlotInfo = (slot) => {
+    // Check if this is a random quote slot
+    const isRandomSlot = typeof slot === 'string' && slot.startsWith('random-');
+
+    // For random slots, extract the actual time bucket
+    const docId = isRandomSlot ? slot.replace('random-', '') : slot;
+
+    // The field name is 'randomQuotes' for random slots, 'users' for regular slots
+    const fieldName = isRandomSlot ? 'randomQuotes' : 'users';
+
+    return { docId, fieldName, isRandomSlot };
+  };
 
   try {
     // Validate timeZone
@@ -1239,46 +1251,92 @@ export const updateNotificationSlots = async (
 
     // Check if the old preferences are the same as the new preferences
     if (previousPreferences && deepEqual(previousPreferences, preferences)) {
-      console.log(
-        'Old preferences are the same as new preferences. No update needed.'
-      );
+      console.log('Preferences unchanged. No update needed.');
       return;
     }
 
-    // Calculate old slots (if previous preferences exist)
+    // Remove user from old slots
     if (previousPreferences) {
       const oldSlots = calculateTimeSlots(previousPreferences, timeZone);
+      console.log('Removing user from old slots:', oldSlots);
 
       for (const slot of oldSlots) {
-        await setDoc(
-          notificationSlotsRef(slot),
-          {
-            users: arrayRemove(userId),
-          },
-          { merge: true } // Ensure the document is created if it doesn't exist
-        );
+        try {
+          const { docId, fieldName } = getSlotInfo(slot);
+          const slotDocRef = doc(db, 'notificationSlots', docId);
+          const slotDoc = await getDoc(slotDocRef);
+
+          if (slotDoc.exists()) {
+            const slotData = slotDoc.data();
+
+            // Check if the appropriate field exists and contains userId
+            if (
+              slotData[fieldName] &&
+              Array.isArray(slotData[fieldName]) &&
+              slotData[fieldName].includes(userId)
+            ) {
+              // Remove the user from the appropriate array
+              await updateDoc(slotDocRef, {
+                [fieldName]: slotData[fieldName].filter((id) => id !== userId),
+              });
+              console.log(`Removed user from ${fieldName} in slot ${docId}`);
+            }
+          }
+        } catch (error) {
+          console.warn(`Error removing user from slot ${slot}:`, error);
+        }
       }
     }
 
-    // Calculate new slots
+    // Add user to new slots
     const newSlots = calculateTimeSlots(preferences, timeZone);
-
-    if (newSlots.length === 0) {
-      console.warn('No valid slots to update.');
-      return;
-    }
+    console.log('Adding user to new slots:', newSlots);
 
     for (const slot of newSlots) {
-      await setDoc(
-        notificationSlotsRef(slot),
-        {
-          users: arrayUnion(userId),
-        },
-        { merge: true } // Ensure the document is created if it doesn't exist
-      );
+      try {
+        const { docId, fieldName } = getSlotInfo(slot);
+        const slotDocRef = doc(db, 'notificationSlots', docId);
+        const slotDoc = await getDoc(slotDocRef);
+
+        if (slotDoc.exists()) {
+          const slotData = slotDoc.data();
+
+          // Check if the appropriate field exists and is an array
+          if (slotData[fieldName] && Array.isArray(slotData[fieldName])) {
+            // Only add if not already in the array
+            if (!slotData[fieldName].includes(userId)) {
+              await updateDoc(slotDocRef, {
+                [fieldName]: [...slotData[fieldName], userId],
+              });
+              console.log(
+                `Added user to existing ${fieldName} in slot ${docId}`
+              );
+            }
+          } else {
+            // Field doesn't exist or isn't an array - initialize it
+            await setDoc(
+              slotDocRef,
+              {
+                [fieldName]: [userId],
+              },
+              { merge: true }
+            );
+            console.log(`Created ${fieldName} field in slot ${docId}`);
+          }
+        } else {
+          // Document doesn't exist - create it
+          await setDoc(slotDocRef, {
+            [fieldName]: [userId],
+          });
+          console.log(`Created new slot ${docId} with user in ${fieldName}`);
+        }
+      } catch (error) {
+        console.warn(`Error adding user to slot ${slot}:`, error);
+      }
     }
 
-    console.log(`Notification slots updated for user ${userId}`);
+    console.log(`Updated notification slots for user ${userId}`);
+    return true;
   } catch (error) {
     console.error('Error updating notification slots:', error);
     throw error;

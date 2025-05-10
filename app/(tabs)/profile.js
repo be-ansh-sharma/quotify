@@ -73,7 +73,6 @@ export default function Profile() {
 
       {/* Links Section */}
       <List.Section style={styles.linksSection}>
-        <Divider />
         <List.Item
           title='Bookmarked Quotes'
           left={(props) => (

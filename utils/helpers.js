@@ -139,8 +139,10 @@ export const calculateTimeSlots = (preferences, timeZone) => {
         randomBucket
       );
 
-      // Add the user to the randomQuotes list in the bucket
-      slots.push({ bucket: randomBucket, type: 'randomQuotes' });
+      // Just push the string, not an object
+      slots.push(`random-${randomBucket}`);
+      // OR if you need to maintain the type information
+      // slots.push(`randomQuotes-${randomBucket}`);
     }
   } catch (error) {
     console.error('Error calculating time slots:', error);
