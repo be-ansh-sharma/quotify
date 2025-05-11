@@ -35,18 +35,27 @@ export default Quotes = ({
   const handleScroll = (event) => {
     const currentOffset = event.nativeEvent.contentOffset.y;
     const direction = currentOffset > scrollOffset.current ? 'down' : 'up';
+    const distance = Math.abs(currentOffset - scrollOffset.current);
 
-    // Only trigger changes when direction actually changes or at top/bottom
+    // Only respond to significant scroll movements
+    if (distance < 3) {
+      scrollOffset.current = currentOffset;
+      return;
+    }
+
+    // If scrolling quickly, respond immediately
+    const isQuickScroll = distance > 15;
+
     if (
       direction !== scrollDirection.current ||
-      currentOffset <= 0 ||
-      (direction === 'down' && currentOffset > 200)
+      currentOffset <= 10 || // Show bar at top
+      isQuickScroll
     ) {
       scrollDirection.current = direction;
 
       if (direction === 'down' && currentOffset > 20) {
         hideTabBar();
-      } else if (direction === 'up') {
+      } else if (direction === 'up' || currentOffset <= 10) {
         showTabBar();
       }
     }
@@ -56,20 +65,11 @@ export default Quotes = ({
 
   const loadQuotes = async () => {
     if (loading || !hasMore) return;
-
-    console.log(
-      `📚 Loading quotes | Mood: ${selectedMood} | Sort: ${selectedSort}`
-    );
-
     setLoading(true);
     try {
       let fetchedQuotes;
-
+      console.log(`📚 Last followedAuthors: ${followedAuthors}`);
       if (followedAuthors && user?.followedAuthors?.length > 0) {
-        console.log(
-          `🧑‍🎨 Fetching followed author quotes with mood: ${selectedMood}`
-        );
-        // Fetch quotes by favorite authors with mood filtering
         const {
           newQuotes,
           lastVisibleDoc,

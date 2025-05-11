@@ -354,7 +354,6 @@ export const fetchQuotes = async (
       quotesQuery = query(quotesQuery, where('tags', 'array-contains', tag));
     }
 
-    console.log('Quotes query:', quotesQuery);
     const snapshot = await getDocs(quotesQuery);
 
     if (!snapshot.empty) {
@@ -558,7 +557,7 @@ export const fetchQuotesByAuthors = async (
         where('author', 'in', chunk),
         where('visibility', '!=', 'private'), // Exclude private quotes
         orderBy('createdAt', sort === 'newest' ? 'desc' : 'asc'),
-        limit(20) // Fetch 20 quotes at a time
+        limit(20)
       );
 
       if (lastVisibleDoc) {

@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Text,
   Animated,
-  Dimensions,
   ScrollView,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';

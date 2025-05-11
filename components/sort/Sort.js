@@ -21,7 +21,6 @@ export default function Sort({ selectedSort, sortOptions, sortHandler }) {
       style={{
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        paddingHorizontal: 16,
       }}
     >
       <Menu

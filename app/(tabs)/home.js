@@ -211,6 +211,8 @@ export default function Index() {
     };
   }, [isGuest]);
 
+  console.log('Selected sort:', selectedSort);
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -235,7 +237,7 @@ export default function Index() {
         selectedSort={selectedSort}
         selectedMood={selectedMood}
         user={user}
-        favoriteAuthors={selectedSort === 'favoriteAuthor'}
+        followedAuthors={selectedSort === 'favoriteAuthor'}
       />
       <QuotesFAB />
     </View>

@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useRef } from 'react';
-import { Animated } from 'react-native';
+import { Animated, Dimensions } from 'react-native';
 
 const TabBarContext = createContext();
 
 export const TabBarProvider = ({ children }) => {
   const [visible, setVisible] = useState(true);
+  const tabBarHeight = 56; // Match your tab bar height
   const tabBarTranslateY = useRef(new Animated.Value(0)).current;
 
   const showTabBar = () => {
@@ -12,18 +13,23 @@ export const TabBarProvider = ({ children }) => {
     Animated.spring(tabBarTranslateY, {
       toValue: 0,
       useNativeDriver: true,
-      friction: 8,
-      tension: 50,
+      friction: 6, // Lower friction for faster movement
+      tension: 40, // Lower tension for more natural feel
+      velocity: 1, // Add initial velocity
     }).start();
   };
 
   const hideTabBar = () => {
     Animated.spring(tabBarTranslateY, {
-      toValue: 60, // Height of tab bar + some extra
+      toValue: tabBarHeight + 20, // Add extra to ensure it's completely off-screen
       useNativeDriver: true,
-      friction: 8,
-      tension: 50,
-    }).start(() => setVisible(false));
+      friction: 6, // Lower friction for faster movement
+      tension: 40, // Lower tension for more natural feel
+      velocity: 1, // Add initial velocity
+    }).start(() => {
+      // Only set invisible after animation completes
+      setVisible(false);
+    });
   };
 
   return (

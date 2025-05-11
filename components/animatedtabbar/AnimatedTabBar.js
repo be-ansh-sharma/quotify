@@ -15,7 +15,17 @@ export default function AnimatedTabBar({ state, descriptors, navigation }) {
 
   return (
     <Animated.View
-      style={[styles.tabBar, { transform: [{ translateY: tabBarTranslateY }] }]}
+      style={[
+        styles.tabBar,
+        {
+          transform: [{ translateY: tabBarTranslateY }],
+          opacity: tabBarTranslateY.interpolate({
+            inputRange: [0, 30, 60],
+            outputRange: [1, 0.7, 0],
+            extrapolate: 'clamp',
+          }),
+        },
+      ]}
     >
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
@@ -76,11 +86,11 @@ const styles = StyleSheet.create({
     height: 56,
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(255,255,255,0.1)',
-    elevation: 8,
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 3,
   },
   tabItem: {
     flex: 1,
@@ -93,3 +103,4 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
+
