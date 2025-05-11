@@ -63,52 +63,81 @@ export default Quotes = ({
     scrollOffset.current = currentOffset;
   };
 
+  // Add this inside your Quotes component
+  const getCacheKey = () => {
+    // Create a unique cache key based only on content filters
+    return `quotes_${selectedSort}_${selectedMood}_${author || 'null'}_${
+      tag || 'null'
+    }_${followedAuthors ? 'followed' : 'all'}`;
+  };
+
   const loadQuotes = async () => {
     if (loading || !hasMore) return;
     setLoading(true);
+
     try {
-      let fetchedQuotes;
+      // STEP 1: Check cache ONLY on first page load
+      if (lastDoc === null) {
+        const cacheKey = getCacheKey();
+        const cachedData = await getQuotesFromCache(cacheKey);
+
+        if (cachedData) {
+          console.log(`📦 Using cached quotes for ${cacheKey}`);
+          setQuotes(cachedData.quotes || []);
+          setLastDoc(cachedData.lastDoc || null);
+          setHasMore(cachedData.hasMore !== false);
+          setProcessedChunks(cachedData.processedChunks || 0);
+          setLoading(false);
+          return; // Exit early, no need to hit Firestore
+        }
+      }
+
+      // STEP 2: If no cache or not first page, fetch from Firestore
+      let fetchedQuotes = [];
+      let lastVisibleDoc = null;
+      let hasMoreQuotes = true;
+      let updatedChunks = processedChunks;
+
       console.log(`📚 Last followedAuthors: ${followedAuthors}`);
+
       if (followedAuthors && user?.followedAuthors?.length > 0) {
-        const {
-          newQuotes,
-          lastVisibleDoc,
-          hasMoreQuotes,
-          processedChunks: updatedChunks,
-        } = await fetchQuotesByAuthors(
+        const result = await fetchQuotesByAuthors(
           user.followedAuthors,
           lastDoc,
           selectedSort,
           processedChunks,
           selectedMood !== 'all' ? selectedMood : null
         );
-        fetchedQuotes = newQuotes;
-        setLastDoc(lastVisibleDoc);
-        setHasMore(hasMoreQuotes);
-        setProcessedChunks(updatedChunks);
+        fetchedQuotes = result.newQuotes || [];
+        lastVisibleDoc = result.lastVisibleDoc;
+        hasMoreQuotes = result.hasMoreQuotes;
+        updatedChunks = result.processedChunks;
       } else if (author || tag) {
         console.log(`🏷️ Fetching by author/tag with mood: ${selectedMood}`);
         // Fetch quotes by author or tag with mood
-        const { newQuotes, lastVisibleDoc, hasMoreQuotes } = await fetchQuotes(
+        const result = await fetchQuotes(
           lastDoc,
           selectedSort,
           author,
           tag,
           selectedMood !== 'all' ? selectedMood : null
         );
-        fetchedQuotes = newQuotes;
-        setLastDoc(lastVisibleDoc);
-        setHasMore(hasMoreQuotes);
+        fetchedQuotes = result.newQuotes || [];
+        lastVisibleDoc = result.lastVisibleDoc;
+        hasMoreQuotes = result.hasMoreQuotes;
       } else {
         // General quotes filtered by mood
         if (selectedMood !== 'all') {
           console.log(`😊 Fetching by mood: ${selectedMood}`);
           // Use the dedicated mood filter function
-          const { newQuotes, lastVisibleDoc, hasMoreQuotes } =
-            await fetchQuotesByMood(selectedMood, lastDoc, selectedSort);
-          fetchedQuotes = newQuotes;
-          setLastDoc(lastVisibleDoc);
-          setHasMore(hasMoreQuotes);
+          const result = await fetchQuotesByMood(
+            selectedMood,
+            lastDoc,
+            selectedSort
+          );
+          fetchedQuotes = result.newQuotes || [];
+          lastVisibleDoc = result.lastVisibleDoc;
+          hasMoreQuotes = result.hasMoreQuotes;
           console.log(
             `📙 Fetched ${
               fetchedQuotes?.length || 0
@@ -117,19 +146,30 @@ export default Quotes = ({
         } else {
           console.log(`📚 Fetching all quotes without mood filter`);
           // Regular quotes without mood filter
-          const { newQuotes, lastVisibleDoc, hasMoreQuotes } =
-            await fetchQuotes(lastDoc, selectedSort);
-          fetchedQuotes = newQuotes;
-          setLastDoc(lastVisibleDoc);
-          setHasMore(hasMoreQuotes);
+          const result = await fetchQuotes(lastDoc, selectedSort);
+          fetchedQuotes = result.newQuotes || [];
+          lastVisibleDoc = result.lastVisibleDoc;
+          hasMoreQuotes = result.hasMoreQuotes;
         }
       }
 
-      // Set quotes - ONLY ONCE per fetch cycle
+      // STEP 3: Update state with fetched data
       if (lastDoc === null) {
+        // First page - set quotes directly and SAVE TO CACHE
         setQuotes(fetchedQuotes || []);
-        console.log(`✅ Initial set: ${fetchedQuotes?.length || 0} quotes`);
+
+        // Cache ONLY the first page results
+        const cacheKey = getCacheKey();
+        await saveQuotesToCache(cacheKey, {
+          quotes: fetchedQuotes || [],
+          lastDoc: lastVisibleDoc,
+          hasMore: hasMoreQuotes,
+          processedChunks: updatedChunks,
+          timestamp: Date.now(),
+        });
+        console.log(`💾 Saved first page to cache with key: ${cacheKey}`);
       } else {
+        // Not first page - append quotes (never cache these)
         setQuotes((prevQuotes) => {
           const existingIds = new Set(prevQuotes.map((quote) => quote.id));
           const filteredNewQuotes = fetchedQuotes.filter(
@@ -139,6 +179,11 @@ export default Quotes = ({
           return [...prevQuotes, ...filteredNewQuotes];
         });
       }
+
+      // Update pagination state
+      setLastDoc(lastVisibleDoc);
+      setHasMore(hasMoreQuotes);
+      setProcessedChunks(updatedChunks);
     } catch (error) {
       console.error('❌ Error fetching quotes:', error);
     } finally {

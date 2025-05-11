@@ -1,36 +1,84 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const getCacheKey = (selectedSort, author, tag, followedAuthors) => {
-  return `QUOTES_CACHE_${selectedSort || 'all'}_${author || 'all'}_${
-    tag || 'all'
-  }_${followedAuthors ? 'followed' : 'all'}`;
+// Cache expiration - 1 hour by default
+const CACHE_EXPIRATION = 60 * 60 * 1000;
+const CACHE_PREFIX = 'QUOTES_CACHE_';
+
+export const saveQuotesToCache = async (key, data) => {
+  try {
+    const fullKey = `${CACHE_PREFIX}${key}`;
+    await AsyncStorage.setItem(
+      fullKey,
+      JSON.stringify({
+        ...data,
+        timestamp: Date.now(),
+      })
+    );
+    return true;
+  } catch (error) {
+    console.error('Error saving quotes to cache:', error);
+    return false;
+  }
 };
 
-export const saveQuotesToCache = async (
-  quotes,
-  selectedSort,
-  author,
-  tag,
-  followedAuthors
-) => {
+export const getQuotesFromCache = async (key) => {
   try {
-    const key = getCacheKey(selectedSort, author, tag, followedAuthors);
-    await AsyncStorage.setItem(key, JSON.stringify(quotes));
-  } catch (e) {}
+    const fullKey = `${CACHE_PREFIX}${key}`;
+    const cachedData = await AsyncStorage.getItem(fullKey);
+
+    if (!cachedData) return null;
+
+    const parsedData = JSON.parse(cachedData);
+
+    // Check if cache is expired
+    if (Date.now() - parsedData.timestamp > CACHE_EXPIRATION) {
+      console.log(`🕒 Cache expired for key: ${fullKey}`);
+      await AsyncStorage.removeItem(fullKey);
+      return null;
+    }
+
+    return parsedData;
+  } catch (error) {
+    console.error('Error getting quotes from cache:', error);
+    return null;
+  }
 };
 
-export const getQuotesFromCache = async (
-  selectedSort,
-  author,
-  tag,
-  followedAuthors
-) => {
+// Clear all quote caches
+export const clearAllQuotesCache = async () => {
   try {
-    const key = getCacheKey(selectedSort, author, tag, followedAuthors);
-    const json = await AsyncStorage.getItem(key);
-    return json ? JSON.parse(json) : [];
-  } catch (e) {
-    return [];
+    const keys = await AsyncStorage.getAllKeys();
+    const quoteKeys = keys.filter((key) => key.startsWith(CACHE_PREFIX));
+    if (quoteKeys.length > 0) {
+      await AsyncStorage.multiRemove(quoteKeys);
+      console.log(`🧹 Cleared ${quoteKeys.length} quote cache entries`);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error clearing quotes cache:', error);
+    return false;
+  }
+};
+
+// Clear specific cache by filter
+export const clearCacheByFilter = async (filter) => {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const matchingKeys = keys.filter(
+      (key) => key.startsWith(CACHE_PREFIX) && key.includes(filter)
+    );
+
+    if (matchingKeys.length > 0) {
+      await AsyncStorage.multiRemove(matchingKeys);
+      console.log(
+        `🧹 Cleared ${matchingKeys.length} quote caches matching "${filter}"`
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error clearing filtered cache:', error);
+    return false;
   }
 };
 

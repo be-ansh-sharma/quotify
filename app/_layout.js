@@ -9,9 +9,10 @@ import { SnackbarProvider } from 'components/snackbar/SnackbarProvider';
 import useUserStore from 'stores/userStore';
 import { useEffect } from 'react';
 import { setupTokenRefreshListener } from 'utils/services/notifications/notifications';
-import { StatusBar, useColorScheme } from 'react-native';
+import { StatusBar, useColorScheme, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { TabBarProvider } from 'context/TabBarContext';
+import { clearAllQuotesCache } from 'utils/quotesCache';
 
 export default function Layout() {
   const setHasCheckedProfileOnce = useUserStore(
@@ -84,6 +85,36 @@ export default function Layout() {
       responseSubscription.remove();
     };
   }, [isGuest, user?.uid]);
+
+  useEffect(() => {
+    // Clear cache on initial app launch
+    clearAllQuotesCache();
+    
+    const handleAppStateChange = async (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App has come to the foreground
+        console.log('App opened, clearing quotes cache...');
+        await clearAllQuotesCache();
+      }
+      
+      appState.current = nextAppState;
+    };
+    
+    // Create app state reference
+    const appState = { current: AppState.currentState };
+    
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange
+    );
+    
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   return (
     <TabBarProvider>

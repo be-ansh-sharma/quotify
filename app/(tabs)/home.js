@@ -19,6 +19,8 @@ import { SORT_OPTIONS } from 'config/sortConfig';
 import * as Notifications from 'expo-notifications';
 import QuotesFAB from 'components/quotesfab/QuotesFAB';
 import { COLORS } from 'styles/theme';
+// Import the cache functions
+import { clearCacheByFilter } from 'utils/quotesCache';
 
 const CURRENT_VERSION = '4.2';
 
@@ -41,16 +43,24 @@ export default function Index() {
   const [selectedMood, setSelectedMood] = useState(storedMood);
   const appState = useRef(AppState.currentState);
 
-  const sortHandler = (sort) => {
-    setSelectedSort(sort);
-    useUserStore.setState({ selectedSort: sort });
+  const sortHandler = async (sort) => {
+    if (sort !== selectedSort) {
+      // Clear caches related to the old sort before changing
+      await clearCacheByFilter(selectedSort);
+      setSelectedSort(sort);
+      useUserStore.setState({ selectedSort: sort });
+    }
   };
 
   // Add mood handler
-  const moodHandler = (mood) => {
-    setSelectedMood(mood);
-    // Store in userStore if you want to persist it
-    useUserStore.setState({ selectedMood: mood });
+  const moodHandler = async (mood) => {
+    if (mood !== selectedMood) {
+      // Clear caches related to the old mood before changing
+      await clearCacheByFilter(selectedMood);
+      setSelectedMood(mood);
+      // Store in userStore if you want to persist it
+      useUserStore.setState({ selectedMood: mood });
+    }
   };
 
   const fetchAndStoreFCMToken = async () => {
