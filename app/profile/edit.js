@@ -12,7 +12,8 @@ import { auth } from 'utils/firebase/firebaseconfig';
 import { updateProfile } from 'firebase/auth';
 import { updateUserProfile } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import Header from 'components/header/Header'; // Import the reusable Header component
 
@@ -27,6 +28,12 @@ export default function EditProfile() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
 
   const validatePassword = () => {
     if (password && password !== confirmPassword) {
@@ -166,38 +173,40 @@ export default function EditProfile() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: COLORS.text,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  helperText: {
-    marginBottom: 8,
-  },
-  button: {
-    marginTop: 4,
-    borderRadius: 8,
-  },
-  cancelButton: {
-    marginTop: 24,
-    alignSelf: 'center',
-  },
-  divider: {
-    marginVertical: 32,
-    height: 1,
-    backgroundColor: COLORS.surface,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    content: {
+      padding: 16,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 12,
+      color: COLORS.text,
+    },
+    input: {
+      marginBottom: 16,
+    },
+    helperText: {
+      marginBottom: 8,
+    },
+    button: {
+      marginTop: 4,
+      borderRadius: 8,
+    },
+    cancelButton: {
+      marginTop: 24,
+      alignSelf: 'center',
+    },
+    divider: {
+      marginVertical: 32,
+      height: 1,
+      backgroundColor: COLORS.surface,
+    },
+  });
 

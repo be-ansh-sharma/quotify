@@ -6,7 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 import { fetchUserQuotesPaginated } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile'; // Import the Tile component
 import useUserStore from 'stores/userStore';
@@ -19,6 +19,9 @@ export default function UserQuotes() {
   const [lastVisible, setLastVisible] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const user = useUserStore((state) => state.user); // Assuming you have a user store to get the current user
+
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const styles = getStyles(COLORS); // Generate styles dynamically
 
   const PAGE_SIZE = 10; // Number of quotes to fetch per page
 
@@ -105,31 +108,33 @@ export default function UserQuotes() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: COLORS.placeholder,
-  },
-  listContent: {
-    paddingBottom: 16,
-  },
-  loadingMoreContainer: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background, // Use the app's background color
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyText: {
+      fontSize: 16,
+      color: COLORS.placeholder,
+    },
+    listContent: {
+      paddingBottom: 16,
+    },
+    loadingMoreContainer: {
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+  });
 

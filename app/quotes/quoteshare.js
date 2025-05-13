@@ -17,7 +17,8 @@ import FontControls from 'components/quoteedit/FontControls';
 import FormatSelector from 'components/quoteedit/FormatSelector';
 import ActionButtons from 'components/quoteedit/ActionButtons';
 import ViewShot from 'react-native-view-shot';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import { Platform } from 'react-native';
 import { useQuoteFormatting } from 'hooks/useQuoteFormatting';
 import { useShareQuote } from 'hooks/useShareQuote';
@@ -39,6 +40,12 @@ export default function QuoteShare() {
     size: 24,
     position: { x: 0, y: 0 },
   });
+
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
 
   // Get user data once and update ref
   useEffect(() => {
@@ -205,74 +212,75 @@ export default function QuoteShare() {
   );
 }
 
-// Simplified styles
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  previewContainer: {
-    height: SCREEN_HEIGHT * 0.6, // Match the preview height
-    width: '100%',
-    padding: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface,
-    marginBottom: 0, // Remove extra margin if you want no gap
-  },
-  viewShot: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 0,
-  },
-  scrollContainer: {
-    flex: 1,
-    marginTop: 10,
-  },
-  scrollContent: {
-    paddingTop: 20,
-    paddingBottom: 80,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.placeholder,
-    marginTop: 10,
-  },
-  invisiblePreviewContainer: {
-    position: 'absolute',
-    top: -9999,
-    left: -9999,
-    width: 1,
-    height: 1,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.surface,
-    opacity: 0.8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  header: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-    justifyContent: 'flex-start',
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    previewContainer: {
+      height: SCREEN_HEIGHT * 0.6, // Match the preview height
+      width: '100%',
+      padding: 0,
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.surface,
+      marginBottom: 0, // Remove extra margin if you want no gap
+    },
+    viewShot: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 0,
+    },
+    scrollContainer: {
+      flex: 1,
+      marginTop: 10,
+    },
+    scrollContent: {
+      paddingTop: 20,
+      paddingBottom: 80,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.background,
+    },
+    loadingText: {
+      fontSize: 16,
+      color: COLORS.placeholder,
+      marginTop: 10,
+    },
+    invisiblePreviewContainer: {
+      position: 'absolute',
+      top: -9999,
+      left: -9999,
+      width: 1,
+      height: 1,
+    },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: COLORS.surface,
+      opacity: 0.8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    },
+    header: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: COLORS.surface,
+      justifyContent: 'flex-start',
+    },
+    backButton: {
+      marginRight: 12,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: COLORS.text,
+    },
+  });
 

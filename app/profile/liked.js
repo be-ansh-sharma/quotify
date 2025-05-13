@@ -10,7 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Header from 'components/header/Header'; // Import the Header component
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import { fetchQuotesByIds } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile';
 import Skelton from 'components/skelton/Skelton';
@@ -28,6 +29,12 @@ export default function LikedQuotes() {
   const [hasMore, setHasMore] = useState(true);
   const [processedChunks, setProcessedChunks] = useState(0);
   const prevReactionsRef = useRef([]);
+
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
 
   const getUserReactedQuoteIds = () => {
     if (!user || !user.reactions) return [];
@@ -249,42 +256,44 @@ export default function LikedQuotes() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: COLORS.placeholder,
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingHorizontal: 8,
-    paddingBottom: 16,
-  },
-  tileContainer: {
-    marginTop: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.background,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    emptyText: {
+      fontSize: 18,
+      color: COLORS.placeholder,
+      textAlign: 'center',
+    },
+    listContent: {
+      paddingHorizontal: 8,
+      paddingBottom: 16,
+    },
+    tileContainer: {
+      marginTop: 16,
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: COLORS.surface,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+  });
 

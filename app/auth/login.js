@@ -15,19 +15,18 @@ import {
   HelperText,
   Dialog,
   Portal,
-  useTheme,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useSignInWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 import { MaterialIcons } from '@expo/vector-icons';
 
 const Login = () => {
-  const theme = useTheme();
   const router = useRouter();
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -128,6 +127,8 @@ const Login = () => {
   };
 
   const closeDialog = () => setIsDialogVisible(false);
+
+  const styles = getStyles(COLORS); // Generate styles dynamically
 
   return (
     <KeyboardAvoidingView
@@ -276,75 +277,76 @@ const Login = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: COLORS.background,
-  },
-  form: {
-    width: '100%',
-    maxWidth: 400,
-    padding: 20,
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  input: {
-    marginBottom: 15,
-    backgroundColor: COLORS.surface,
-  },
-  button: {
-    marginTop: 10,
-    backgroundColor: COLORS.primary,
-  },
-  forgotPassword: {
-    marginTop: 10,
-  },
-  helperText: {
-    color: COLORS.error,
-    marginBottom: 5,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    marginBottom: 10,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    letterSpacing: 1,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-    zIndex: 10,
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+      backgroundColor: COLORS.background,
+    },
+    form: {
+      width: '100%',
+      maxWidth: 400,
+      padding: 20,
+      backgroundColor: COLORS.surface,
+      borderRadius: 8,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    input: {
+      marginBottom: 15,
+      backgroundColor: COLORS.surface,
+    },
+    button: {
+      marginTop: 10,
+      backgroundColor: COLORS.primary,
+    },
+    forgotPassword: {
+      marginTop: 10,
+    },
+    helperText: {
+      color: COLORS.error,
+      marginBottom: 5,
+    },
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 30,
+    },
+    logo: {
+      width: 100,
+      height: 100,
+      borderRadius: 20,
+      marginBottom: 10,
+    },
+    appName: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: COLORS.primary,
+      letterSpacing: 1,
+    },
+    backButton: {
+      position: 'absolute',
+      top: 40,
+      left: 20,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.surface,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 3,
+      elevation: 3,
+      zIndex: 10,
+    },
+  });
 
 export default Login;
 

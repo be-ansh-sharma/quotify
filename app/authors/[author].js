@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router'; // Import router for navigation
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext';
 import Quotes from 'components/quotes/Quotes';
 import Sort from 'components/sort/Sort';
 import { AUTHOR_SORT_OPTIONS } from 'config/sortConfig';
@@ -18,6 +18,12 @@ export default function AuthorScreen() {
   const updateUser = useUserStore((state) => state.setUser); // Function to update the user in the store
 
   const isFollowing = user?.followedAuthors?.includes(decodedAuthor); // Check if the user is already following the author
+
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
 
   const toggleFollow = async () => {
     try {
@@ -74,10 +80,12 @@ export default function AuthorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+  });
 

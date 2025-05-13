@@ -10,7 +10,8 @@ import {
 import { useRouter } from 'expo-router';
 import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function BookmarkedLists() {
@@ -19,6 +20,12 @@ export default function BookmarkedLists() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [lists, setLists] = useState([]);
+
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
 
   useEffect(() => {
     if (user?.bookmarklist) {
@@ -100,56 +107,58 @@ export default function BookmarkedLists() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: COLORS.placeholder,
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
-  },
-  listTile: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    marginBottom: 12,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  listTileContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  listTileText: {
-    fontSize: 16,
-    color: COLORS.text,
-    marginLeft: 12,
-    fontWeight: '500',
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.background,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    emptyText: {
+      fontSize: 18,
+      color: COLORS.placeholder,
+      textAlign: 'center',
+    },
+    listContent: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 24,
+    },
+    listTile: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: COLORS.surface,
+      borderRadius: 8,
+      marginBottom: 12,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    listTileContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    listTileText: {
+      fontSize: 16,
+      color: COLORS.text,
+      marginLeft: 12,
+      fontWeight: '500',
+    },
+  });
 

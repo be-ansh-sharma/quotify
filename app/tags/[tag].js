@@ -4,7 +4,8 @@ import Sort from 'components/sort/Sort';
 import Quotes from 'components/quotes/Quotes';
 import useUserStore from 'stores/userStore';
 import { TAG_SORT_OPTIONS } from 'config/sortConfig';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import Header from 'components/header/Header'; // Import the reusable Header component
 import { useLocalSearchParams } from 'expo-router';
 
@@ -13,6 +14,10 @@ export default function TagScreen() {
   const storedSort = useUserStore((state) => state.selectedSort);
   const user = useUserStore((state) => state.user); // Get user data from userStore
   const [selectedSort, setSelectedSort] = useState(storedSort);
+
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+
+  const styles = getStyles(COLORS); // Generate styles dynamically
 
   const sortHandler = (sort) => {
     setSelectedSort(sort);
@@ -37,10 +42,12 @@ export default function TagScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+  });
 

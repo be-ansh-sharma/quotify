@@ -1,33 +1,53 @@
 import { Tabs } from 'expo-router';
 import { useRouter } from 'expo-router';
-import { COLORS } from 'styles/theme';
+import { COLORS, LIGHT_COLORS } from 'styles/theme'; // Import LIGHT_COLORS too
 import { MaterialIcons } from '@expo/vector-icons';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
-import useUserStore from 'stores/userStore'; // Import user store
+import useUserStore from 'stores/userStore';
 import AnimatedTabBar from 'components/animatedtabbar/AnimatedTabBar';
 import { useTabBar } from 'context/TabBarContext';
+import { useMemo } from 'react'; // Add this import
 
 export default function Layout() {
   const router = useRouter();
-  const isGuest = useUserStore((state) => state.isGuest); // Check if the user is a guest
+  const isGuest = useUserStore((state) => state.isGuest);
   const { visible } = useTabBar();
+
+  // Add theme detection code
+  const themePreference = useUserStore((state) => state.theme);
+  const systemIsDark = useUserStore((state) => state.systemIsDark);
+
+  // Calculate actual theme
+  const isDarkMode = useMemo(() => {
+    if (themePreference === 'system') {
+      return systemIsDark !== false;
+    }
+    return themePreference === 'dark';
+  }, [themePreference, systemIsDark]);
+
+  // Get the right colors based on theme
+  const colors = isDarkMode ? COLORS : LIGHT_COLORS;
 
   return (
     <Tabs
-      tabBar={(props) => <AnimatedTabBar {...props} />}
+      tabBar={(props) => <AnimatedTabBar {...props} isDark={isDarkMode} />}
+      // Add this prop to make React Navigation update theme
+      colorScheme={isDarkMode ? 'dark' : 'light'}
       screenOptions={{
         headerStyle: {
-          backgroundColor: COLORS.background, // Same dark color as body
-          shadowColor: 'rgba(0, 0, 0, 0.25)', // Shadow color
-          shadowOffset: { width: 0, height: 2 }, // Shadow offset
-          shadowOpacity: 1, // Full opacity for shadow
-          shadowRadius: 4, // Shadow blur radius
+          backgroundColor: colors.background, // Use theme-aware background
+          shadowColor: isDarkMode
+            ? 'rgba(0, 0, 0, 0.25)'
+            : 'rgba(0, 0, 0, 0.1)',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 1,
+          shadowRadius: 4,
         },
         headerRight: () => (
           <MaterialIcons
             name='format-quote'
             size={28}
-            color={COLORS.primary}
+            color={colors.primary}
             style={{ marginRight: 16 }}
             onPress={() => {
               if (isGuest) {
@@ -41,14 +61,14 @@ export default function Layout() {
           />
         ),
         tabBarStyle: {
-          position: 'absolute', // Important for animation
+          position: 'absolute',
           height: 56,
-          backgroundColor: 'transparent', // Let our custom tab bar handle it
+          backgroundColor: 'transparent',
         },
-        tabBarActiveTintColor: COLORS.primary, // Active tab color
-        tabBarInactiveTintColor: COLORS.placeholder, // Inactive tab color
-        tabBarPressColor: 'transparent', // <-- Remove ripple on Android
-        tabBarPressOpacity: 1, // <-- Remove opacity change on iOS
+        tabBarActiveTintColor: colors.primary, // Theme-aware active color
+        tabBarInactiveTintColor: colors.placeholder, // Theme-aware inactive color
+        tabBarPressColor: 'transparent',
+        tabBarPressOpacity: 1,
       }}
     >
       <Tabs.Screen
@@ -58,7 +78,7 @@ export default function Layout() {
           tabBarIcon: ({ size, focused }) => (
             <MaterialIcons
               name='home'
-              color={focused ? COLORS.primary : COLORS.placeholder} // Primary color when focused
+              color={focused ? colors.primary : colors.placeholder}
               size={size}
             />
           ),
@@ -71,7 +91,7 @@ export default function Layout() {
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialIcons
               name='search'
-              color={focused ? COLORS.primary : COLORS.placeholder}
+              color={focused ? colors.primary : colors.placeholder}
               size={size}
             />
           ),
@@ -84,7 +104,7 @@ export default function Layout() {
           tabBarIcon: ({ color, size, focused }) => (
             <MaterialIcons
               name='person'
-              color={focused ? COLORS.primary : COLORS.placeholder}
+              color={focused ? colors.primary : colors.placeholder}
               size={size}
             />
           ),

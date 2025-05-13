@@ -14,7 +14,7 @@ import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { createUser } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function Register() {
@@ -27,6 +27,9 @@ export default function Register() {
 
   const router = useRouter();
   const setUser = useUserStore((state) => state.setUser);
+
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const styles = getStyles(COLORS); // Generate styles dynamically
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -207,79 +210,77 @@ export default function Register() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-    backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  // Logo styles
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    marginBottom: 10,
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    letterSpacing: 1,
-  },
-  // Form styles
-  formContainer: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    padding: 20,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  title: {
-    fontSize: 20,
-    textAlign: 'center',
-    marginBottom: 20,
-    color: COLORS.text,
-  },
-  input: {
-    marginBottom: 8,
-    backgroundColor: 'transparent',
-  },
-  button: {
-    marginTop: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
-  },
-  // Add new back button style
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-    zIndex: 10,
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 24,
+      justifyContent: 'center',
+      backgroundColor: COLORS.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.background,
+    },
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    logo: {
+      width: 80,
+      height: 80,
+      borderRadius: 16,
+      marginBottom: 10,
+    },
+    appName: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: COLORS.primary,
+      letterSpacing: 1,
+    },
+    formContainer: {
+      backgroundColor: COLORS.surface,
+      borderRadius: 8,
+      padding: 20,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    title: {
+      fontSize: 20,
+      textAlign: 'center',
+      marginBottom: 20,
+      color: COLORS.text,
+    },
+    input: {
+      marginBottom: 8,
+      backgroundColor: 'transparent',
+    },
+    button: {
+      marginTop: 16,
+      borderRadius: 8,
+      backgroundColor: COLORS.primary,
+    },
+    backButton: {
+      position: 'absolute',
+      top: 40,
+      left: 20,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.surface,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 3,
+      elevation: 3,
+      zIndex: 10,
+    },
+  });
 

@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import { FontAwesome } from '@expo/vector-icons';
 import Tile from 'components/quotes/tile/Tile';
 import {
@@ -31,7 +32,12 @@ export default function ListQuotes() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
 
-  // Initial fetch
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
+
   useEffect(() => {
     const fetchInitialQuotes = async () => {
       try {
@@ -47,22 +53,6 @@ export default function ListQuotes() {
     fetchInitialQuotes();
   }, [listQuotes]);
 
-  // Share the entire list
-  const handleShareList = async () => {
-    const formattedQuotes = quoteDetails
-      .map((quote, index) => `${index + 1}. ${quote.text} - ${quote.author}`)
-      .join('\n');
-    const message = `Check out my list "${listName}" on Quotify:\n\n${formattedQuotes}`;
-
-    try {
-      await Share.share({
-        message,
-      });
-    } catch (error) {
-      console.error('Error sharing the list:', error);
-    }
-  };
-
   const removeDuplicates = (quotes) => {
     const seen = new Set();
     return quotes.filter((quote) => {
@@ -75,7 +65,7 @@ export default function ListQuotes() {
   };
 
   const fetchMoreQuotes = async () => {
-    if (loadingMore) return; // Prevent multiple fetches at the same time
+    if (loadingMore) return;
 
     setLoadingMore(true);
 
@@ -108,10 +98,8 @@ export default function ListQuotes() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Remove the list from Firestore
               await deleteListFromUser(user.uid, listName);
 
-              // Update the user store to remove the list locally
               const updatedLists = { ...user.lists };
               delete updatedLists[listName];
               setUser({
@@ -119,8 +107,7 @@ export default function ListQuotes() {
                 lists: updatedLists,
               });
 
-              console.log(`List "${listName}" deleted successfully.`);
-              router.push('/profile/bookmarked'); // Navigate back to the bookmarked lists
+              router.push('/profile/bookmarked');
             } catch (error) {
               console.error('Error deleting the list:', error);
               Alert.alert(
@@ -148,18 +135,12 @@ export default function ListQuotes() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Remove the quote from Firestore
               await removeQuoteFromList(user.uid, listName, quoteId);
 
-              // Update the local state to remove the quote
-              setQuoteDetails((prev) => {
-                const updatedQuotes = prev
-                  ? prev.filter((quote) => quote.id !== quoteId)
-                  : [];
-                return updatedQuotes.length > 0 ? updatedQuotes : []; // Ensure it's always an array
-              });
+              setQuoteDetails((prev) =>
+                prev.filter((quote) => quote.id !== quoteId)
+              );
 
-              // Update the local user object
               const updatedLists = { ...user.lists };
               updatedLists[listName] =
                 updatedLists[listName]?.filter((id) => id !== quoteId) || [];
@@ -167,10 +148,6 @@ export default function ListQuotes() {
                 ...user,
                 lists: updatedLists,
               });
-
-              console.log(
-                `Quote with ID ${quoteId} removed from the list "${listName}".`
-              );
             } catch (error) {
               console.error('Error removing quote from the list:', error);
               Alert.alert(
@@ -204,12 +181,6 @@ export default function ListQuotes() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{listName}</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={handleShareList}
-            style={styles.shareButton}
-          >
-            <FontAwesome name='share-alt' size={20} color={COLORS.icon} />
-          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDeleteList}
             style={styles.deleteListButton}
@@ -259,82 +230,80 @@ export default function ListQuotes() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  shareButton: {
-    marginRight: 12,
-  },
-  deleteListButton: {
-    marginLeft: 12,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.background,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: COLORS.placeholder,
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingHorizontal: 8,
-    marginTop: 16,
-  },
-  tileContainer: {
-    marginBottom: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  removeButton: {
-    marginLeft: 16,
-    padding: 8,
-    alignSelf: 'center',
-  },
-  loadingMoreContainer: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+      backgroundColor: COLORS.surface,
+    },
+    backButton: {
+      marginRight: 12,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: COLORS.text,
+      flex: 1,
+      textAlign: 'center',
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    deleteListButton: {
+      marginLeft: 12,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: COLORS.background,
+    },
+    emptyText: {
+      fontSize: 18,
+      color: COLORS.placeholder,
+      textAlign: 'center',
+    },
+    listContent: {
+      paddingHorizontal: 8,
+      marginTop: 16,
+    },
+    tileContainer: {
+      marginBottom: 16,
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: COLORS.surface,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+    },
+    removeButton: {
+      marginLeft: 16,
+      padding: 8,
+      alignSelf: 'center',
+    },
+    loadingMoreContainer: {
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+  });
 

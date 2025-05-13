@@ -1,9 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { ActivityIndicator, Card, useTheme } from 'react-native-paper';
-import { COLORS } from 'styles/theme';
-// If you're using Lottie
-// import LottieView from 'lottie-react-native';
+import { ActivityIndicator, Card } from 'react-native-paper';
+import { useAppTheme } from 'context/AppThemeContext';
 
 const quotes = [
   'Inhale confidence, exhale doubt.',
@@ -33,8 +31,10 @@ const getRandomQuote = () => {
 };
 
 const Skelton = () => {
-  const { colors } = useTheme();
+  const { COLORS, isDark } = useAppTheme(); // Get theme and dark mode status
   const quote = getRandomQuote();
+
+  const styles = getStyles(COLORS, isDark);
 
   return (
     <View style={styles.container}>
@@ -42,11 +42,11 @@ const Skelton = () => {
         <Card.Content style={styles.content}>
           <ActivityIndicator
             animating={true}
-            color={colors.primary}
+            color={COLORS.primary}
             size='large'
           />
           <Text
-            style={[styles.quoteText, { color: colors.primary }]}
+            style={[styles.quoteText, { color: COLORS.primary }]}
           >{`"${quote}"`}</Text>
         </Card.Content>
       </Card>
@@ -54,28 +54,37 @@ const Skelton = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  card: {
-    padding: 24,
-    borderRadius: 16,
-    minWidth: '75%',
-    backgroundColor: 'transparent',
-  },
-  content: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  quoteText: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 16,
-  },
-});
+// Convert static styles to a function that takes COLORS and isDark
+const getStyles = (COLORS, isDark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.background, // Ensure it matches the theme
+    },
+    card: {
+      padding: 24,
+      borderRadius: 16,
+      width: '90%', // Make the card responsive
+      backgroundColor: COLORS.surface,
+      shadowColor: isDark ? COLORS.shadow : 'rgba(0, 0, 0, 0.1)', // Subtle shadow for light themes
+      shadowOpacity: isDark ? 0.3 : 0.1, // Adjust shadow opacity
+      shadowRadius: isDark ? 8 : 4, // Adjust shadow radius
+      shadowOffset: { width: 0, height: isDark ? 4 : 2 },
+      elevation: isDark ? 6 : 3, // Android shadow
+    },
+    content: {
+      alignItems: 'center',
+      gap: 16,
+    },
+    quoteText: {
+      fontSize: 16,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      marginTop: 16,
+    },
+  });
 
 export default Skelton;
 

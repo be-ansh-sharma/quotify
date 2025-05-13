@@ -8,7 +8,8 @@ import {
   Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORS } from 'styles/theme';
+// Import the hook instead of COLORS
+import { useAppTheme } from 'context/AppThemeContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 
 const Header = ({
@@ -20,6 +21,11 @@ const Header = ({
   rightAction,
 }) => {
   const router = useRouter();
+  // Get COLORS from the theme context
+  const { COLORS } = useAppTheme();
+
+  // Create styles with current COLORS
+  const styles = getStyles(COLORS);
 
   const handleLeftAction = () => {
     if (leftAction) {
@@ -88,37 +94,34 @@ const Header = ({
   );
 };
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 20,
-  },
-  rightButton: {
-    marginLeft: 'auto',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    flex: 1,
-    marginLeft: 12,
-  },
-});
+// Create styles function that uses COLORS directly
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: COLORS.surface,
+      elevation: 3,
+    },
+    iconButton: {
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 20,
+    },
+    rightButton: {
+      marginLeft: 'auto',
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: COLORS.text,
+      flex: 1,
+      marginLeft: 12,
+    },
+  });
 
 export default Header;
 

@@ -5,11 +5,17 @@ import { List, Divider, Surface } from 'react-native-paper';
 import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
 import { auth } from 'utils/firebase/firebaseconfig';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext';
 
 export default function Settings() {
   const router = useRouter();
   const resetUser = useUserStore((state) => state.resetUser);
+  const theme = useUserStore((state) => state.theme);
+  const isGuest = useUserStore((state) => state.isGuest);
+
+  const { COLORS } = useAppTheme();
+
+  const styles = getStyles(COLORS);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -37,6 +43,30 @@ export default function Settings() {
       <View style={styles.container}>
         <Surface style={styles.card} elevation={2}>
           <List.Section>
+            <List.Item
+              title='Theme'
+              titleStyle={styles.listItemTitle}
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon='theme-light-dark'
+                  color={COLORS.primary}
+                />
+              )}
+              onPress={() => router.push('/settings/theme')}
+              right={() => (
+                <Text style={styles.themeValue}>
+                  {theme === 'system'
+                    ? 'System'
+                    : theme === 'light'
+                    ? 'Light'
+                    : 'Dark'}
+                </Text>
+              )}
+              rippleColor={`${COLORS.primary}20`}
+            />
+            <Divider style={styles.divider} />
+
             <List.Item
               title='Manage Notifications'
               titleStyle={styles.listItemTitle}
@@ -75,15 +105,23 @@ export default function Settings() {
               rippleColor={`${COLORS.primary}20`}
             />
             <Divider style={styles.divider} />
-            <List.Item
-              title='Logout'
-              titleStyle={styles.logoutText}
-              left={(props) => (
-                <List.Icon {...props} icon='logout' color={COLORS.error} />
-              )}
-              onPress={handleLogout}
-              rippleColor={`${COLORS.error}20`}
-            />
+            {isGuest ? (
+              <List.Item
+                title='Login'
+                left={(props) => (
+                  <List.Icon {...props} icon='key' color={COLORS.primary} />
+                )}
+                onPress={() => router.push('/auth/entry')}
+              />
+            ) : (
+              <List.Item
+                title='Logout'
+                left={(props) => (
+                  <List.Icon {...props} icon='logout' color={COLORS.error} />
+                )}
+                onPress={handleLogout}
+              />
+            )}
           </List.Section>
         </Surface>
       </View>
@@ -91,35 +129,41 @@ export default function Settings() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  card: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  divider: {
-    backgroundColor: `${COLORS.disabled}40`,
-  },
-  listItemTitle: {
-    color: COLORS.text,
-    fontSize: 16,
-  },
-  logoutText: {
-    color: COLORS.error,
-    fontSize: 16,
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    container: {
+      flex: 1,
+      padding: 16,
+    },
+    card: {
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: COLORS.surface,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    divider: {
+      backgroundColor: `${COLORS.disabled}40`,
+    },
+    listItemTitle: {
+      color: COLORS.text,
+      fontSize: 16,
+    },
+    logoutText: {
+      color: COLORS.error,
+      fontSize: 16,
+    },
+    themeValue: {
+      color: COLORS.secondaryText,
+      fontSize: 14,
+      marginRight: 8,
+    },
+  });
 

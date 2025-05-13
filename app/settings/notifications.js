@@ -9,7 +9,8 @@ import {
 import { Chip, Button, List, Switch, Portal } from 'react-native-paper';
 import { TimePickerModal } from 'react-native-paper-dates';
 import dayjs from 'dayjs';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
@@ -195,6 +196,10 @@ export default function NotificationSettings() {
       setLoading(false); // Stop loading
     }
   };
+
+  // --- Theme Hook ---
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
   // --- Render ---
   return (
@@ -403,45 +408,46 @@ export default function NotificationSettings() {
 }
 
 // --- Styles ---
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  container: {
-    paddingBottom: 80,
-  },
-  nestedListItem: {
-    paddingLeft: 30,
-  },
-  saveButton: {
-    marginHorizontal: 16,
-    marginVertical: 24,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary || '#6200EE',
-  },
-  buttonLabel: {
-    fontWeight: '600',
-    fontSize: 16,
-    color: COLORS.onPrimary || '#FFFFFF',
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  tagChip: {
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: '#E0E0E0',
-  },
-  tagText: {
-    fontSize: 14,
-    color: '#000',
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    container: {
+      paddingBottom: 80,
+    },
+    nestedListItem: {
+      paddingLeft: 30,
+    },
+    saveButton: {
+      marginHorizontal: 16,
+      marginVertical: 24,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: COLORS.primary || '#6200EE',
+    },
+    buttonLabel: {
+      fontWeight: '600',
+      fontSize: 16,
+      color: COLORS.onPrimary || '#FFFFFF',
+    },
+    tagContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+    },
+    tagChip: {
+      marginRight: 8,
+      marginBottom: 8,
+      backgroundColor: '#E0E0E0',
+    },
+    tagText: {
+      fontSize: 14,
+      color: '#000',
+    },
+  });
 
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 

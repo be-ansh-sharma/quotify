@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchAuthors } from 'utils/firebase/firestore'; // Function to fetch authors
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext';
 import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function Authors() {
@@ -20,6 +20,12 @@ export default function Authors() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [scale] = useState(new Animated.Value(1)); // Animation value for scaling
+
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
 
   // Fetch authors from the database
   const loadAuthors = async () => {
@@ -109,43 +115,45 @@ export default function Authors() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  grid: {
-    justifyContent: 'center',
-  },
-  row: {
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  tile: {
-    flex: 1,
-    marginHorizontal: 8,
-    aspectRatio: 1, // Make tiles square
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 15,
-    elevation: 6,
-    shadowColor: COLORS.shadow,
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  tileContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tileText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    grid: {
+      justifyContent: 'center',
+    },
+    row: {
+      justifyContent: 'space-between',
+      marginTop: 8,
+    },
+    tile: {
+      flex: 1,
+      marginHorizontal: 8,
+      aspectRatio: 1, // Make tiles square
+      backgroundColor: COLORS.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 15,
+      elevation: 6,
+      shadowColor: COLORS.shadow,
+      shadowOpacity: 0.2,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      paddingHorizontal: 12,
+      marginBottom: 16,
+    },
+    tileContent: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    tileText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: COLORS.text,
+      textAlign: 'center',
+    },
+  });
 

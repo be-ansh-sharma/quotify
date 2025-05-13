@@ -3,11 +3,14 @@ import { View, StyleSheet, Image, Animated } from 'react-native';
 import { Button, Title, Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 
 export default function Entry() {
   const router = useRouter();
   const setGuest = useUserStore((state) => state.setGuest);
+
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const styles = getStyles(COLORS); // Generate styles dynamically
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -72,7 +75,7 @@ export default function Entry() {
           mode='contained'
           onPress={() => router.navigate('/auth/login')}
           style={[styles.button, { backgroundColor: COLORS.primary }]}
-          labelStyle={{ color: COLORS.icon }}
+          labelStyle={styles.buttonLabel}
         >
           Login
         </Button>
@@ -94,51 +97,55 @@ export default function Entry() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: COLORS.background,
-  },
-  // Logo styles
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 24,
-    marginBottom: 12,
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    letterSpacing: 1.5,
-  },
-  title: {
-    fontSize: 22,
-    textAlign: 'center',
-    marginBottom: 8,
-    color: COLORS.text,
-  },
-  subtitle: {
-    textAlign: 'center',
-    color: COLORS.placeholder,
-    marginBottom: 32,
-    fontSize: 16,
-  },
-  buttonGroup: {
-    width: '100%',
-    maxWidth: 300,
-    gap: 16,
-  },
-  button: {
-    borderRadius: 8,
-    paddingVertical: 6,
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+      backgroundColor: COLORS.background,
+    },
+    // Logo styles
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 30,
+    },
+    logo: {
+      width: 120,
+      height: 120,
+      borderRadius: 24,
+      marginBottom: 12,
+    },
+    appName: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: COLORS.primary,
+      letterSpacing: 1.5,
+    },
+    title: {
+      fontSize: 22,
+      textAlign: 'center',
+      marginBottom: 8,
+      color: COLORS.text,
+    },
+    subtitle: {
+      textAlign: 'center',
+      color: COLORS.placeholder,
+      marginBottom: 32,
+      fontSize: 16,
+    },
+    buttonGroup: {
+      width: '100%',
+      maxWidth: 300,
+      gap: 16,
+    },
+    button: {
+      borderRadius: 8,
+      paddingVertical: 6,
+    },
+    buttonLabel: {
+      color: COLORS.surface,
+    },
+  });
 

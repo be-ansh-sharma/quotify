@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 import { FontAwesome } from '@expo/vector-icons';
 import { getRandomQuote } from 'utils/firebase/firestore';
 
@@ -14,6 +14,9 @@ export default function RandomQuote() {
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const styles = getStyles(COLORS); // Generate styles dynamically
 
   const fetchNewQuote = async () => {
     setLoading(true);
@@ -69,52 +72,53 @@ export default function RandomQuote() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.surface,
-    padding: 16,
-    borderRadius: 8,
-    elevation: 4,
-  },
-  quoteText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  authorText: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    color: COLORS.placeholder,
-    marginBottom: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    color: COLORS.error,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginTop: 12,
-    gap: 8,
-  },
-  refreshText: {
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: COLORS.surface,
+      padding: 16,
+      borderRadius: 8,
+      elevation: 4,
+    },
+    quoteText: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: COLORS.text,
+      marginBottom: 8,
+    },
+    authorText: {
+      fontSize: 16,
+      fontStyle: 'italic',
+      color: COLORS.placeholder,
+      marginBottom: 16,
+    },
+    errorText: {
+      fontSize: 16,
+      color: COLORS.error,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    loadingContainer: {
+      padding: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    refreshButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'center',
+      backgroundColor: COLORS.surface,
+      borderWidth: 1,
+      borderColor: COLORS.primary,
+      borderRadius: 20,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      marginTop: 12,
+      gap: 8,
+    },
+    refreshText: {
+      color: COLORS.primary,
+      fontWeight: '500',
+    },
+  });
 

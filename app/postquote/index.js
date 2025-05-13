@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { TextInput, Button, Switch } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import {
   addQuoteToPendingList,
   addQuote,
@@ -21,6 +22,12 @@ export default function PostQuote() {
   const [isPrivate, setIsPrivate] = useState(false); // New state for private/public toggle
   const [loading, setLoading] = useState(false);
   const [privateQuoteCount, setPrivateQuoteCount] = useState(0); // New state for private quote count
+
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
 
   const handlePostQuote = async () => {
     if (!quoteText.trim() || !author.trim()) {
@@ -181,71 +188,73 @@ export default function PostQuote() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.placeholder,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  input: {
-    marginBottom: 16,
-    backgroundColor: 'transparent',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  toggleLabel: {
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  rejectionNote: {
-    fontSize: 12,
-    color: COLORS.placeholder,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  note: {
-    fontSize: 12,
-    color: COLORS.placeholder,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  limitMessage: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  limitText: {
-    fontSize: 14,
-    color: COLORS.placeholder,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  upgradeButton: {
-    marginTop: 8,
-    borderRadius: 8,
-  },
-  button: {
-    marginTop: 8,
-    borderRadius: 8,
-  },
-  cancelButton: {
-    marginTop: 12,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    content: {
+      flex: 1,
+      padding: 20,
+      justifyContent: 'center',
+    },
+    subtitle: {
+      fontSize: 14,
+      color: COLORS.placeholder,
+      marginBottom: 24,
+      textAlign: 'center',
+    },
+    input: {
+      marginBottom: 16,
+      backgroundColor: 'transparent',
+    },
+    toggleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+    },
+    toggleLabel: {
+      fontSize: 16,
+      color: COLORS.text,
+    },
+    rejectionNote: {
+      fontSize: 12,
+      color: COLORS.placeholder,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    note: {
+      fontSize: 12,
+      color: COLORS.placeholder,
+      marginBottom: 24,
+      textAlign: 'center',
+    },
+    limitMessage: {
+      marginTop: 16,
+      padding: 16,
+      backgroundColor: COLORS.surface,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    limitText: {
+      fontSize: 14,
+      color: COLORS.placeholder,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    upgradeButton: {
+      marginTop: 8,
+      borderRadius: 8,
+    },
+    button: {
+      marginTop: 8,
+      borderRadius: 8,
+    },
+    cancelButton: {
+      marginTop: 12,
+    },
+  });
 

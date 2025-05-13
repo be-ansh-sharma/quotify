@@ -12,9 +12,10 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext';
 
 const BottomSheet = forwardRef(({ children, height = '40%', onClose }, ref) => {
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
   const [visible, setVisible] = useState(false);
   const slideAnim = useState(new Animated.Value(0))[0];
 
@@ -74,6 +75,8 @@ const BottomSheet = forwardRef(({ children, height = '40%', onClose }, ref) => {
 
   if (!visible) return null;
 
+  const styles = getStyles(COLORS); // Generate styles dynamically
+
   return (
     <Modal transparent visible={visible} animationType='none'>
       <TouchableWithoutFeedback onPress={() => ref.current.close()}>
@@ -95,32 +98,34 @@ const BottomSheet = forwardRef(({ children, height = '40%', onClose }, ref) => {
   );
 });
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-    zIndex: 1000,
-  },
-  container: {
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 8,
-    zIndex: 1000,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: COLORS.placeholder,
-    alignSelf: 'center',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+      zIndex: 1000,
+    },
+    container: {
+      backgroundColor: COLORS.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingTop: 8,
+      zIndex: 1000,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      backgroundColor: COLORS.placeholder,
+      alignSelf: 'center',
+      borderRadius: 2,
+      marginBottom: 8,
+    },
+    content: {
+      flex: 1,
+      padding: 16,
+    },
+  });
 
 export default BottomSheet;
+

@@ -1,26 +1,23 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 
 function TileActions({
   selectedReaction,
   reactions,
   isBookmarked,
   listCount,
-  onReactionPress,
   onReactionLongPress,
   onBookmarkPress,
   onSharePress,
   handleSelectReaction,
   toggleReactionTray,
 }) {
+  const { COLORS } = useAppTheme(); // Get COLORS from theme context
+  const styles = getStyles(COLORS); // Generate styles dynamically
+
   const handleReactionPress = () => {
     if (selectedReaction) {
       handleSelectReaction(selectedReaction);
@@ -113,102 +110,96 @@ function TileActions({
   );
 }
 
-const styles = StyleSheet.create({
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-  },
-  leftActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 24, // Ensure consistent minimum height
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  reactionIconWrapper: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  reactionIcon: {
-    fontSize: 20, // Consistent font size for both emoji and icon
-    color: COLORS.icon,
-    textAlign: 'center',
-    lineHeight: 24, // Force consistent line height
-  },
-  reactionCount: {
-    fontSize: 14,
-    color: COLORS.text,
-    marginRight: 8,
-  },
-  badge: {
-    position: 'absolute',
-    top: -5,
-    right: -10,
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    width: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  shareButton: {
-    marginRight: 16,
-  },
-  reactionStack: {
-    flexDirection: 'row',
-    position: 'relative',
-    height: 24,
-    width: 60, // Adjust based on your needs
-    marginRight: 4,
-  },
-  stackedEmoji: {
-    position: 'absolute',
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.background,
-  },
-  reactionEmoji: {
-    fontSize: 16,
-  },
-  totalReactionCount: {
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-  emptyReactions: {
-    width: 64, // Match the width of populated reaction stack + count
-    height: 24,
-  },
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4, // Reduced top margin
-  },
-  button: {
-    padding: 6, // Reduced padding
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    actions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 12,
+    },
+    leftActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    rightActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 24, // Ensure consistent minimum height
+    },
+    actionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    reactionIconWrapper: {
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    reactionIcon: {
+      fontSize: 20, // Consistent font size for both emoji and icon
+      color: COLORS.icon,
+      textAlign: 'center',
+      lineHeight: 24, // Force consistent line height
+    },
+    reactionCount: {
+      fontSize: 14,
+      color: COLORS.text,
+      marginRight: 8,
+    },
+    badge: {
+      position: 'absolute',
+      top: -5,
+      right: -10,
+      backgroundColor: COLORS.primary,
+      borderRadius: 10,
+      width: 18,
+      height: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    badgeText: {
+      color: COLORS.white,
+      fontSize: 10,
+      fontWeight: 'bold',
+    },
+    shareButton: {
+      marginRight: 16,
+    },
+    reactionStack: {
+      flexDirection: 'row',
+      position: 'relative',
+      height: 24,
+      width: 60, // Adjust based on your needs
+      marginRight: 4,
+    },
+    stackedEmoji: {
+      position: 'absolute',
+      backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: COLORS.background,
+    },
+    reactionEmoji: {
+      fontSize: 16,
+    },
+    totalReactionCount: {
+      fontSize: 14,
+      color: COLORS.text,
+      fontWeight: '600',
+    },
+    emptyReactions: {
+      width: 64, // Match the width of populated reaction stack + count
+      height: 24,
+    },
+  });
 
 export default React.memo(TileActions);
 

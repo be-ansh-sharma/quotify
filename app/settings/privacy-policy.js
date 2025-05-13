@@ -1,9 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { COLORS } from 'styles/theme';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
 import Header from 'components/header/Header'; // Import the reusable Header component
 
 export default function PrivacyPolicy() {
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
+
   return (
     <View style={styles.container}>
       {/* Use the reusable Header component */}
@@ -65,25 +72,27 @@ export default function PrivacyPolicy() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background, // Use the app's background color
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  text: {
-    fontSize: 16,
-    color: COLORS.text,
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background, // Use the app's background color
+    },
+    contentContainer: {
+      padding: 16,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: COLORS.text,
+      marginBottom: 8,
+    },
+    text: {
+      fontSize: 16,
+      color: COLORS.text,
+      marginBottom: 16,
+      lineHeight: 22,
+    },
+  });
 

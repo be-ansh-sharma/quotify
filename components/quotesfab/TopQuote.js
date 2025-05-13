@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 import { getTopQuote } from 'utils/firebase/firestore';
 
 export default function TopQuote() {
   const [topQuote, setTopQuote] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const styles = getStyles(COLORS); // Generate styles dynamically
+
   useEffect(() => {
     const fetchQuote = async () => {
       try {
         const fetchedQuote = await getTopQuote();
         setTopQuote(fetchedQuote);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching Top Quote:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -43,34 +46,35 @@ export default function TopQuote() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.surface,
-    padding: 16,
-    elevation: 4,
-    borderRadius: 8,
-  },
-  quoteText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  authorText: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    color: COLORS.placeholder,
-    marginBottom: 4,
-  },
-  reactionsText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    marginTop: 4,
-  },
-  loadingContainer: {
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: COLORS.surface,
+      padding: 16,
+      elevation: 4,
+      borderRadius: 8,
+    },
+    quoteText: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: COLORS.text,
+      marginBottom: 8,
+    },
+    authorText: {
+      fontSize: 16,
+      fontStyle: 'italic',
+      color: COLORS.placeholder,
+      marginBottom: 4,
+    },
+    reactionsText: {
+      fontSize: 14,
+      color: COLORS.primary,
+      marginTop: 4,
+    },
+    loadingContainer: {
+      padding: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
 

@@ -7,17 +7,29 @@ import {
   StyleSheet,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORS } from 'styles/theme';
+import { COLORS, LIGHT_COLORS } from 'styles/theme';
 import { useTabBar } from 'context/TabBarContext';
 
-export default function AnimatedTabBar({ state, descriptors, navigation }) {
+// Add isDark prop to component signature
+export default function AnimatedTabBar({
+  state,
+  descriptors,
+  navigation,
+  isDark = true,
+}) {
   const { tabBarTranslateY } = useTabBar();
+
+  // Choose appropriate colors based on theme
+  const colors = isDark ? COLORS : LIGHT_COLORS;
 
   return (
     <Animated.View
       style={[
         styles.tabBar,
         {
+          // Replace static COLORS with dynamic colors
+          backgroundColor: colors.background,
+          borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
           transform: [{ translateY: tabBarTranslateY }],
           opacity: tabBarTranslateY.interpolate({
             inputRange: [0, 30, 60],
@@ -58,12 +70,14 @@ export default function AnimatedTabBar({ state, descriptors, navigation }) {
             <MaterialIcons
               name={iconName}
               size={24}
-              color={isFocused ? COLORS.primary : COLORS.placeholder}
+              // Use dynamic colors
+              color={isFocused ? colors.primary : colors.placeholder}
             />
             <Text
               style={[
                 styles.tabText,
-                { color: isFocused ? COLORS.primary : COLORS.placeholder },
+                // Use dynamic colors
+                { color: isFocused ? colors.primary : colors.placeholder },
               ]}
             >
               {label}
@@ -75,17 +89,16 @@ export default function AnimatedTabBar({ state, descriptors, navigation }) {
   );
 }
 
+// Keep static layout styles, move color-specific styles to the component
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: COLORS.background,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     height: 56,
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255,255,255,0.1)',
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -1 },

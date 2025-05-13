@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Header from 'components/header/Header'; // Import the Header component
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
-import { MaterialIcons } from '@expo/vector-icons'; // Switch to MaterialIcons for consistency
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 
 export default function FavoriteAuthors() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
   const isGuest = useUserStore((state) => state.isGuest);
 
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const styles = getStyles(COLORS); // Generate styles dynamically
+
   const renderEmptyState = (message) => (
     <SafeAreaView style={styles.safeArea}>
-      {/* Replace the custom header with the Header component */}
+      {/* Use the reusable Header component */}
       <Header title='Favorite Authors' backRoute='/profile' />
 
       <View style={styles.emptyContainer}>
@@ -80,7 +82,7 @@ export default function FavoriteAuthors() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Replace the custom header with the Header component */}
+      {/* Use the reusable Header component */}
       <Header title='Favorite Authors' backRoute='/profile' />
 
       <FlatList
@@ -95,57 +97,58 @@ export default function FavoriteAuthors() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  // Remove header styles since we're using the Header component
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: COLORS.placeholder,
-    textAlign: 'center',
-    lineHeight: 26,
-  },
-  grid: {
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-  },
-  row: {
-    justifyContent: 'space-between',
-  },
-  tile: {
-    flex: 1,
-    marginHorizontal: 8,
-    aspectRatio: 1,
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 15,
-    elevation: 6,
-    shadowColor: COLORS.shadow,
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    marginBottom: 16,
-  },
-  tileContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tileText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text, // Use COLORS.text instead of COLORS.onSurface for consistency
-    textAlign: 'center',
-    paddingHorizontal: 8,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    emptyText: {
+      fontSize: 18,
+      color: COLORS.placeholder,
+      textAlign: 'center',
+      lineHeight: 26,
+    },
+    grid: {
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 12,
+    },
+    row: {
+      justifyContent: 'space-between',
+    },
+    tile: {
+      flex: 1,
+      marginHorizontal: 8,
+      aspectRatio: 1,
+      backgroundColor: COLORS.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 15,
+      elevation: 6,
+      shadowColor: COLORS.shadow,
+      shadowOpacity: 0.2,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      marginBottom: 16,
+    },
+    tileContent: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    tileText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: COLORS.text,
+      textAlign: 'center',
+      paddingHorizontal: 8,
+    },
+  });
 

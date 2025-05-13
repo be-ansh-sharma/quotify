@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import { COLORS } from 'styles/theme';
 import Quotes from 'components/quotes/Quotes'; // Reuse the Quotes component
 import useUserStore from 'stores/userStore';
 import Header from 'components/header/Header'; // Import the reusable Header component
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 
 export default function FavoriteQuotes() {
   const router = useRouter();
@@ -12,6 +12,10 @@ export default function FavoriteQuotes() {
 
   // Check if the user has favorite authors
   const hasFollowedAuthors = user?.followedAuthors?.length > 0;
+
+  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+
+  const styles = getStyles(COLORS); // Generate styles dynamically
 
   return (
     <View style={styles.container}>
@@ -37,21 +41,23 @@ export default function FavoriteQuotes() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background, // Use the app's background color
-  },
-  noFavoritesContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  noFavoritesText: {
-    fontSize: 16,
-    color: COLORS.placeholder,
-    textAlign: 'center',
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background, // Use the app's background color
+    },
+    noFavoritesContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    noFavoritesText: {
+      fontSize: 16,
+      color: COLORS.placeholder,
+      textAlign: 'center',
+    },
+  });
 

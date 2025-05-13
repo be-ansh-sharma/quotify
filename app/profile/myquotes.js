@@ -6,16 +6,19 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
-  Alert, // Import Alert
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from 'components/header/Header'; // Import Header component
 import useUserStore from 'stores/userStore';
-import { COLORS } from 'styles/theme';
-import { MaterialIcons } from '@expo/vector-icons'; // Switch to MaterialIcons
-import { fetchQuotesByUser } from 'utils/firebase/firestore';
+// Change this import
+import { useAppTheme } from 'context/AppThemeContext';
+import { MaterialIcons } from '@expo/vector-icons';
+import {
+  fetchQuotesByUser,
+  deletePrivateQuote,
+} from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile';
-import { deletePrivateQuote } from 'utils/firebase/firestore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 
 export default function MyQuotes() {
@@ -29,9 +32,14 @@ export default function MyQuotes() {
   const [hasMoreQuotes, setHasMoreQuotes] = useState(true);
   const [filter, setFilter] = useState('public'); // 'public' or 'private'
 
-  // Existing functions and effects...
+  // Get COLORS from theme context
+  const { COLORS } = useAppTheme();
+
+  // Generate styles with current COLORS
+  const styles = getStyles(COLORS);
+
   const loadQuotes = async (isLoadMore = false) => {
-    if (isLoadMore && !hasMoreQuotes) return; // Stop if no more quotes to load
+    if (isLoadMore && !hasMoreQuotes) return;
 
     isLoadMore ? setLoadingMore(true) : setLoading(true);
 
@@ -44,7 +52,7 @@ export default function MyQuotes() {
 
       setQuotes((prev) => (isLoadMore ? [...prev, ...newQuotes] : newQuotes));
       setLastDoc(lastVisibleDoc);
-      setHasMoreQuotes(newQuotes.length > 0); // If no new quotes, stop loading more
+      setHasMoreQuotes(newQuotes.length > 0);
     } catch (error) {
       console.error('Error fetching user quotes:', error);
     } finally {
@@ -54,8 +62,8 @@ export default function MyQuotes() {
 
   const handleDeletePrivateQuote = async (quoteId) => {
     Alert.alert(
-      'Confirm Delete', // Title
-      'Are you sure you want to delete this private quote? This action cannot be undone.', // Message
+      'Confirm Delete',
+      'Are you sure you want to delete this private quote? This action cannot be undone.',
       [
         {
           text: 'Cancel',
@@ -77,7 +85,7 @@ export default function MyQuotes() {
           },
         },
       ],
-      { cancelable: true } // Allows dismissing by tapping outside on Android
+      { cancelable: true }
     );
   };
 
@@ -89,10 +97,8 @@ export default function MyQuotes() {
 
   const renderEmptyState = (message) => (
     <View style={styles.container}>
-      {/* Use Header component */}
       <Header title='My Quotes' backRoute='/profile' />
 
-      {/* Filter Section */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
           style={[
@@ -175,10 +181,8 @@ export default function MyQuotes() {
 
   return (
     <View style={styles.container}>
-      {/* Use Header component instead of custom header */}
       <Header title='My Quotes' backRoute='/profile' />
 
-      {/* Filter Section */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
           style={[
@@ -214,7 +218,6 @@ export default function MyQuotes() {
         </TouchableOpacity>
       </View>
 
-      {/* Quote List */}
       {quotes.length > 0
         ? renderQuoteList()
         : renderEmptyState(
@@ -226,81 +229,82 @@ export default function MyQuotes() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  // Remove header styles since we use the Header component
-  filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: COLORS.surface,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.disabled + '20', // Slightly transparent border
-  },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  activeFilter: {
-    backgroundColor: COLORS.primary,
-  },
-  filterText: {
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  activeFilterText: {
-    color: COLORS.icon, // Use icon color for text on primary background
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: COLORS.placeholder,
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingHorizontal: 8,
-    paddingBottom: 16, // Add padding at the bottom for better spacing
-  },
-  tileContainer: {
-    marginTop: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-    shadowColor: COLORS.shadow, // Use theme shadow color
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    padding: 12, // Increased padding for better tap target
-    borderTopWidth: 1,
-    borderTopColor: COLORS.disabled + '20', // Slightly transparent border
-  },
-  deleteButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: COLORS.error,
-    fontWeight: '500',
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    filterContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: COLORS.surface,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: `${COLORS.disabled}20`,
+    },
+    filterButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    activeFilter: {
+      backgroundColor: COLORS.primary,
+    },
+    filterText: {
+      fontSize: 14,
+      color: COLORS.text,
+    },
+    activeFilterText: {
+      color: COLORS.icon,
+      fontWeight: '600',
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.background,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 16,
+    },
+    emptyText: {
+      fontSize: 18,
+      color: COLORS.placeholder,
+      textAlign: 'center',
+    },
+    listContent: {
+      paddingHorizontal: 8,
+      paddingBottom: 16,
+    },
+    tileContainer: {
+      marginTop: 16,
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: COLORS.surface,
+      shadowColor: COLORS.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    deleteButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      padding: 12,
+      borderTopWidth: 1,
+      borderTopColor: `${COLORS.disabled}20`,
+    },
+    deleteButtonText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: COLORS.error,
+      fontWeight: '500',
+    },
+  });
 
