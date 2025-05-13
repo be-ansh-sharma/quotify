@@ -1,80 +1,161 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from 'context/AppThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import TileDecoration from 'components/decoration/TileDecoration';
 
+// Add icons for each category
 const categories = [
-  { id: '1', title: 'Authors', route: '/authors' },
-  { id: '2', title: 'Tags', route: '/tags' },
-  { id: '3', title: 'Popular Quotes', route: '/browse/popular' },
-  { id: '4', title: 'Newest Quotes', route: '/browse/new' },
-  { id: '5', title: 'Followed Authors Quotes', route: '/browse/favorites' },
+  { id: '1', title: 'Authors', route: '/authors', icon: 'people-outline' },
+  { id: '2', title: 'Tags', route: '/tags', icon: 'pricetags-outline' },
+  {
+    id: '3',
+    title: 'Popular Quotes',
+    route: '/browse/popular',
+    icon: 'star-outline',
+  },
+  {
+    id: '4',
+    title: 'Newest Quotes',
+    route: '/browse/new',
+    icon: 'time-outline',
+  },
+  {
+    id: '5',
+    title: 'Followed Authors',
+    route: '/browse/favorites',
+    icon: 'heart-outline',
+  },
   {
     id: '7',
-    title: 'User-Generated Quotes',
+    title: 'User Quotes',
     route: '/browse/userquotes',
-  },
-  { id: '8', title: 'Book Quotes', route: '/books', comingsoon: true },
-  { id: '9', title: 'Movie Quotes', route: '/movies', comingsoon: true },
-  {
-    id: '10',
-    title: 'Celebrity Quotes',
-    route: '/celebrities',
-    comingsoon: true,
+    icon: 'create-outline',
   },
 ];
 
+// Get screen width to calculate tile size
+const { width: screenWidth } = Dimensions.get('window');
+const tileSize = (screenWidth - 48) / 2; // 48 = padding (16) + margin (8*4)
+
 export default function Browse() {
   const router = useRouter();
-
   const { COLORS } = useAppTheme();
-
   const styles = getStyles(COLORS);
 
-  const renderTile = ({ item }) => (
-    <View style={styles.tileContainer}>
-      <TouchableOpacity
-        style={[
-          styles.tile,
-          item.comingsoon && styles.comingSoonTile, // Apply different style for coming soon tiles
-        ]}
-        onPress={() => !item.comingsoon && router.push(item.route)} // Disable navigation for coming soon items
-        activeOpacity={item.comingsoon ? 1 : 0.85} // Disable click effect for coming soon items
-      >
-        <Text style={styles.tileText}>{item.title}</Text>
-        {item.comingsoon && (
-          <Text style={styles.comingSoonLabel}>Coming Soon</Text> // Add "Coming Soon" label
-        )}
-      </TouchableOpacity>
-    </View>
-  );
+  const renderTile = ({ item }) => {
+    return <CategoryTile item={item} router={router} styles={styles} />;
+  };
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Browse</Text>
+      </View>
       <FlatList
         data={categories}
         keyExtractor={(item) => item.id}
         renderItem={renderTile}
-        numColumns={2} // Display 2 tiles per row
-        columnWrapperStyle={styles.row} // Style for rows
-        contentContainerStyle={styles.grid} // Style for the grid
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.grid}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
 }
+
+const CategoryTile = ({ item, router, styles }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const seed = parseInt(item.id) * 100;
+
+  return (
+    <View style={styles.tileContainer}>
+      <TouchableOpacity
+        style={[styles.tileWrapper]}
+        activeOpacity={item.comingsoon ? 1 : 0.95}
+        onPressIn={!item.comingsoon ? handlePressIn : undefined}
+        onPressOut={!item.comingsoon ? handlePressOut : undefined}
+        onPress={() => !item.comingsoon && router.push(item.route)}
+      >
+        <Animated.View
+          style={[
+            styles.tile,
+            item.comingsoon && styles.comingSoonTile,
+            { transform: [{ scale: scaleAnim }] },
+          ]}
+        >
+          {/* Background decorations */}
+          <TileDecoration
+            size={tileSize - 24}
+            seed={seed}
+            iconCount={5}
+            opacity={0.15}
+            style={styles.decorations}
+          />
+
+          <View style={styles.iconContainer}>
+            <Ionicons
+              name={item.icon}
+              size={28}
+              color={
+                item.comingsoon
+                  ? styles.comingSoonLabel.color
+                  : styles.tileText.color
+              }
+            />
+          </View>
+          <Text style={styles.tileText}>{item.title}</Text>
+          {item.comingsoon && (
+            <Text style={styles.comingSoonLabel}>Coming Soon</Text>
+          )}
+        </Animated.View>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: COLORS.background,
-      padding: 8,
+      padding: 16,
+    },
+    header: {
+      marginBottom: 16,
+      paddingVertical: 8,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: COLORS.text,
     },
     grid: {
       justifyContent: 'center',
@@ -88,28 +169,45 @@ const getStyles = (COLORS) =>
       flex: 1,
       marginHorizontal: 8,
     },
+    tileWrapper: {
+      flex: 1,
+      aspectRatio: 1,
+    },
     tile: {
       flex: 1,
-      aspectRatio: 1, // Make tiles square
       backgroundColor: COLORS.surface,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 15, // Slightly rounded for a softer look
+      borderRadius: 18,
+      padding: 12,
       shadowColor: COLORS.shadow,
-      shadowOpacity: 0.2, // Slightly stronger shadow for depth
-      shadowRadius: 8, // Increased shadow radius for a more noticeable effect
-      shadowOffset: { width: 0, height: 4 }, // Slightly offset shadow for a more realistic appearance
-      elevation: 4, // Android shadow effect
+      shadowOpacity: 0.15,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 5,
+      overflow: 'hidden', // Important for the decorations
+    },
+    decorations: {
+      position: 'absolute',
+      top: 12,
+      left: 12,
+    },
+    iconContainer: {
+      marginBottom: 12,
+      padding: 12,
+      borderRadius: 50,
+      backgroundColor: COLORS.surfaceVariant,
     },
     comingSoonTile: {
-      backgroundColor: COLORS.placeholder, // Dimmed background for coming soon tiles
+      backgroundColor: COLORS.surfaceVariant,
+      opacity: 0.8,
     },
     tileText: {
-      fontSize: 18, // Increased text size for better visibility
-      fontWeight: '600', // Semi-bold for better emphasis
+      fontSize: 16,
+      fontWeight: '600',
       color: COLORS.text,
       textAlign: 'center',
-      paddingHorizontal: 10, // Padding for better text spacing
+      paddingHorizontal: 10,
     },
     comingSoonLabel: {
       marginTop: 8,
@@ -117,6 +215,10 @@ const getStyles = (COLORS) =>
       fontWeight: '500',
       color: COLORS.onSurface,
       textAlign: 'center',
+      backgroundColor: COLORS.surfaceVariant,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 4,
     },
   });
 

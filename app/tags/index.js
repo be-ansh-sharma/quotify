@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,22 +7,27 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Animated,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { fetchTags } from 'utils/firebase/firestore'; // Function to fetch tags
+import { fetchTags } from 'utils/firebase/firestore';
 import { useAppTheme } from 'context/AppThemeContext';
-import Header from 'components/header/Header'; // Import the reusable Header component
+import Header from 'components/header/Header';
+import TileDecoration from 'components/decoration/TileDecoration';
+
+// Calculate tile size based on screen width
+const { width: screenWidth } = Dimensions.get('window');
+const tileSize = (screenWidth - 40) / 2; // Accounting for margins
 
 export default function Tags() {
   const router = useRouter();
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const { COLORS } = useAppTheme();
   const [tags, setTags] = useState([]);
-  const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
+  const [lastDoc, setLastDoc] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [scale] = useState(new Animated.Value(1)); // Animation value for scaling
 
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const styles = getStyles(COLORS);
 
   // Fetch tags from the database
   const loadTags = async () => {
@@ -43,12 +48,19 @@ export default function Tags() {
   };
 
   useEffect(() => {
-    loadTags(); // Load tags when the component mounts
+    loadTags();
   }, []);
 
-  const renderTile = ({ item }) => {
+  // Separate tile component to handle animations properly
+  const TagTile = React.memo(({ item, index }) => {
+    // Use item id or index as seed for consistent icons per tag
+    const iconSeed = parseInt(item.id, 36) || index * 100;
+
+    // Animation values
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
     const handlePressIn = () => {
-      Animated.spring(scale, {
+      Animated.spring(scaleAnim, {
         toValue: 0.95,
         friction: 3,
         useNativeDriver: true,
@@ -56,7 +68,7 @@ export default function Tags() {
     };
 
     const handlePressOut = () => {
-      Animated.spring(scale, {
+      Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 3,
         useNativeDriver: true,
@@ -66,15 +78,26 @@ export default function Tags() {
     return (
       <TouchableOpacity
         style={styles.tile}
+        activeOpacity={0.8}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        onPress={() => router.push(`/tags/${encodeURIComponent(item.name)}`)} // Navigate to the tag's page
+        onPress={() => router.push(`/tags/${encodeURIComponent(item.name)}`)}
       >
+        {/* Background decorations */}
+        <TileDecoration
+          size={tileSize - 16} // Subtract padding
+          seed={iconSeed}
+          iconCount={7} // Number of decorative icons
+          opacity={0.15} // Make icons subtle
+          style={styles.decorations}
+        />
+
+        {/* Main content */}
         <Animated.View
           style={[
             styles.tileContent,
             {
-              transform: [{ scale: scale }],
+              transform: [{ scale: scaleAnim }],
             },
           ]}
         >
@@ -82,27 +105,35 @@ export default function Tags() {
         </Animated.View>
       </TouchableOpacity>
     );
+  });
+
+  const renderTile = ({ item, index }) => {
+    return <TagTile item={item} index={index} />;
   };
 
   const renderFooter = () => {
     if (!loading) return null;
-    return <ActivityIndicator size='large' style={{ marginVertical: 20 }} />;
+    return (
+      <ActivityIndicator
+        size='large'
+        color={COLORS.primary}
+        style={{ marginVertical: 20 }}
+      />
+    );
   };
 
   return (
     <View style={styles.container}>
-      {/* Use the reusable Header component */}
       <Header title='Tags' backRoute='/browse' />
 
-      {/* Tags List */}
       <FlatList
         data={tags}
         keyExtractor={(item) => item.id}
         renderItem={renderTile}
-        numColumns={2} // Display 2 tiles per row
-        columnWrapperStyle={styles.row} // Style for rows
-        contentContainerStyle={styles.grid} // Style for the grid
-        onEndReached={loadTags} // Load more tags when the user scrolls to the end
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.grid}
+        onEndReached={loadTags}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
       />
@@ -119,6 +150,8 @@ const getStyles = (COLORS) =>
     },
     grid: {
       justifyContent: 'center',
+      paddingHorizontal: 12,
+      paddingBottom: 20,
     },
     row: {
       justifyContent: 'space-between',
@@ -132,20 +165,30 @@ const getStyles = (COLORS) =>
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: 10,
+      padding: 8,
       shadowColor: COLORS.shadow,
       shadowOpacity: 0.1,
       shadowRadius: 5,
       shadowOffset: { width: 0, height: 1 },
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    decorations: {
+      position: 'absolute',
+      top: 8,
+      left: 8,
     },
     tileContent: {
       justifyContent: 'center',
       alignItems: 'center',
+      zIndex: 2,
     },
     tileText: {
       fontSize: 16,
       fontWeight: 'bold',
       color: COLORS.text,
       textAlign: 'center',
+      padding: 8,
     },
   });
 

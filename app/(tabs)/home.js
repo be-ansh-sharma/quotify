@@ -15,7 +15,7 @@ import { clearCacheByFilter } from 'utils/quotesCache';
 // Separate the version check logic
 function useVersionCheck() {
   useEffect(() => {
-    const CURRENT_VERSION = '4.2';
+    const CURRENT_VERSION = '4.3';
 
     const uploadIfVersionChanged = async () => {
       try {

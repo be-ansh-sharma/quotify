@@ -120,6 +120,7 @@ const getStyles = (COLORS) =>
       shadowColor: COLORS.shadow,
       shadowOpacity: 0.15, // Slightly increased for more impact
       shadowRadius: 4,
+      elevation: 2, // For Android shadow
       shadowOffset: { width: 0, height: 1 },
       borderLeftWidth: 3, // Add an accent border on the left
       borderLeftColor: COLORS.secondary || COLORS.accent1 || '#9C27B0', // Use an accent color

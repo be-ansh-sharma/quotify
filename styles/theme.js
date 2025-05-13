@@ -2,7 +2,7 @@ import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 
 // Define dark and light color palettes
 const DARK_COLORS_VALUES = {
-  primary: '#00B0FF',
+  primary: '#0099ff',
   accent: '#FF6F61',
   background: '#121212',
   surface: '#1A1A1A',

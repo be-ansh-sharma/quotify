@@ -208,6 +208,7 @@ const getStyles = (COLORS) =>
       backgroundColor: COLORS.surface,
       borderRadius: 12,
       paddingVertical: 4,
+      elevation: 2,
     },
     logoutText: {
       color: COLORS.error,

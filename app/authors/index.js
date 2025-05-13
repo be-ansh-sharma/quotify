@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchAuthors } from 'utils/firebase/firestore'; // Function to fetch authors
 import { useAppTheme } from 'context/AppThemeContext';
 import Header from 'components/header/Header'; // Import the reusable Header component
+import TileDecoration from 'components/decoration/TileDecoration'; // Add decorative icons
 
 export default function Authors() {
   const router = useRouter();
@@ -19,7 +20,6 @@ export default function Authors() {
   const [lastDoc, setLastDoc] = useState(null); // Track the last document for pagination
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [scale] = useState(new Animated.Value(1)); // Animation value for scaling
 
   // Get COLORS from theme context
   const { COLORS } = useAppTheme();
@@ -52,41 +52,7 @@ export default function Authors() {
   }, []);
 
   const renderTile = ({ item }) => {
-    const handlePressIn = () => {
-      Animated.spring(scale, {
-        toValue: 0.95,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const handlePressOut = () => {
-      Animated.spring(scale, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    return (
-      <TouchableOpacity
-        style={styles.tile}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={() => router.push(`/authors/${encodeURIComponent(item.name)}`)} // Navigate to the author's page
-      >
-        <Animated.View
-          style={[
-            styles.tileContent,
-            {
-              transform: [{ scale: scale }],
-            },
-          ]}
-        >
-          <Text style={styles.tileText}>{item.name}</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
+    return <AuthorTile item={item} router={router} styles={styles} />;
   };
 
   const renderFooter = () => {
@@ -115,6 +81,57 @@ export default function Authors() {
   );
 }
 
+const AuthorTile = ({ item, router, styles }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Create a more unique seed
+  const seed = parseInt(item.id, 36) * 100 + item.name.length * 7;
+
+  return (
+    <TouchableOpacity
+      style={styles.tile}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={() => router.push(`/authors/${encodeURIComponent(item.name)}`)}
+    >
+      <Animated.View
+        style={[
+          styles.tileContent,
+          {
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        {/* Background decorations - significantly reduced icon count and larger area */}
+        <TileDecoration
+          size={130} // Increase size to give more room
+          seed={seed}
+          iconCount={6} // Reduce to just 3 icons
+          opacity={0.15}
+          style={styles.decorations}
+        />
+        <Text style={styles.tileText}>{item.name}</Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
 // Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
@@ -124,10 +141,12 @@ const getStyles = (COLORS) =>
     },
     grid: {
       justifyContent: 'center',
+      paddingHorizontal: 12,
+      paddingBottom: 20,
     },
     row: {
       justifyContent: 'space-between',
-      marginTop: 8,
+      marginTop: 16,
     },
     tile: {
       flex: 1,
@@ -144,8 +163,11 @@ const getStyles = (COLORS) =>
       shadowOffset: { width: 0, height: 4 },
       paddingHorizontal: 12,
       marginBottom: 16,
+      overflow: 'hidden', // Ensure decorations don't overflow
     },
     tileContent: {
+      width: '100%',
+      height: '100%',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -154,6 +176,15 @@ const getStyles = (COLORS) =>
       fontWeight: '600',
       color: COLORS.text,
       textAlign: 'center',
+      zIndex: 2, // Ensure text stays on top
+    },
+    decorations: {
+      position: 'absolute',
+      top: -10, // Extend beyond the tile edges
+      left: -10,
+      right: -10,
+      bottom: -10,
+      zIndex: 1,
     },
   });
 
