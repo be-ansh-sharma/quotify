@@ -77,7 +77,7 @@ export default function Profile() {
         <List.Item
           title='Bookmarked Quotes'
           left={(props) => (
-            <List.Icon {...props} icon='bookmark' color={COLORS.icon} />
+            <List.Icon {...props} icon='bookmark' color={COLORS.primary} />
           )}
           onPress={() => router.push('/profile/bookmarked')}
         />
@@ -85,7 +85,7 @@ export default function Profile() {
         <List.Item
           title='Liked Quotes'
           left={(props) => (
-            <List.Icon {...props} icon='heart' color={COLORS.icon} />
+            <List.Icon {...props} icon='heart' color='#E53935' /> // Red for heart
           )}
           onPress={() => router.push('/profile/liked')}
         />
@@ -93,7 +93,7 @@ export default function Profile() {
         <List.Item
           title='Favorite Authors'
           left={(props) => (
-            <List.Icon {...props} icon='account-heart' color={COLORS.icon} />
+            <List.Icon {...props} icon='account-heart' color={COLORS.primary} />
           )}
           onPress={() => router.push('/profile/authors')}
         />
@@ -104,7 +104,7 @@ export default function Profile() {
             <List.Icon
               {...props}
               icon='format-quote-open'
-              color={COLORS.icon}
+              color={COLORS.primary}
             />
           )}
           onPress={() => router.push('/profile/myquotes')}
@@ -118,7 +118,7 @@ export default function Profile() {
                 <List.Icon
                   {...props}
                   icon='format-quote-open'
-                  color={COLORS.icon}
+                  color={COLORS.primary}
                 />
               )}
               onPress={() => router.push('/profile/pendingquotes')}
@@ -130,7 +130,7 @@ export default function Profile() {
         <List.Item
           title='Settings'
           left={(props) => (
-            <List.Icon {...props} icon='cog' color={COLORS.icon} />
+            <List.Icon {...props} icon='cog' color={COLORS.primary} />
           )}
           onPress={() => router.push('/settings')}
         />

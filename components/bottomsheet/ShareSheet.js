@@ -71,14 +71,14 @@ const getStyles = (COLORS) =>
     content: {
       flex: 1,
       paddingVertical: 16,
-      backgroundColor: COLORS.background, // Use theme background color
+      backgroundColor: COLORS.surface,
     },
     option: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: 12,
       paddingHorizontal: 16,
-      backgroundColor: COLORS.surface, // Use theme surface color
+      backgroundColor: COLORS.surface,
       borderRadius: 8,
       marginHorizontal: 16,
       marginBottom: 8,

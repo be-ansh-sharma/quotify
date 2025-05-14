@@ -17,12 +17,11 @@ import FontControls from 'components/quoteedit/FontControls';
 import FormatSelector from 'components/quoteedit/FormatSelector';
 import ActionButtons from 'components/quoteedit/ActionButtons';
 import ViewShot from 'react-native-view-shot';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
 import { Platform } from 'react-native';
 import { useQuoteFormatting } from 'hooks/useQuoteFormatting';
 import { useShareQuote } from 'hooks/useShareQuote';
-import { FontAwesome } from '@expo/vector-icons';
+import Header from 'components/header/Header'; // Import Header component
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -121,15 +120,13 @@ export default function QuoteShare() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.push('/home')}
-          style={styles.backButton}
-        >
-          <FontAwesome name='arrow-left' size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Share Quote</Text>
-      </View>
+      {/* Replace custom header with Header component */}
+      <Header
+        title='Share Quote'
+        backAction={() => router.push('/home')}
+        showBackButton={true}
+      />
+
       {/* Preview area */}
       <View style={styles.previewContainer}>
         <ViewShot

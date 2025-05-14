@@ -28,6 +28,7 @@
     },
     "plugins": ["expo-router", "expo-localization"],
     "scheme": "quotify",
+    "assetBundlePatterns": ["**/*"],
     "extra": {
       "router": {
         "origin": false

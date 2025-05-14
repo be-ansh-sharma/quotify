@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Replace static COLORS import
 import { Modal, Portal, Text as PaperText } from 'react-native-paper';
 import QuoteOfTheDay from './QuoteOfTheDay';
 import TopQuote from './TopQuote';
@@ -16,11 +16,15 @@ import RandomQuote from './RandomQuote';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function QuotesFAB() {
+  const { COLORS } = useAppTheme(); // Get colors from theme context
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [activeQuote, setActiveQuote] = useState(null);
   const animation = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
+
+  // Generate styles with current theme colors
+  const styles = getStyles(COLORS);
 
   const openQuoteModal = (quoteType) => {
     animation.setValue(0);
@@ -116,7 +120,13 @@ export default function QuotesFAB() {
           ]}
         >
           <View style={styles.fabItemLabel}>
-            <Text style={styles.fabItemText}>Random</Text>
+            <Text
+              style={styles.fabItemText}
+              numberOfLines={1}
+              ellipsizeMode='clip' // Prevent ellipsis from appearing
+            >
+              Random
+            </Text>
           </View>
           <TouchableOpacity
             style={[
@@ -238,93 +248,100 @@ export default function QuotesFAB() {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 998,
-  },
-  fabContainer: {
-    position: 'absolute',
-    bottom: 25,
-    right: 25,
-    alignItems: 'flex-end',
-    zIndex: 999,
-  },
-  fab: {
-    backgroundColor: COLORS.primary || '#6200ee',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  fabItem: {
-    position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'center',
-    right: 4,
-    justifyContent: 'flex-end',
-  },
-  fabItemButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    marginLeft: 10,
-  },
-  fabItemLabel: {
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  fabItemText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  paperModalContent: {
-    backgroundColor: COLORS.surface || 'white',
-    padding: 0,
-    marginHorizontal: 20,
-    marginVertical: '10%',
-    borderRadius: 16,
-    alignSelf: 'center',
-    maxHeight: '80%',
-    width: '90%',
-    maxWidth: 400,
-    overflow: 'hidden',
-    elevation: 10,
-  },
-  modalHeaderPaper: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: COLORS.primary || '#6200ee',
-  },
-  modalTitlePaper: {
-    color: COLORS.onPrimary || '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  modalBodyScrollView: {},
-  modalBodyContentContainer: {
-    padding: 20,
-    flexGrow: 1,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      zIndex: 998,
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 25,
+      right: 25,
+      alignItems: 'flex-end',
+      zIndex: 999,
+    },
+    fab: {
+      backgroundColor: COLORS.primary || '#6200ee',
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    fabItem: {
+      position: 'absolute',
+      flexDirection: 'row',
+      alignItems: 'center',
+      right: 4,
+      justifyContent: 'flex-end',
+    },
+    fabItemButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.22,
+      shadowRadius: 2.22,
+      marginLeft: 10,
+    },
+    fabItemLabel: {
+      backgroundColor: COLORS.surfaceVariant || '#E1E1E1',
+      paddingVertical: 5,
+      paddingHorizontal: 12,
+      borderRadius: 5,
+      minWidth: 80, // Increased from 60 to 80 to fit "Random" text
+      borderWidth: 1,
+      borderColor: COLORS.outlineVariant || '#DDDDDD',
+      elevation: 2,
+    },
+    fabItemText: {
+      color: COLORS.onSurfaceVariant || '#333333',
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    paperModalContent: {
+      backgroundColor: COLORS.surface || 'white',
+      padding: 0,
+      marginHorizontal: 20,
+      marginVertical: '10%',
+      borderRadius: 16,
+      alignSelf: 'center',
+      maxHeight: '80%',
+      width: '90%',
+      maxWidth: 400,
+      overflow: 'hidden',
+      elevation: 10,
+    },
+    modalHeaderPaper: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      backgroundColor: COLORS.primary || '#6200ee',
+    },
+    modalTitlePaper: {
+      color: COLORS.onPrimary || '#ffffff',
+      fontWeight: 'bold',
+      fontSize: 18,
+    },
+    modalBodyScrollView: {},
+    modalBodyContentContainer: {
+      padding: 20,
+      flexGrow: 1,
+    },
+  });
 

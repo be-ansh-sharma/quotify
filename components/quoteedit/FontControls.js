@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import ColorPicker from 'react-native-wheel-color-picker';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Replace static COLORS import
 import { FontAwesome } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -65,6 +65,7 @@ const FONT_OPTIONS = [
 ];
 
 const FontControls = ({ typography, onUpdateTypography }) => {
+  const { COLORS } = useAppTheme(); // Get colors from theme context
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [tempColor, setTempColor] = useState(typography.color);
 
@@ -76,6 +77,9 @@ const FontControls = ({ typography, onUpdateTypography }) => {
     );
     return currentFont ? currentFont.id : FONT_OPTIONS[0].id; // Default to first font if not found
   });
+
+  // Create styles with current theme colors
+  const styles = getStyles(COLORS);
 
   const handleColorChange = (color) => {
     setTempColor(color);
@@ -275,214 +279,216 @@ const isLightColor = (color) => {
   return brightness > 150;
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: COLORS.text,
-  },
-  fontContainer: {
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-  },
-  fontOption: {
-    width: 80,
-    height: 90,
-    marginRight: 15,
-    borderRadius: 8,
-    backgroundColor: COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#DDD',
-  },
-  selectedFont: {
-    borderColor: COLORS.primary,
-    backgroundColor: `${COLORS.primary}10`,
-  },
-  fontLabel: {
-    fontSize: 16,
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  colorPreview: {
-    width: 60,
-    height: 40,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border || '#DDD',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  colorPickerContainer: {
-    width: SCREEN_WIDTH * 0.85,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: COLORS.shadow || '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    maxHeight: SCREEN_WIDTH * 1.4, // Increased height to accommodate all elements
-  },
-  pickerWrapper: {
-    width: SCREEN_WIDTH * 0.7,
-    height: 240, // Adjusted height
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10, // Add margin at bottom
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: COLORS.text,
-  },
-  colorPreviewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 20,
-    backgroundColor: COLORS.surface,
-    padding: 10,
-    borderRadius: 8,
-    width: '100%',
-  },
-  colorPreviewLarge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#DDD',
-  },
-  colorHexText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-  },
-  modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    width: '48%',
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: COLORS.surface,
-  },
-  cancelButtonText: {
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-  applyButton: {
-    backgroundColor: COLORS.primary,
-  },
-  applyButtonText: {
-    color: COLORS.onPrimary || '#fff',
-    fontWeight: '600',
-  },
-  colorSwatchesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginBottom: 10,
-    width: '100%',
-  },
-  colorSwatch: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    margin: 4,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#DDD',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedSwatch: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border || '#e0e0e0',
-    width: '100%',
-    marginVertical: 10,
-  },
-  colorInfoContainer: {
-    flex: 1,
-  },
-  colorInfoLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary || '#666',
-    marginBottom: 2,
-  },
-  fontCarousel: {
-    marginVertical: 10,
-    width: '100%',
-  },
-  fontCarouselItem: {
-    height: 80,
-    width: SCREEN_WIDTH * 0.3, // Make items take 30% of screen width
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    marginHorizontal: 5,
-  },
-  fontSample: {
-    fontSize: 24,
-    marginBottom: 5,
-    color: COLORS.text, // Ensure font sample is visible
-  },
-  fontName: {
-    fontSize: 12,
-    textAlign: 'center',
-    color: COLORS.text, // Ensure font name is visible
-  },
-  fontListContainer: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  fontPagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  fontPaginationDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.border || '#DDD',
-    marginHorizontal: 3,
-  },
-  fontPaginationDotActive: {
-    backgroundColor: COLORS.primary,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    section: {
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: 8,
+      color: COLORS.text,
+    },
+    fontContainer: {
+      paddingVertical: 15,
+      paddingHorizontal: 10,
+    },
+    fontOption: {
+      width: 80,
+      height: 90,
+      marginRight: 15,
+      borderRadius: 8,
+      backgroundColor: COLORS.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 8,
+      borderWidth: 1,
+      borderColor: COLORS.border || '#DDD',
+    },
+    selectedFont: {
+      borderColor: COLORS.primary,
+      backgroundColor: `${COLORS.primary}10`,
+    },
+    fontLabel: {
+      fontSize: 16,
+    },
+    slider: {
+      width: '100%',
+      height: 40,
+    },
+    colorPreview: {
+      width: 60,
+      height: 40,
+      borderRadius: 6,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: COLORS.border || '#DDD',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    colorPickerContainer: {
+      width: SCREEN_WIDTH * 0.85,
+      backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      padding: 20,
+      alignItems: 'center',
+      elevation: 5,
+      shadowColor: COLORS.shadow || '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      maxHeight: SCREEN_WIDTH * 1.4, // Increased height to accommodate all elements
+    },
+    pickerWrapper: {
+      width: SCREEN_WIDTH * 0.7,
+      height: 240, // Adjusted height
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10, // Add margin at bottom
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 16,
+      color: COLORS.text,
+    },
+    colorPreviewRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 16,
+      marginBottom: 20,
+      backgroundColor: COLORS.surface,
+      padding: 10,
+      borderRadius: 8,
+      width: '100%',
+    },
+    colorPreviewLarge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 10,
+      borderWidth: 1,
+      borderColor: COLORS.border || '#DDD',
+    },
+    colorHexText: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginTop: 20,
+    },
+    modalButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 6,
+      width: '48%',
+      alignItems: 'center',
+    },
+    cancelButton: {
+      backgroundColor: COLORS.surface,
+    },
+    cancelButtonText: {
+      color: COLORS.text,
+      fontWeight: '600',
+    },
+    applyButton: {
+      backgroundColor: COLORS.primary,
+    },
+    applyButtonText: {
+      color: COLORS.onPrimary || '#fff',
+      fontWeight: '600',
+    },
+    colorSwatchesContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      marginBottom: 10,
+      width: '100%',
+    },
+    colorSwatch: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      margin: 4,
+      borderWidth: 1,
+      borderColor: COLORS.border || '#DDD',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    selectedSwatch: {
+      borderWidth: 2,
+      borderColor: COLORS.primary,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: COLORS.border || '#e0e0e0',
+      width: '100%',
+      marginVertical: 10,
+    },
+    colorInfoContainer: {
+      flex: 1,
+    },
+    colorInfoLabel: {
+      fontSize: 12,
+      color: COLORS.textSecondary || '#666',
+      marginBottom: 2,
+    },
+    fontCarousel: {
+      marginVertical: 10,
+      width: '100%',
+    },
+    fontCarouselItem: {
+      height: 80,
+      width: SCREEN_WIDTH * 0.3, // Make items take 30% of screen width
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 8,
+      borderWidth: 1,
+      marginHorizontal: 5,
+    },
+    fontSample: {
+      fontSize: 24,
+      marginBottom: 5,
+      color: COLORS.text, // Ensure font sample is visible
+    },
+    fontName: {
+      fontSize: 12,
+      textAlign: 'center',
+      color: COLORS.text, // Ensure font name is visible
+    },
+    fontListContainer: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+    },
+    fontPagination: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 8,
+    },
+    fontPaginationDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: COLORS.border || '#DDD',
+      marginHorizontal: 3,
+    },
+    fontPaginationDotActive: {
+      backgroundColor: COLORS.primary,
+    },
+  });
 
 export default FontControls;
 

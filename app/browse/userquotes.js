@@ -82,11 +82,14 @@ export default function UserQuotes() {
 
   if (!loading && userQuotes.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
-          No user-submitted quotes available.
-        </Text>
-      </View>
+      <>
+        <Header title='User Quotes' backRoute='/browse' />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            No user-submitted quotes available.
+          </Text>
+        </View>
+      </>
     );
   }
 

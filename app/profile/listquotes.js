@@ -278,7 +278,6 @@ const getStyles = (COLORS) =>
       textAlign: 'center',
     },
     listContent: {
-      paddingHorizontal: 8,
       marginTop: 16,
     },
     tileContainer: {
@@ -294,7 +293,6 @@ const getStyles = (COLORS) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: 16,
     },
     removeButton: {
       marginLeft: 16,

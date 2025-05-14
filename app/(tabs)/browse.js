@@ -58,9 +58,6 @@ export default function Browse() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Browse</Text>
-      </View>
       <FlatList
         data={categories}
         keyExtractor={(item) => item.id}
@@ -148,15 +145,6 @@ const getStyles = (COLORS) =>
       backgroundColor: COLORS.background,
       padding: 16,
     },
-    header: {
-      marginBottom: 16,
-      paddingVertical: 8,
-    },
-    headerTitle: {
-      fontSize: 28,
-      fontWeight: '700',
-      color: COLORS.text,
-    },
     grid: {
       justifyContent: 'center',
       paddingBottom: 20,
@@ -185,7 +173,7 @@ const getStyles = (COLORS) =>
       shadowRadius: 10,
       shadowOffset: { width: 0, height: 4 },
       elevation: 5,
-      overflow: 'hidden', // Important for the decorations
+      overflow: 'hidden',
     },
     decorations: {
       position: 'absolute',
