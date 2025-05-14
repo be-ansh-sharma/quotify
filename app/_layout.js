@@ -32,7 +32,6 @@ import {
 import { setAppTheme } from 'styles/theme';
 import { AppThemeProvider } from 'context/AppThemeContext';
 
-// Notification setup (no navigation here)
 function setupNotifications() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -79,11 +78,6 @@ export default function Layout() {
   const colorScheme = useColorScheme();
   const setSystemTheme = useUserStore((state) => state.setSystemTheme);
 
-  // Log on startup what theme should be used
-  console.log(
-    `[THEME INIT] Preference: ${themePreference}, System dark: ${systemIsDark}, Device scheme: ${colorScheme}`
-  );
-
   // Set system theme detection immediately
   useEffect(() => {
     setSystemTheme(colorScheme === 'dark');
@@ -98,11 +92,6 @@ export default function Layout() {
     return themePreference === 'dark';
   }, [themePreference, systemIsDark]);
 
-  // Set theme immediately and in effect
-  // IMMEDIATELY on first render
-  console.log(
-    `[THEME] Setting initial theme to: ${isDarkMode ? 'dark' : 'light'}`
-  );
   setAppTheme(isDarkMode ? 'dark' : 'light');
 
   // ALSO update when theme changes
@@ -152,16 +141,13 @@ export default function Layout() {
           const userProfile = await fetchUserProfile(user.email);
 
           if (!userProfile) {
-            console.log('User profile not found, redirecting to login...');
             await auth.signOut();
             router.push('/auth/entry');
             return;
           }
 
-          console.log('User profile loaded in layout');
           setUser(userProfile);
 
-          // 3. Handle FCM token after profile is loaded (moved from home.js)
           await fetchAndStoreFCMToken(userProfile);
         } catch (err) {
           console.error('Error fetching user profile in layout:', err);
@@ -196,7 +182,6 @@ export default function Layout() {
   // Add the FCM token handler function
   const fetchAndStoreFCMToken = async (currentUser) => {
     try {
-      // Request notification permissions
       const { status } = await Notifications.getPermissionsAsync();
       if (status !== 'granted') {
         const { status: newStatus } =
@@ -207,13 +192,11 @@ export default function Layout() {
         }
       }
 
-      // Fetch the FCM token
       const tokenData = await Notifications.getExpoPushTokenAsync({
         projectId: '72429fcf-5b83-4cb5-b250-ffd6370f59bd',
       });
       const fcmToken = tokenData.data;
 
-      // Check if token is already stored and matches
       if (currentUser?.fcmToken === fcmToken) {
         console.log('FCM token already up to date. Skipping update.');
         return;
@@ -238,11 +221,11 @@ export default function Layout() {
           });
         }
       } else if (currentUser?.uid) {
-        // Logged-in user FCM token handling
         let defaultPreferences = await storeFCMToken(
           currentUser.uid,
           fcmToken,
-          false
+          false,
+          currentUser
         );
 
         setUser({
@@ -275,7 +258,6 @@ export default function Layout() {
     return () => subscription.remove();
   }, []);
 
-  // Routing based on auth state
   useEffect(() => {
     if (
       !isStoresHydrated ||
@@ -301,7 +283,6 @@ export default function Layout() {
     isLayoutMounted,
   ]);
 
-  // Notification navigation after layout and routes are set
   useEffect(() => {
     if (notificationData?.quoteId && isLayoutMounted && isInitialRouteSet) {
       router.push(`/quote/${notificationData.quoteId}`);
@@ -309,11 +290,9 @@ export default function Layout() {
     }
   }, [notificationData, isLayoutMounted, isInitialRouteSet, router]);
 
-  // Always render Slot, overlay loading if needed
   return (
     <TabBarProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        {/* Add AppThemeProvider at a high level in the tree */}
         <AppThemeProvider>
           <StatusBar
             backgroundColor={

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { COLORS } from 'styles/theme';
+import { useAppTheme } from 'context/AppThemeContext'; // Add theme hook import
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
@@ -30,7 +30,8 @@ const moods = [
 ];
 
 // Simplified compact MoodItem
-const MoodItem = ({ mood, isSelected, onSelect }) => {
+const MoodItem = ({ mood, isSelected, onSelect, COLORS, styles }) => {
+  // Add styles prop
   const scale = useSharedValue(1);
   const iconScale = useSharedValue(1);
 
@@ -59,7 +60,11 @@ const MoodItem = ({ mood, isSelected, onSelect }) => {
       <Animated.View
         style={[
           styles.moodItem,
-          isSelected && styles.selectedMoodItem,
+          { borderColor: COLORS.primary },
+          isSelected && [
+            styles.selectedMoodItem,
+            { backgroundColor: COLORS.primary },
+          ],
           containerStyle,
         ]}
       >
@@ -73,7 +78,11 @@ const MoodItem = ({ mood, isSelected, onSelect }) => {
         {/* Only show text for selected mood or All Moods */}
         {(isSelected || mood.key === 'all') && (
           <Text
-            style={[styles.moodText, isSelected && styles.selectedMoodText]}
+            style={[
+              styles.moodText,
+              { color: COLORS.primary },
+              isSelected && { color: COLORS.background },
+            ]}
           >
             {mood.label}
           </Text>
@@ -84,7 +93,9 @@ const MoodItem = ({ mood, isSelected, onSelect }) => {
 };
 
 const MoodSelector = ({ selectedMood, onSelectMood, showTitle = true }) => {
+  const { COLORS } = useAppTheme(); // Get dynamic theme colors
   const scrollRef = useRef(null);
+  const styles = getStyles(COLORS); // Generate dynamic styles
 
   const handleSelectMood = (mood) => {
     onSelectMood(mood);
@@ -115,6 +126,8 @@ const MoodSelector = ({ selectedMood, onSelectMood, showTitle = true }) => {
             mood={mood}
             isSelected={selectedMood === mood.key}
             onSelect={handleSelectMood}
+            COLORS={COLORS} // Pass COLORS to MoodItem
+            styles={styles} // Pass styles to MoodItem
           />
         ))}
       </ScrollView>
@@ -122,48 +135,44 @@ const MoodSelector = ({ selectedMood, onSelectMood, showTitle = true }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 6, // Reduced from 8
-  },
-  title: {
-    fontSize: 14, // Reduced from 16
-    fontWeight: '600',
-    marginLeft: 16,
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  moodList: {
-    paddingHorizontal: 8,
-  },
-  moodItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 4, // Reduced from 6
-    paddingVertical: 6, // Reduced from 8
-    paddingHorizontal: 10, // Reduced from 12
-    borderRadius: 16, // Reduced from 20
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    flexDirection: 'row',
-    height: 32, // Fixed height for consistency
-    minWidth: 36, // Minimum width for icon-only state
-  },
-  selectedMoodItem: {
-    backgroundColor: COLORS.primary,
-    minWidth: 100, // Wider to accommodate text
-  },
-  moodText: {
-    color: COLORS.primary,
-    marginLeft: 4,
-    fontWeight: '500',
-    fontSize: 12, // Reduced from 14
-    maxWidth: 80, // Limit text width
-  },
-  selectedMoodText: {
-    color: COLORS.background,
-  },
-});
+// Convert static styles to a function that takes COLORS
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    container: {
+      marginVertical: 6,
+    },
+    title: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginLeft: 16,
+      color: COLORS.text,
+      marginBottom: 4,
+    },
+    moodList: {
+      paddingHorizontal: 8,
+    },
+    moodItem: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginHorizontal: 4,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 16,
+      borderWidth: 1,
+      flexDirection: 'row',
+      height: 32,
+      minWidth: 36,
+    },
+    selectedMoodItem: {
+      minWidth: 100,
+    },
+    moodText: {
+      marginLeft: 4,
+      fontWeight: '500',
+      fontSize: 12,
+      maxWidth: 80,
+    },
+  });
 
 export default MoodSelector;
 

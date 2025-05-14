@@ -18,8 +18,8 @@ import {
   deleteDoc,
   getDoc,
   deleteField,
-  FieldValue,
   increment,
+  documentId,
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 import * as Localization from 'expo-localization';
@@ -559,63 +559,49 @@ export const fetchQuotesByAuthors = async (
   }
 };
 
-export const fetchQuotesByIds = async (
-  ids,
-  startIndex = 0,
-  limit = 10,
-  processedChunks = 0 // Track processed chunks
-) => {
-  if (!ids || startIndex >= ids.length) return { quotes: [], hasMore: false };
-
-  const chunkSize = 10; // Firestore allows a maximum of 10 IDs in an `in` query
-  const idChunks = [];
-
-  // Split IDs into chunks of 10
-  for (let i = 0; i < ids.length; i += chunkSize) {
-    idChunks.push(ids.slice(i, i + chunkSize));
-  }
-
-  let allQuotes = [];
-  let hasMore = false;
-
-  // Start processing from the current chunk
-  for (
-    let chunkIndex = processedChunks;
-    chunkIndex < idChunks.length;
-    chunkIndex++
-  ) {
-    const chunk = idChunks[chunkIndex];
-
-    // Fetch quotes for the current chunk
-    const q = query(collection(db, 'quotes'), where('__name__', 'in', chunk));
-    const snapshot = await getDocs(q);
-
-    const newQuotes = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    allQuotes = [...allQuotes, ...newQuotes];
-
-    // Check if we've reached the limit
-    if (allQuotes.length >= limit) {
-      hasMore = true;
-      return {
-        quotes: allQuotes.slice(0, limit), // Return only the requested number of quotes
-        hasMore,
-        nextIndex: startIndex + limit, // Update the next start index
-        processedChunks: chunkIndex, // Return the current chunk index
-      };
+/**
+ * Fetch quotes by their IDs
+ * @param {string[]} quoteIds - Array of quote IDs to fetch
+ * @returns {Promise<Array>} Array of quote documents
+ */
+export const fetchQuotesByIds = async (quoteIds) => {
+  try {
+    if (!quoteIds || quoteIds.length === 0) {
+      return [];
     }
-  }
 
-  // If all chunks are processed and we haven't reached the limit
-  return {
-    quotes: allQuotes,
-    hasMore: false,
-    nextIndex: ids.length, // All IDs have been processed
-    processedChunks: idChunks.length, // All chunks have been processed
-  };
+    // Firestore has limits on how many IDs we can query at once
+    const chunkSize = 10;
+    let allQuotes = [];
+
+    // Process in chunks to avoid Firestore limitations
+    for (let i = 0; i < quoteIds.length; i += chunkSize) {
+      const chunk = quoteIds.slice(i, i + chunkSize);
+
+      try {
+        // Query this chunk of IDs
+        const quotesRef = collection(db, 'quotes');
+        const q = query(quotesRef, where(documentId(), 'in', chunk));
+        const querySnapshot = await getDocs(q);
+
+        // Map to our quote objects with IDs
+        const chunkQuotes = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        allQuotes = [...allQuotes, ...chunkQuotes];
+      } catch (chunkError) {
+        console.error(`Error fetching chunk ${i / chunkSize + 1}:`, chunkError);
+        // Continue with next chunk even if one fails
+      }
+    }
+
+    return allQuotes;
+  } catch (error) {
+    console.error('Error fetching quotes by IDs:', error);
+    return []; // Always return an array, even on error
+  }
 };
 
 /**
@@ -662,13 +648,19 @@ export const addQuoteToPendingList = async (quote) => {
  * @param {object} quote - The quote object to add.
  * @returns {Promise<void>} - A promise that resolves when the quote is added.
  * */
-export const addQuote = async (quote) => {
+export const addQuote = async (quoteData) => {
   try {
     const quotesRef = collection(db, 'quotes');
-    await addDoc(quotesRef, quote);
-    console.log('Quote added to quotes collection:', quote);
+    const docRef = await addDoc(quotesRef, {
+      ...quoteData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    // Return the quote ID
+    return docRef.id;
   } catch (error) {
-    console.error('Error adding quote to quotes collection:', error);
+    console.error('Error adding quote:', error);
     throw error;
   }
 };
@@ -698,6 +690,7 @@ export const fetchPendingQuotes = async () => {
 
 /**
  * Approve a pending quote and move it to the main quotes collection.
+ * Also track in user's public quotes list.
  * @param {object} quote - The quote object to approve.
  */
 export const approveQuote = async (quote) => {
@@ -714,6 +707,18 @@ export const approveQuote = async (quote) => {
       createdAt: quote.createdAt || new Date().toISOString(),
     });
 
+    // If the quote has a userId, add it to the user's publicQuotes array
+    // If the quote has a userId, add it to the user's publicQuotes array
+    if (quote.userId) {
+      const userRef = doc(db, 'users', quote.userId);
+      await updateDoc(userRef, {
+        publicQuotes: arrayUnion(quote.id), // Just add the ID to the array, no updatedAt needed
+      });
+      console.log(
+        `Added quote ${quote.id} to user ${quote.userId}'s public quotes`
+      );
+    }
+
     // Remove the quote from the pendingquotes collection
     await deleteDoc(pendingQuoteRef);
 
@@ -726,6 +731,7 @@ export const approveQuote = async (quote) => {
 
 /**
  * Reject a pending quote, convert it to private, and move it to the quotes collection.
+ * Also track in user's private quotes list.
  * @param {object} quote - The quote object to reject.
  */
 export const rejectQuote = async (quote) => {
@@ -737,13 +743,22 @@ export const rejectQuote = async (quote) => {
     // Convert the quote to private and move it to the quotes collection
     const privateQuote = {
       ...quote,
-      visibility: 'private', // Set visibility to private
-      approved: false, // Mark as not approved
+      visibility: 'private',
+      approved: false,
       createdAt: quote.createdAt || new Date().toISOString(), // Retain or set createdAt
     };
 
     // Add the private quote to the quotes collection
     await setDoc(quotesRef, privateQuote);
+
+    // If the quote has a userId, add it to the user's privateQuotes array
+    if (quote.userId) {
+      // Use the existing updateUserPrivateQuotes function
+      await updateUserPrivateQuotes(quote.userId, quote.id);
+      console.log(
+        `Added quote ${quote.id} to user ${quote.userId}'s private quotes`
+      );
+    }
 
     // Remove the quote from the pendingquotes collection
     await deleteDoc(pendingQuoteRef);
@@ -965,8 +980,14 @@ const addToTimeBucket = async (timeBucket, id, isGuest) => {
  * @param {string|null} userId - The ID of the user (null for guests).
  * @param {string} fcmToken - The FCM token to store.
  * @param {boolean} isGuest - Whether the user is a guest.
+ * @param {object|null} userData - Optional user data to avoid redundant queries.
  */
-export const storeFCMToken = async (userId, fcmToken, isGuest) => {
+export const storeFCMToken = async (
+  userId,
+  fcmToken,
+  isGuest,
+  userData = null
+) => {
   try {
     const defaultPreferences = {
       tags: ['Motivational'],
@@ -980,13 +1001,27 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
 
     const timeZone = Localization.timezone;
 
+    // STEP 1: Only check if token has changed and remove from slots if needed
+    if (userId && !isGuest) {
+      // Use the passed userData if available, otherwise fetch it
+      const currentUserData = userData || (await fetchUserData(userId));
+
+      if (currentUserData?.fcmToken && currentUserData.fcmToken !== fcmToken) {
+        console.log(
+          `Token changed for user ${userId}. Removing old token from slots.`
+        );
+        await removeUserFromAllNotificationSlots(userId);
+      }
+    }
+
+    // STEP 2: Continue with existing logic to store new token
     if (isGuest) {
       // Store the token and default preferences in the guest_tokens collection
       const guestTokenRef = collection(db, 'guest_tokens');
       const guestDoc = await addDoc(guestTokenRef, {
         fcmToken,
         preferences: defaultPreferences,
-        timeZone, // Store the user's time zone
+        timeZone,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -1016,8 +1051,7 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
           fcmToken,
           preferences: userData.preferences || defaultPreferences,
           timeZone: userData.timeZone || timeZone, // Retain existing time zone or set default
-          createdAt: userData.createdAt || new Date(),
-          updatedAt: new Date(),
+          updatedAt: serverTimestamp(),
         });
 
         console.log('FCM Token and preferences updated for logged-in user.');
@@ -1034,8 +1068,8 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
           fcmToken,
           preferences: defaultPreferences,
           timeZone, // Store the user's time zone
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
 
         console.log(
@@ -1054,6 +1088,7 @@ export const storeFCMToken = async (userId, fcmToken, isGuest) => {
         }
       }
     }
+
     return defaultPreferences;
   } catch (error) {
     console.error('Error storing FCM token and preferences:', error);
@@ -1436,15 +1471,38 @@ export const countUserPrivateQuotes = async (userId) => {
 };
 
 /**
- * Delete a private quote from the Firestore database.
+ * Delete a private quote from the Firestore database and remove it from the user's privateQuotes list.
  * @param {string} quoteId - The ID of the quote to delete.
  * @returns {Promise<void>}
  */
 export const deletePrivateQuote = async (quoteId) => {
   try {
+    // First get the quote to find the associated user
     const quoteRef = doc(db, 'quotes', quoteId);
+    const quoteSnap = await getDoc(quoteRef);
+
+    if (!quoteSnap.exists()) {
+      console.log(`Quote with ID ${quoteId} not found.`);
+      return;
+    }
+
+    const quoteData = quoteSnap.data();
+    const userId = quoteData.userId;
+
+    // Delete the quote document
     await deleteDoc(quoteRef);
     console.log(`Private quote with ID ${quoteId} deleted successfully.`);
+
+    // Remove the quote reference from the user's privateQuotes array
+    if (userId) {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        privateQuotes: arrayRemove(quoteId),
+      });
+      console.log(
+        `Removed quote ${quoteId} from user ${userId}'s privateQuotes list`
+      );
+    }
   } catch (error) {
     console.error('Error deleting private quote:', error);
     throw error;
@@ -1744,6 +1802,87 @@ export const fetchQuotesByMood = async (
     }
   } catch (error) {
     console.error('Error fetching quotes by mood:', error);
+    throw error;
+  }
+};
+
+/**
+ * Helper function to remove a user from all notification slots
+ * @param {string} userId - The user's ID to remove
+ */
+export const removeUserFromAllNotificationSlots = async (userId) => {
+  try {
+    // Get all notification slot documents
+    const slotsRef = collection(db, 'notificationSlots');
+    const slotsSnapshot = await getDocs(slotsRef);
+
+    // Check each document and remove the user from relevant arrays
+    const batch = writeBatch(db);
+    let updateCount = 0;
+
+    slotsSnapshot.forEach((slotDoc) => {
+      const slotData = slotDoc.data();
+      let needsUpdate = false;
+
+      // Fields to check: users, randomQuotes
+      const fieldsToCheck = ['users', 'randomQuotes'];
+
+      for (const fieldName of fieldsToCheck) {
+        // Check if field exists and contains the userId
+        if (
+          slotData[fieldName] &&
+          Array.isArray(slotData[fieldName]) &&
+          slotData[fieldName].includes(userId)
+        ) {
+          // Filter out the userId
+          slotData[fieldName] = slotData[fieldName].filter(
+            (id) => id !== userId
+          );
+          needsUpdate = true;
+        }
+      }
+
+      if (needsUpdate) {
+        batch.update(doc(db, 'notificationSlots', slotDoc.id), slotData);
+        updateCount++;
+
+        // Commit batch if it's getting large to avoid hitting limits
+        if (updateCount >= 450) {
+          batch.commit();
+          console.log(`Committed batch of ${updateCount} slot updates`);
+          updateCount = 0;
+        }
+      }
+    });
+
+    // Commit any remaining updates
+    if (updateCount > 0) {
+      await batch.commit();
+      console.log(`Committed remaining ${updateCount} slot updates`);
+    }
+
+    console.log(`User ${userId} removed from all notification slots`);
+  } catch (error) {
+    console.error('Error removing user from notification slots:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a user's document to track a private quote
+ * @param {string} userId - The user's ID
+ * @param {string} quoteId - The ID of the private quote
+ */
+export const updateUserPrivateQuotes = async (userId, quoteId) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      privateQuotes: arrayUnion(quoteId),
+      // Removed updatedAt for consistency
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating user private quotes:', error);
     throw error;
   }
 };

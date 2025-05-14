@@ -83,15 +83,26 @@ export default Quotes = ({
         const cacheKey = getCacheKey();
         const cachedData = await getQuotesFromCache(cacheKey);
 
-        // Only use cache if it has actual quotes in it
-        if (cachedData && cachedData.quotes && cachedData.quotes.length > 0) {
+        // Add timestamp check - only use cache if less than 1 hour old
+        const isCacheValid =
+          cachedData &&
+          cachedData.timestamp &&
+          Date.now() - cachedData.timestamp < 60 * 60 * 1000;
+
+        if (
+          cachedData &&
+          cachedData.quotes &&
+          cachedData.quotes.length > 0 &&
+          isCacheValid
+        ) {
           console.log(`📦 Using cached quotes for ${cacheKey}`);
           setQuotes(cachedData.quotes || []);
           setLastDoc(cachedData.lastDoc || null);
           setHasMore(cachedData.hasMore !== false);
           setProcessedChunks(cachedData.processedChunks || 0);
           setLoading(false);
-          return; // Exit early, no need to hit Firestore
+
+          return; // Exit early, we're using cache
         }
 
         // Log that we're falling back to Firebase because cache is empty
@@ -216,6 +227,7 @@ export default Quotes = ({
       console.log(
         `🔄 MOOD CHANGED from '${prevMoodRef.current}' to '${selectedMood}'`
       );
+
       prevMoodRef.current = selectedMood;
     }
 

@@ -86,6 +86,7 @@ export const calculateTimeSlots = (preferences, timeZone) => {
       }
     };
 
+    // Daily notification handling - unchanged
     if (preferences.frequency === 'daily' && preferences.time) {
       const utcBucket = convertToUTCTimeBucket(preferences.time, timeZone, 15);
       console.log('Generated UTC Bucket:', utcBucket);
@@ -96,6 +97,7 @@ export const calculateTimeSlots = (preferences, timeZone) => {
       }
     }
 
+    // Interval notifications handling - unchanged
     if (preferences.frequency === 'Interval' && preferences.interval) {
       const intervalMinutes = preferences.interval * 60;
       let currentTime = dayjs().startOf('day');
@@ -123,26 +125,49 @@ export const calculateTimeSlots = (preferences, timeZone) => {
       }
     }
 
+    // FIX: Random quote handling - now respects DND period
     if (preferences.randomQuoteEnabled) {
-      // Generate a random time slot
-      const randomHour = Math.floor(Math.random() * 24); // Random hour (0-23)
-      const randomMinute = Math.floor(Math.random() / 15) * 15; // Random minute (0, 15, 30, 45)
-      const randomTime = dayjs()
-        .hour(randomHour)
-        .minute(randomMinute)
-        .second(0);
+      let attempts = 0;
+      let validTimeFound = false;
 
-      // Convert to UTC bucket
-      const randomBucket = randomTime.utc().format('HH-mm');
-      console.log(
-        'Generated random time bucket for randomQuoteEnabled:',
-        randomBucket
-      );
+      // Try to find a random time outside DND hours (max 20 attempts)
+      while (!validTimeFound && attempts < 20) {
+        // Generate a random time
+        const randomHour = Math.floor(Math.random() * 24); // Random hour (0-23)
+        const randomMinute = Math.floor(Math.random() * 4) * 15; // Fixed: 0, 15, 30, or 45
 
-      // Just push the string, not an object
-      slots.push(`random-${randomBucket}`);
-      // OR if you need to maintain the type information
-      // slots.push(`randomQuotes-${randomBucket}`);
+        const randomTime = dayjs()
+          .hour(randomHour)
+          .minute(randomMinute)
+          .second(0);
+
+        // Check if the random time is outside DND hours
+        if (!isWithinDND(randomTime)) {
+          // Convert to UTC bucket
+          const randomBucket = randomTime.utc().format('HH-mm');
+          console.log(
+            'Generated random time bucket outside DND period:',
+            randomBucket
+          );
+
+          slots.push(`random-${randomBucket}`);
+          validTimeFound = true;
+        } else {
+          console.log(
+            `Random time ${randomTime.format(
+              'HH:mm'
+            )} is within DND period, trying again.`
+          );
+        }
+
+        attempts++;
+      }
+
+      if (!validTimeFound) {
+        console.warn(
+          'Could not find a random time outside DND period after multiple attempts'
+        );
+      }
     }
   } catch (error) {
     console.error('Error calculating time slots:', error);

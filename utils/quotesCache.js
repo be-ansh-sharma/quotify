@@ -60,25 +60,3 @@ export const clearAllQuotesCache = async () => {
   }
 };
 
-// Clear specific cache by filter
-export const clearCacheByFilter = async (filter) => {
-  try {
-    const keys = await AsyncStorage.getAllKeys();
-    const matchingKeys = keys.filter(
-      (key) => key.startsWith(CACHE_PREFIX) && key.includes(filter)
-    );
-
-    if (matchingKeys.length > 0) {
-      await AsyncStorage.multiRemove(matchingKeys);
-      console.log(
-        `🧹 Cleared ${matchingKeys.length} quote caches matching "${filter}"`
-      );
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error clearing filtered cache:', error);
-    return false;
-  }
-};
-

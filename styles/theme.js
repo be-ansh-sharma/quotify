@@ -11,6 +11,7 @@ const DARK_COLORS_VALUES = {
   placeholder: '#B3B3B3',
   notification: '#FF6F61',
   disabled: '#505050',
+  onPrimary: '#FFFFFF',
   onSurface: '#FFFFFF',
   onBackground: '#E1E1E1',
   shadow: '#000000',
@@ -58,6 +59,10 @@ export const COLORS = {
   },
   get accent() {
     return _currentColorValues.accent;
+  },
+  // Add this getter for onPrimary
+  get onPrimary() {
+    return _currentColorValues.onPrimary;
   },
   get background() {
     return _currentColorValues.background;

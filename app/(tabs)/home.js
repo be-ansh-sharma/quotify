@@ -10,7 +10,6 @@ import { SORT_OPTIONS } from 'config/sortConfig';
 import QuotesFAB from 'components/quotesfab/QuotesFAB';
 // Change this import
 import { useAppTheme } from 'context/AppThemeContext';
-import { clearCacheByFilter } from 'utils/quotesCache';
 
 // Separate the version check logic
 function useVersionCheck() {
@@ -55,7 +54,6 @@ export default function Index() {
 
   const sortHandler = async (sort) => {
     if (sort !== selectedSort) {
-      await clearCacheByFilter(selectedSort);
       setSelectedSort(sort);
       useUserStore.setState({ selectedSort: sort });
     }
@@ -63,7 +61,6 @@ export default function Index() {
 
   const moodHandler = async (mood) => {
     if (mood !== selectedMood) {
-      await clearCacheByFilter(selectedMood);
       setSelectedMood(mood);
       useUserStore.setState({ selectedMood: mood });
     }

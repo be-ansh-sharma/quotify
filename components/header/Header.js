@@ -117,7 +117,7 @@ const getStyles = (COLORS) =>
     headerTitle: {
       fontSize: 20,
       fontWeight: 'bold',
-      color: COLORS.text,
+      color: COLORS.primary,
       flex: 1,
       marginLeft: 12,
     },

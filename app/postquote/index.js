@@ -8,6 +8,7 @@ import {
   addQuoteToPendingList,
   addQuote,
   countUserPrivateQuotes,
+  updateUserPrivateQuotes,
 } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
@@ -66,8 +67,37 @@ export default function PostQuote() {
       };
 
       if (isPrivate) {
-        await addQuote(quoteData); // Add to "quotes" collection
-        SnackbarService.show('Quote saved privately!');
+        try {
+          // Add the quote to the quotes collection and get its ID
+          const quoteId = await addQuote(quoteData);
+
+          // Update the user document to track this private quote
+          if (user?.uid && quoteId) {
+            await updateUserPrivateQuotes(user.uid, quoteId);
+            console.log(`Added private quote ${quoteId} to user ${user.uid}`);
+
+            // Update the local user store to keep it in sync with Firebase
+            const updatedPrivateQuotes = user.privateQuotes
+              ? [...user.privateQuotes, quoteId]
+              : [quoteId];
+
+            useUserStore.setState({
+              user: {
+                ...user,
+                privateQuotes: updatedPrivateQuotes,
+              },
+            });
+
+            console.log(
+              `Added quote ${quoteId} to user's privateQuotes in local store`
+            );
+          }
+
+          SnackbarService.show('Quote saved privately!');
+        } catch (error) {
+          console.error('Error saving private quote:', error);
+          SnackbarService.show('Failed to save your private quote.');
+        }
       } else {
         await addQuoteToPendingList(quoteData); // Add to "pendingquotes" collection
         SnackbarService.show('Quote submitted! It’ll be reviewed soon.');
