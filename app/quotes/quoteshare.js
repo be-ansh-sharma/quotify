@@ -184,7 +184,12 @@ export default function QuoteShare() {
         <View style={styles.invisiblePreviewContainer}>
           <ViewShot
             ref={invisibleViewRef}
-            options={{ format: 'png', quality: 1 }}
+            options={{
+              format: 'png',
+              quality: 1,
+              width: invisiblePreviewDimensions.width,
+              height: invisiblePreviewDimensions.height,
+            }}
             style={{
               width: invisiblePreviewDimensions.width,
               height: invisiblePreviewDimensions.height,
@@ -197,6 +202,7 @@ export default function QuoteShare() {
               typography={getExportTypography(typography)}
               onGesture={null}
               isExport={true}
+              aspectRatio={selectedFormat.aspectRatio}
             />
           </ViewShot>
         </View>

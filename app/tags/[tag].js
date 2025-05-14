@@ -19,25 +19,12 @@ export default function TagScreen() {
 
   const styles = getStyles(COLORS); // Generate styles dynamically
 
-  const sortHandler = (sort) => {
-    setSelectedSort(sort);
-    useUserStore.setState({ selectedSort: sort }); // Update the sort option in the store
-  };
-
   return (
     <View style={styles.container}>
       {/* Use the reusable Header component */}
       <Header title={`#${tag}`} backRoute='/browse' />
 
-      {/* Sort Options */}
-      <Sort
-        selectedSort={selectedSort}
-        sortHandler={sortHandler}
-        sortOptions={TAG_SORT_OPTIONS}
-      />
-
-      {/* Quotes Section */}
-      <Quotes selectedSort={selectedSort} user={user} tag={tag} />
+      <Quotes user={user} tag={tag} selectedSort='newest' />
     </View>
   );
 }

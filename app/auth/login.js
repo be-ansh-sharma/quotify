@@ -21,12 +21,12 @@ import { useSignInWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import useUserStore from 'stores/userStore';
-import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
+import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const Login = () => {
   const router = useRouter();
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
+  const { COLORS } = useAppTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -128,7 +128,7 @@ const Login = () => {
 
   const closeDialog = () => setIsDialogVisible(false);
 
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const styles = getStyles(COLORS);
 
   return (
     <KeyboardAvoidingView
@@ -158,6 +158,7 @@ const Login = () => {
         <Text style={styles.appName}>Quotify</Text>
       </Animated.View>
 
+      {/* Login Form */}
       <View style={styles.form}>
         <TextInput
           label='Email'
@@ -168,8 +169,6 @@ const Login = () => {
           error={!!emailError}
           style={styles.input}
           theme={{ colors: { primary: COLORS.primary } }}
-          selectionColor={COLORS.primary}
-          underlineColor={COLORS.primary}
         />
         <HelperText
           type='error'
@@ -187,8 +186,6 @@ const Login = () => {
           error={!!passwordError}
           style={styles.input}
           theme={{ colors: { primary: COLORS.primary } }}
-          selectionColor={COLORS.primary}
-          underlineColor={COLORS.primary}
         />
         <HelperText
           type='error'
@@ -210,8 +207,7 @@ const Login = () => {
           style={styles.button}
           loading={loading}
           disabled={loading}
-          color={COLORS.primary}
-          labelStyle={{ color: COLORS.icon }}
+          labelStyle={styles.buttonText}
         >
           {loading ? 'Logging In...' : 'Login'}
         </Button>
@@ -220,22 +216,16 @@ const Login = () => {
           mode='text'
           onPress={openDialog}
           style={styles.forgotPassword}
-          color={COLORS.primary}
-          labelStyle={{ color: COLORS.primary }}
+          labelStyle={styles.forgotPasswordText}
         >
           Forgot Password?
         </Button>
       </View>
 
+      {/* Reset Password Dialog */}
       <Portal>
-        <Dialog
-          visible={isDialogVisible}
-          onDismiss={closeDialog}
-          theme={{ colors: { surface: COLORS.surface } }}
-        >
-          <Dialog.Title style={{ color: COLORS.text }}>
-            Reset Password
-          </Dialog.Title>
+        <Dialog visible={isDialogVisible} onDismiss={closeDialog}>
+          <Dialog.Title style={styles.dialogTitle}>Reset Password</Dialog.Title>
           <Dialog.Content>
             <TextInput
               label='Email'
@@ -246,7 +236,6 @@ const Login = () => {
               error={!!resetError}
               style={styles.input}
               theme={{ colors: { primary: COLORS.primary } }}
-              selectionColor={COLORS.primary}
             />
             {resetError && (
               <HelperText type='error' visible={true} style={styles.helperText}>
@@ -254,20 +243,16 @@ const Login = () => {
               </HelperText>
             )}
             {resetSuccess && (
-              <HelperText
-                type='info'
-                visible={true}
-                style={{ color: COLORS.primary }}
-              >
+              <HelperText type='info' visible={true} style={styles.successText}>
                 {resetSuccess}
               </HelperText>
             )}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button color={COLORS.primary} onPress={closeDialog}>
+            <Button onPress={closeDialog} color={COLORS.primary}>
               Cancel
             </Button>
-            <Button color={COLORS.primary} onPress={handleResetPassword}>
+            <Button onPress={handleResetPassword} color={COLORS.primary}>
               Send
             </Button>
           </Dialog.Actions>
@@ -306,11 +291,22 @@ const getStyles = (COLORS) =>
       marginTop: 10,
       backgroundColor: COLORS.primary,
     },
+    buttonText: {
+      color: COLORS.onPrimary,
+      fontWeight: '600',
+    },
     forgotPassword: {
       marginTop: 10,
     },
+    forgotPasswordText: {
+      color: COLORS.primary,
+    },
     helperText: {
       color: COLORS.error,
+      marginBottom: 5,
+    },
+    successText: {
+      color: COLORS.primary,
       marginBottom: 5,
     },
     logoContainer: {
@@ -345,6 +341,10 @@ const getStyles = (COLORS) =>
       shadowRadius: 3,
       elevation: 3,
       zIndex: 10,
+    },
+    dialogTitle: {
+      color: COLORS.text,
+      fontWeight: 'bold',
     },
   });
 

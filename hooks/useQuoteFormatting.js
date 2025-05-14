@@ -1,108 +1,97 @@
 import { useState, useEffect, useRef } from 'react';
-import { Dimensions } from 'react-native';
-import { cropToAspectRatio, resizeImage } from 'utils/imageManipulation';
+import { Platform, Dimensions } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Define share formats
-export const SHARE_FORMATS = [
+// Define standard formats with proper aspect ratios
+const SHARE_FORMATS = [
+  { id: 'square', name: 'Square', aspectRatio: 1, width: 1080, height: 1080 },
   {
-    id: 'instagram_square',
-    name: 'Instagram (1:1)',
-    aspectRatio: 1 / 1,
-    width: 1080,
-    height: 1080,
-    icon: 'instagram',
-  },
-  {
-    id: 'instagram_portrait',
-    name: 'Instagram (4:5)',
+    id: 'portrait',
+    name: 'Portrait',
     aspectRatio: 4 / 5,
     width: 1080,
     height: 1350,
-    icon: 'instagram',
   },
   {
-    id: 'instagram_story',
-    name: 'Story (9:16)',
+    id: 'landscape',
+    name: 'Landscape',
+    aspectRatio: 16 / 9,
+    width: 1920,
+    height: 1080,
+  },
+  {
+    id: 'story',
+    name: 'Story',
     aspectRatio: 9 / 16,
     width: 1080,
     height: 1920,
-    icon: 'mobile',
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    aspectRatio: 1.91 / 1,
-    width: 1200,
-    height: 630,
-    icon: 'facebook',
   },
   {
     id: 'twitter',
     name: 'Twitter',
-    aspectRatio: 16 / 9,
+    aspectRatio: 1.91 / 1,
     width: 1200,
-    height: 675,
-    icon: 'twitter',
+    height: 628,
   },
 ];
 
 export const useQuoteFormatting = (viewRef, selectedBackground) => {
-  const [selectedFormat, setSelectedFormat] = useState(SHARE_FORMATS[0]);
+  const [selectedFormat, setSelectedFormat] = useState(SHARE_FORMATS[0]); // Default to square
+  const [previewUri, setPreviewUri] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const invisibleViewRef = useRef(null);
   const [invisiblePreviewDimensions, setInvisiblePreviewDimensions] =
     useState(null);
-  const invisibleViewRef = useRef();
 
-  // Create a high-resolution quote image for sharing
-  const createFormattedQuoteImage = async (typography) => {
-    try {
-      setProcessing(true);
-
+  // Update invisible preview dimensions when format changes
+  useEffect(() => {
+    if (selectedFormat) {
+      // Use the exact width/height from the selected format
       setInvisiblePreviewDimensions({
         width: selectedFormat.width,
         height: selectedFormat.height,
       });
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      if (!invisibleViewRef.current) {
-        setProcessing(false);
-        return null;
-      }
-
-      const uri = await invisibleViewRef.current.capture();
-      const finalUri = await resizeImage(
-        uri,
-        selectedFormat.width,
-        selectedFormat.height
-      );
-
-      setProcessing(false);
-      return finalUri;
-    } catch (error) {
-      console.error('Error creating image:', error);
-      setProcessing(false);
-      return null;
     }
-  };
+  }, [selectedFormat]);
 
-  // Calculate scaled typography for export
   const getExportTypography = (typography) => {
+    // Scale typography based on format size
+    const scaleFactor = selectedFormat.width / SCREEN_WIDTH;
     return {
       ...typography,
-      // Increase the 0.6 scaling factor to 1.2 for larger text
-      size: Math.round(
-        typography.size * (selectedFormat.width / SCREEN_WIDTH) * 1.2
-      ),
-      position: { x: 0, y: 0 },
+      size: typography.size * scaleFactor,
+      position: {
+        x: typography.position.x * scaleFactor,
+        y: typography.position.y * scaleFactor,
+      },
     };
+  };
+
+  const createFormattedQuoteImage = async (typography) => {
+    setProcessing(true);
+    try {
+      // Make sure to wait a bit for the invisible view to render
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Capture the high-resolution version with proper dimensions
+      const uri = await invisibleViewRef.current.capture();
+      setPreviewUri(uri);
+      return uri;
+    } catch (error) {
+      console.error('Error creating image:', error);
+      return null;
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return {
     selectedFormat,
     setSelectedFormat,
+    previewUri,
     processing,
     invisiblePreviewDimensions,
     invisibleViewRef,

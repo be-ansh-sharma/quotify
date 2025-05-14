@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import {
   TextInput,
   Button,
@@ -12,10 +18,9 @@ import { auth } from 'utils/firebase/firebaseconfig';
 import { updateProfile } from 'firebase/auth';
 import { updateUserProfile } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
-import Header from 'components/header/Header'; // Import the reusable Header component
+import Header from 'components/header/Header';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -29,10 +34,7 @@ export default function EditProfile() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Get COLORS from theme context
   const { COLORS } = useAppTheme();
-
-  // Generate styles with current COLORS
   const styles = getStyles(COLORS);
 
   const validatePassword = () => {
@@ -87,93 +89,98 @@ export default function EditProfile() {
 
   return (
     <View style={styles.container}>
-      {/* Use the reusable Header component */}
       <Header title='Edit Profile' backRoute='/profile' />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Profile Fields */}
-        <Text style={styles.sectionTitle}>Profile Info</Text>
-        <TextInput
-          label='First Name'
-          value={firstName}
-          onChangeText={setFirstName}
-          style={styles.input}
-          theme={{
-            colors: { text: COLORS.text, placeholder: COLORS.placeholder },
-          }}
-        />
-        <TextInput
-          label='Last Name'
-          value={lastName}
-          onChangeText={setLastName}
-          style={styles.input}
-          theme={{
-            colors: { text: COLORS.text, placeholder: COLORS.placeholder },
-          }}
-        />
-        <Button
-          mode='contained'
-          onPress={handleProfileUpdate}
-          loading={loading}
-          disabled={loading}
-          style={styles.button}
-        >
-          Save Profile
-        </Button>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.content}>
+          {/* Profile Section */}
+          <Text style={styles.sectionTitle}>Profile Info</Text>
+          <TextInput
+            label='First Name'
+            value={firstName}
+            onChangeText={setFirstName}
+            style={styles.input}
+            theme={{
+              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+            }}
+          />
+          <TextInput
+            label='Last Name'
+            value={lastName}
+            onChangeText={setLastName}
+            style={styles.input}
+            theme={{
+              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+            }}
+          />
+          <Button
+            mode='contained'
+            onPress={handleProfileUpdate}
+            loading={loading}
+            disabled={loading}
+            style={styles.button}
+            labelStyle={styles.buttonText}
+          >
+            Save Profile
+          </Button>
 
-        <Divider style={styles.divider} />
+          <Divider style={styles.divider} />
 
-        {/* Password Section */}
-        <Text style={styles.sectionTitle}>Change Password</Text>
-        <TextInput
-          label='New Password'
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          theme={{
-            colors: { text: COLORS.text, placeholder: COLORS.placeholder },
-          }}
-        />
-        <TextInput
-          label='Confirm Password'
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          style={styles.input}
-          theme={{
-            colors: { text: COLORS.text, placeholder: COLORS.placeholder },
-          }}
-        />
-        {error && (
-          <HelperText type='error' style={styles.helperText}>
-            {error}
-          </HelperText>
-        )}
-        <Button
-          mode='contained'
-          onPress={handlePasswordUpdate}
-          loading={loading}
-          disabled={loading}
-          style={styles.button}
-        >
-          Update Password
-        </Button>
+          {/* Password Section */}
+          <Text style={styles.sectionTitle}>Change Password</Text>
+          <TextInput
+            label='New Password'
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.input}
+            theme={{
+              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+            }}
+          />
+          <TextInput
+            label='Confirm Password'
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            style={styles.input}
+            theme={{
+              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+            }}
+          />
+          {error && (
+            <HelperText type='error' style={styles.helperText}>
+              {error}
+            </HelperText>
+          )}
+          <Button
+            mode='contained'
+            onPress={handlePasswordUpdate}
+            loading={loading}
+            disabled={loading}
+            style={styles.button}
+            labelStyle={styles.buttonText}
+          >
+            Update Password
+          </Button>
 
-        <Button
-          mode='text'
-          onPress={() => router.back()}
-          style={styles.cancelButton}
-          textColor={COLORS.placeholder}
-        >
-          Cancel
-        </Button>
-      </ScrollView>
+          <Button
+            mode='text'
+            onPress={() => router.back()}
+            style={styles.cancelButton}
+            labelStyle={styles.cancelButtonText}
+          >
+            Cancel
+          </Button>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
-// Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
@@ -184,29 +191,40 @@ const getStyles = (COLORS) =>
       padding: 16,
     },
     sectionTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      marginBottom: 12,
+      fontSize: 18,
+      fontWeight: '700',
+      marginBottom: 16,
       color: COLORS.text,
     },
     input: {
       marginBottom: 16,
+      backgroundColor: COLORS.surface,
     },
     helperText: {
       marginBottom: 8,
     },
     button: {
-      marginTop: 4,
+      marginTop: 8,
       borderRadius: 8,
+      backgroundColor: COLORS.primary,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: COLORS.onPrimary,
     },
     cancelButton: {
       marginTop: 24,
       alignSelf: 'center',
     },
+    cancelButtonText: {
+      fontSize: 14,
+      color: COLORS.placeholder,
+    },
     divider: {
       marginVertical: 32,
       height: 1,
-      backgroundColor: COLORS.surface,
+      backgroundColor: COLORS.surfaceVariant,
     },
   });
 

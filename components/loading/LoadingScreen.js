@@ -7,13 +7,11 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
 
 export default function LoadingScreen({ message = 'Loading your quotes...' }) {
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
-
-  const styles = getStyles(COLORS); // Generate styles with current theme
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
   return (
     <View style={styles.container}>
@@ -35,31 +33,35 @@ export default function LoadingScreen({ message = 'Loading your quotes...' }) {
   );
 }
 
-// Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+      position: 'absolute', // Position absolutely
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       backgroundColor: COLORS.background,
+      zIndex: 1000, // Ensure it's above other content
     },
     content: {
-      alignItems: 'center', // Center all content horizontally
+      flex: 1,
+      justifyContent: 'center', // Center content vertically
+      alignItems: 'center', // Center content horizontally
     },
     logo: {
       width: 120,
       height: 120,
-      marginBottom: 20, // Space between the logo and the title
+      marginBottom: 20,
     },
     title: {
       fontSize: 24,
       fontWeight: 'bold',
       color: COLORS.primary,
-      marginBottom: 24, // Space between the title and the ActivityIndicator
+      marginBottom: 24,
     },
     message: {
-      marginTop: 16, // Space between the ActivityIndicator and the message
+      marginTop: 16,
       color: COLORS.text,
       fontSize: 16,
       textAlign: 'center',

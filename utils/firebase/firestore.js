@@ -226,134 +226,85 @@ export const fetchQuotes = async (
   selectedSort = 'newest',
   author = null,
   tag = null,
-  mood = null // New parameter for mood filtering
+  mood = null
 ) => {
   try {
-    console.log('Fetching quotes with parameters:');
-    const quotesRef = collection(db, 'quotes');
-    let quotesQuery;
-
-    // Determine the sorting logic based on selectedSort
-    switch (selectedSort) {
-      case 'newest':
-        quotesQuery = lastDoc
-          ? query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
-              orderBy('createdAt', 'desc'),
-              startAfter(lastDoc),
-              limit(20)
-            )
-          : query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]), // Include public quotes or those without visibility
-              orderBy('createdAt', 'desc'),
-              limit(20)
-            );
-        break;
-      case 'oldest':
-        quotesQuery = lastDoc
-          ? query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]),
-              orderBy('createdAt', 'asc'),
-              startAfter(lastDoc),
-              limit(20)
-            )
-          : query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]),
-              orderBy('createdAt', 'asc'),
-              limit(20)
-            );
-        break;
-      case 'mostPopular':
-        quotesQuery = lastDoc
-          ? query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]),
-              orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
-              startAfter(lastDoc),
-              limit(20)
-            )
-          : query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]),
-              orderBy('totalReactions', 'desc'), // Use totalReactions instead of likes
-              limit(20)
-            );
-        break;
-      case 'a_z_author':
-        quotesQuery = lastDoc
-          ? query(
-              quotesRef,
-              where('visibility', '!=', 'private'),
-              orderBy('author', 'asc'),
-              startAfter(lastDoc),
-              limit(20)
-            )
-          : query(
-              quotesRef,
-              where('visibility', '!=', 'private'),
-              orderBy('author', 'asc'),
-              limit(20)
-            );
-        break;
-      case 'z_a_author':
-        quotesQuery = lastDoc
-          ? query(
-              quotesRef,
-              where('visibility', '!=', 'private'),
-              orderBy('author', 'desc'),
-              startAfter(lastDoc),
-              limit(20)
-            )
-          : query(
-              quotesRef,
-              where('visibility', '!=', 'private'),
-              orderBy('author', 'desc'),
-              limit(20)
-            );
-        break;
-      default:
-        quotesQuery = lastDoc
-          ? query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]),
-              orderBy('likes', 'desc'),
-              startAfter(lastDoc),
-              limit(20)
-            )
-          : query(
-              quotesRef,
-              where('visibility', 'in', ['public', null]),
-              orderBy('likes', 'desc'),
-              limit(20)
-            );
-    }
-
-    // Add filters in this order
-    // First visibility
-    quotesQuery = query(
-      quotesQuery,
-      where('visibility', 'in', ['public', null])
+    console.log(
+      'Fetching quotes with parameters:',
+      mood,
+      author,
+      tag,
+      selectedSort
     );
+    const quotesRef = collection(db, 'quotes');
 
-    // Then mood if specified
-    if (mood) {
-      quotesQuery = query(quotesQuery, where('mood', '==', mood));
+    // Build basic constraints - visibility filter will always apply
+    const constraints = [where('visibility', 'in', ['public', null])];
+
+    // Add mood filter if specified
+    if (mood && mood !== 'all') {
+      constraints.push(where('mood', '==', mood));
     }
 
-    // Then author if specified
+    // Add author filter if specified
     if (author) {
-      quotesQuery = query(quotesQuery, where('author', '==', author));
+      constraints.push(where('author', '==', author));
     }
 
-    // Then tag if specified
+    // Add tag filter if specified
     if (tag) {
-      quotesQuery = query(quotesQuery, where('tags', 'array-contains', tag));
+      constraints.push(where('tags', 'array-contains', tag));
     }
 
+    // Apply sorting based on context
+    if (author) {
+      // When filtering by author, use simplified sorting to avoid index issues
+      // Complex queries with author filter + exotic sorting require special indexes
+      console.log(
+        `Using simplified query for author filter with ${selectedSort} sort`
+      );
+
+      // For author pages, we only support two sort types for better compatibility
+      if (selectedSort === 'mostPopular' && false) {
+        // Disabled for now until index is created
+        constraints.push(orderBy('totalReactions', 'desc'));
+      } else {
+        // Default to creation date which usually works without special indexes
+        constraints.push(orderBy('createdAt', 'desc'));
+      }
+    } else {
+      // When not filtering by author, we can use any sort option
+      switch (selectedSort) {
+        case 'newest':
+          constraints.push(orderBy('createdAt', 'desc'));
+          break;
+        case 'oldest':
+          constraints.push(orderBy('createdAt', 'asc'));
+          break;
+        case 'mostPopular':
+          constraints.push(orderBy('totalReactions', 'desc'));
+          break;
+        case 'a_z_author':
+          constraints.push(orderBy('author', 'asc'));
+          break;
+        case 'z_a_author':
+          constraints.push(orderBy('author', 'desc'));
+          break;
+        default:
+          constraints.push(orderBy('createdAt', 'desc'));
+      }
+    }
+
+    // Add pagination constraint if there's a lastDoc
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
+    }
+
+    // Add limit constraint
+    constraints.push(limit(20));
+
+    // Create a single query with all constraints
+    const quotesQuery = query(quotesRef, ...constraints);
     const snapshot = await getDocs(quotesQuery);
 
     if (!snapshot.empty) {
@@ -361,17 +312,23 @@ export const fetchQuotes = async (
         id: doc.id,
         ...doc.data(),
       }));
-      const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
+      const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+      console.log(
+        `Found ${newQuotes.length} quotes${
+          author ? ` for author: ${author}` : ''
+        }`
+      );
       return {
         newQuotes,
         lastVisibleDoc,
-        hasMoreQuotes: true,
+        hasMoreQuotes: newQuotes.length === 20,
       };
     } else {
+      console.log(`No quotes found${author ? ` for author: ${author}` : ''}`);
       return {
         newQuotes: [],
         lastVisibleDoc: null,
-        hasMoreQuotes: false, // No more quotes to fetch
+        hasMoreQuotes: false,
       };
     }
   } catch (error) {

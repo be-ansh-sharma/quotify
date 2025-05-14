@@ -58,21 +58,36 @@ export default function Tags() {
 
     // Animation values
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const opacityAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 0.95,
+          friction: 3,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0.8,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
     };
 
     const handlePressOut = () => {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 3,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
     };
 
     return (
@@ -87,8 +102,8 @@ export default function Tags() {
         <TileDecoration
           size={tileSize - 16} // Subtract padding
           seed={iconSeed}
-          iconCount={7} // Number of decorative icons
-          opacity={0.15} // Make icons subtle
+          iconCount={5} // Number of decorative icons
+          opacity={0.1} // Make icons subtle
           style={styles.decorations}
         />
 
@@ -98,6 +113,7 @@ export default function Tags() {
             styles.tileContent,
             {
               transform: [{ scale: scaleAnim }],
+              opacity: opacityAnim,
             },
           ]}
         >
@@ -114,11 +130,9 @@ export default function Tags() {
   const renderFooter = () => {
     if (!loading) return null;
     return (
-      <ActivityIndicator
-        size='large'
-        color={COLORS.primary}
-        style={{ marginVertical: 20 }}
-      />
+      <View style={styles.footer}>
+        <ActivityIndicator size='large' color={COLORS.primary} />
+      </View>
     );
   };
 
@@ -164,7 +178,7 @@ const getStyles = (COLORS) =>
       backgroundColor: COLORS.surface,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 10,
+      borderRadius: 12,
       padding: 8,
       shadowColor: COLORS.shadow,
       shadowOpacity: 0.1,
@@ -189,6 +203,10 @@ const getStyles = (COLORS) =>
       color: COLORS.text,
       textAlign: 'center',
       padding: 8,
+    },
+    footer: {
+      marginVertical: 20,
+      alignItems: 'center',
     },
   });
 

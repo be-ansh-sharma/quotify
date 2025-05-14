@@ -9,9 +9,10 @@ import {
 import SkeletonLoader from 'components/skelton/Skelton';
 import { saveQuotesToCache, getQuotesFromCache } from 'utils/quotesCache';
 import { useTabBar } from 'context/TabBarContext';
+import { useAppTheme } from 'context/AppThemeContext'; // Add this import
 
 export default Quotes = ({
-  selectedSort,
+  selectedSort = 'recent', // Add this prop with a default value
   selectedMood = 'all',
   user,
   author = null,
@@ -23,6 +24,7 @@ export default Quotes = ({
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [processedChunks, setProcessedChunks] = useState(0);
+  const { COLORS } = useAppTheme(); // Now this will work properly
 
   // Add this to track mood changes
   const prevMoodRef = useRef(selectedMood);
@@ -81,7 +83,8 @@ export default Quotes = ({
         const cacheKey = getCacheKey();
         const cachedData = await getQuotesFromCache(cacheKey);
 
-        if (cachedData) {
+        // Only use cache if it has actual quotes in it
+        if (cachedData && cachedData.quotes && cachedData.quotes.length > 0) {
           console.log(`📦 Using cached quotes for ${cacheKey}`);
           setQuotes(cachedData.quotes || []);
           setLastDoc(cachedData.lastDoc || null);
@@ -90,9 +93,16 @@ export default Quotes = ({
           setLoading(false);
           return; // Exit early, no need to hit Firestore
         }
+
+        // Log that we're falling back to Firebase because cache is empty
+        if (cachedData) {
+          console.log(
+            `⚠️ Cache exists but is empty for ${cacheKey}, fetching from Firebase`
+          );
+        }
       }
 
-      // STEP 2: If no cache or not first page, fetch from Firestore
+      // STEP 2: If no cache, empty cache, or not first page, fetch from Firestore
       let fetchedQuotes = [];
       let lastVisibleDoc = null;
       let hasMoreQuotes = true;
@@ -121,6 +131,9 @@ export default Quotes = ({
           author,
           tag,
           selectedMood !== 'all' ? selectedMood : null
+        );
+        console.log(
+          `📖 Fetched ${result.newQuotes?.length || 0} quotes by author/tag`
         );
         fetchedQuotes = result.newQuotes || [];
         lastVisibleDoc = result.lastVisibleDoc;
@@ -158,16 +171,22 @@ export default Quotes = ({
         // First page - set quotes directly and SAVE TO CACHE
         setQuotes(fetchedQuotes || []);
 
-        // Cache ONLY the first page results
-        const cacheKey = getCacheKey();
-        await saveQuotesToCache(cacheKey, {
-          quotes: fetchedQuotes || [],
-          lastDoc: lastVisibleDoc,
-          hasMore: hasMoreQuotes,
-          processedChunks: updatedChunks,
-          timestamp: Date.now(),
-        });
-        console.log(`💾 Saved first page to cache with key: ${cacheKey}`);
+        // ONLY cache if we actually got results
+        if (fetchedQuotes && fetchedQuotes.length > 0) {
+          const cacheKey = getCacheKey();
+          await saveQuotesToCache(cacheKey, {
+            quotes: fetchedQuotes,
+            lastDoc: lastVisibleDoc,
+            hasMore: hasMoreQuotes,
+            processedChunks: updatedChunks,
+            timestamp: Date.now(),
+          });
+          console.log(
+            `💾 Saved ${fetchedQuotes.length} quotes to cache with key: ${cacheKey}`
+          );
+        } else {
+          console.log(`⚠️ No quotes fetched, skipping cache`);
+        }
       } else {
         // Not first page - append quotes (never cache these)
         setQuotes((prevQuotes) => {
@@ -248,7 +267,7 @@ export default Quotes = ({
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <FlatList
         data={quotes}
         keyExtractor={(item) => item.id}
@@ -258,13 +277,20 @@ export default Quotes = ({
         ListFooterComponent={renderFooter}
         decelerationRate='normal'
         scrollEventThrottle={16}
-        onScroll={handleScroll} // Add scroll handler
+        onScroll={handleScroll}
+        contentContainerStyle={styles.listContent} // Add this line
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 8, // Add horizontal padding to entire list content
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',

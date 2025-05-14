@@ -7,11 +7,11 @@ import React, {
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Portal, Button, TextInput } from 'react-native-paper';
 import BottomSheet from '../shared/BottomSheet'; // Use our custom BottomSheet
-import { COLORS } from 'styles/theme';
 import { addQuoteToList, removeQuoteFromList } from 'utils/firebase/firestore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import useUserStore from 'stores/userStore';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme context
 
 const MAX_LISTS = 10;
 
@@ -23,6 +23,8 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
   const [tempSelection, setTempSelection] = useState({});
   const bookmarklist = user.bookmarklist || {};
   const setUser = useUserStore((state) => state.setUser);
+
+  const { COLORS } = useAppTheme(); // Get theme colors
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -143,6 +145,8 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
     }
   };
 
+  const styles = getStyles(COLORS);
+
   return (
     <Portal>
       <BottomSheet ref={bottomSheetRef} height='60%'>
@@ -161,11 +165,11 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
               <View style={styles.newListActions}>
                 <Button
                   mode='contained'
-                  onPress={handleCreateNewList} // Call the correct function
+                  onPress={handleCreateNewList}
                   loading={loading}
                   disabled={loading}
                   style={styles.button}
-                  color={COLORS.primary}
+                  labelStyle={styles.buttonText}
                 >
                   Create List
                 </Button>
@@ -173,7 +177,7 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
                   mode='text'
                   onPress={handleCancelNewList}
                   style={styles.cancelButton}
-                  color={COLORS.placeholder}
+                  labelStyle={styles.cancelButtonText}
                 >
                   Cancel
                 </Button>
@@ -221,7 +225,7 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
             loading={loading}
             disabled={loading}
             style={styles.saveButton}
-            color={COLORS.primary}
+            labelStyle={styles.buttonText}
           >
             Save Changes
           </Button>
@@ -231,74 +235,83 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
   );
 });
 
-const styles = StyleSheet.create({
-  bottomSheetContent: {
-    flex: 1,
-  },
-  bottomSheetTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: COLORS.text,
-  },
-  input: {
-    marginBottom: 16,
-    backgroundColor: 'transparent',
-  },
-  newListActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  button: {
-    flex: 1,
-    marginRight: 8,
-  },
-  cancelButton: {
-    flex: 1,
-  },
-  newListButton: {
-    padding: 16,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  newListButtonText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontWeight: 'bold',
-  },
-  existingListsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: COLORS.text,
-  },
-  listContainer: {
-    marginBottom: 16,
-  },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  listTitle: {
-    fontSize: 16,
-    color: COLORS.text,
-    marginLeft: 8,
-  },
-  noListsText: {
-    fontSize: 14,
-    color: COLORS.placeholder,
-    fontStyle: 'italic',
-    marginTop: 8,
-    textAlign: 'center',
-    paddingVertical: 16,
-  },
-  saveButton: {
-    marginTop: 16,
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    bottomSheetContent: {
+      flex: 1,
+    },
+    bottomSheetTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 16,
+      color: COLORS.text,
+    },
+    input: {
+      marginBottom: 16,
+      backgroundColor: COLORS.surface,
+    },
+    newListActions: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    button: {
+      flex: 1,
+      marginRight: 8,
+      backgroundColor: COLORS.primary,
+    },
+    buttonText: {
+      color: COLORS.onPrimary,
+    },
+    cancelButton: {
+      flex: 1,
+    },
+    cancelButtonText: {
+      color: COLORS.placeholder,
+    },
+    newListButton: {
+      padding: 16,
+      backgroundColor: COLORS.surface,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    newListButtonText: {
+      fontSize: 16,
+      color: COLORS.primary,
+      fontWeight: 'bold',
+    },
+    existingListsTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 12,
+      color: COLORS.text,
+    },
+    listContainer: {
+      marginBottom: 16,
+    },
+    listItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    listTitle: {
+      fontSize: 16,
+      color: COLORS.text,
+      marginLeft: 8,
+    },
+    noListsText: {
+      fontSize: 14,
+      color: COLORS.placeholder,
+      fontStyle: 'italic',
+      marginTop: 8,
+      textAlign: 'center',
+      paddingVertical: 16,
+    },
+    saveButton: {
+      marginTop: 16,
+      backgroundColor: COLORS.primary,
+    },
+  });
 
 export default ListManager;
 

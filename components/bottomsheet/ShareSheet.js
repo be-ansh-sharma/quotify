@@ -7,11 +7,12 @@ import {
   FlatList,
 } from 'react-native';
 import BottomSheet from 'components/shared/BottomSheet'; // Use our custom BottomSheet
-import { COLORS } from 'styles/theme';
 import { FontAwesome } from '@expo/vector-icons'; // For icons
+import { useAppTheme } from 'context/AppThemeContext'; // Import theme context
 
 const ShareSheet = forwardRef(({ onShareAsText, onShareAsPhoto }, ref) => {
   const bottomSheetRef = useRef(null);
+  const { COLORS } = useAppTheme(); // Get theme colors
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -39,6 +40,8 @@ const ShareSheet = forwardRef(({ onShareAsText, onShareAsPhoto }, ref) => {
     },
   ];
 
+  const styles = getStyles(COLORS);
+
   return (
     <BottomSheet ref={bottomSheetRef} height='30%'>
       <View style={styles.content}>
@@ -63,30 +66,37 @@ const ShareSheet = forwardRef(({ onShareAsText, onShareAsPhoto }, ref) => {
   );
 });
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingVertical: 16,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  icon: {
-    marginRight: 12,
-  },
-  optionText: {
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: 16,
-  },
-});
+const getStyles = (COLORS) =>
+  StyleSheet.create({
+    content: {
+      flex: 1,
+      paddingVertical: 16,
+      backgroundColor: COLORS.background, // Use theme background color
+    },
+    option: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: COLORS.surface, // Use theme surface color
+      borderRadius: 8,
+      marginHorizontal: 16,
+      marginBottom: 8,
+    },
+    icon: {
+      marginRight: 12,
+    },
+    optionText: {
+      fontSize: 16,
+      color: COLORS.text, // Use theme text color
+      fontWeight: '500',
+    },
+    separator: {
+      height: 1,
+      backgroundColor: COLORS.border, // Use theme border color
+      marginHorizontal: 16,
+    },
+  });
 
 export default ShareSheet;
 

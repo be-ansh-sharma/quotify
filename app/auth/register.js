@@ -14,7 +14,7 @@ import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { createUser } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
+import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function Register() {
@@ -28,17 +28,15 @@ export default function Register() {
   const router = useRouter();
   const setUser = useUserStore((state) => state.setUser);
 
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
-  // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   const [createUserWithEmailAndPassword, user, loading, error] =
     useCreateUserWithEmailAndPassword(auth);
 
-  // Start animation when component mounts
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -200,8 +198,7 @@ export default function Register() {
           onPress={handleRegister}
           style={styles.button}
           contentStyle={{ paddingVertical: 6 }}
-          labelStyle={{ color: COLORS.icon }}
-          color={COLORS.primary}
+          labelStyle={{ color: COLORS.onPrimary }}
         >
           Register
         </Button>

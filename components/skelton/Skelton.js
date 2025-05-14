@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { ActivityIndicator, Card } from 'react-native-paper';
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import { useAppTheme } from 'context/AppThemeContext';
+import LottieView from 'lottie-react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const quotes = [
   'Inhale confidence, exhale doubt.',
@@ -31,58 +33,58 @@ const getRandomQuote = () => {
 };
 
 const Skelton = () => {
-  const { COLORS, isDark } = useAppTheme(); // Get theme and dark mode status
+  const { COLORS, isDark } = useAppTheme();
   const quote = getRandomQuote();
+  const lottieRef = useRef(null);
+
+  useEffect(() => {
+    if (lottieRef.current) {
+      setTimeout(() => {
+        lottieRef.current?.play();
+      }, 100);
+    }
+  }, []);
 
   const styles = getStyles(COLORS, isDark);
 
   return (
     <View style={styles.container}>
-      <Card style={styles.card} mode='elevated'>
-        <Card.Content style={styles.content}>
-          <ActivityIndicator
-            animating={true}
-            color={COLORS.primary}
-            size='large'
-          />
-          <Text
-            style={[styles.quoteText, { color: COLORS.primary }]}
-          >{`"${quote}"`}</Text>
-        </Card.Content>
-      </Card>
+      <LottieView
+        ref={lottieRef}
+        source={require('../../assets/animations/loading.json')}
+        style={styles.lottieAnimation}
+        autoPlay
+        loop
+      />
+
+      <Text style={styles.quoteText}>{`"${quote}"`}</Text>
     </View>
   );
 };
 
-// Convert static styles to a function that takes COLORS and isDark
 const getStyles = (COLORS, isDark) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: COLORS.background, // Ensure it matches the theme
+      justifyContent: 'center', // This centers vertically
+      alignItems: 'center', // This centers horizontally
+      backgroundColor: COLORS.background,
+      paddingHorizontal: 20,
+      // Don't set explicit width/height for better flex behavior
     },
-    card: {
-      padding: 24,
-      borderRadius: 16,
-      width: '90%', // Make the card responsive
-      backgroundColor: COLORS.surface,
-      shadowColor: isDark ? COLORS.shadow : 'rgba(0, 0, 0, 0.1)', // Subtle shadow for light themes
-      shadowOpacity: isDark ? 0.3 : 0.1, // Adjust shadow opacity
-      shadowRadius: isDark ? 8 : 4, // Adjust shadow radius
-      shadowOffset: { width: 0, height: isDark ? 4 : 2 },
-      elevation: isDark ? 6 : 3, // Android shadow
-    },
-    content: {
-      alignItems: 'center',
-      gap: 16,
+    lottieAnimation: {
+      width: 200,
+      height: 200,
     },
     quoteText: {
-      fontSize: 16,
+      fontSize: 18,
       fontStyle: 'italic',
       textAlign: 'center',
-      marginTop: 16,
+      marginTop: 24,
+      color: COLORS.primary,
+      fontWeight: '500',
+      lineHeight: 26,
+      maxWidth: 320, // Limit text width for better readability
     },
   });
 

@@ -12,8 +12,6 @@ import { followAuthor, unfollowAuthor } from 'utils/firebase/firestore'; // Impo
 export default function AuthorScreen() {
   const { author } = useLocalSearchParams();
   const decodedAuthor = author ? decodeURIComponent(author) : 'Unknown Author'; // Decode the author name or fallback to 'Unknown Author'
-
-  const [selectedSort, setSelectedSort] = useState('mostPopular'); // Default sort option
   const user = useUserStore((state) => state.user); // Get the user from the store
   const updateUser = useUserStore((state) => state.setUser); // Function to update the user in the store
 
@@ -51,31 +49,19 @@ export default function AuthorScreen() {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
-
-  const sortHandler = (sortOption) => {
-    setSelectedSort(sortOption);
-  };
-
   return (
     <View style={styles.container}>
       {/* Use the reusable Header component */}
       <Header
         title={decodedAuthor}
         backRoute='/authors'
-        rightIcon={isFollowing ? 'heart' : 'heart-outline'}
+        rightIcon={isFollowing ? 'favorite' : 'favorite-outline'}
         rightAction={toggleFollow}
         rightIconColor={isFollowing ? COLORS.liked : COLORS.onSurface}
       />
 
-      {/* Sort Options */}
-      <Sort
-        selectedSort={selectedSort}
-        sortOptions={AUTHOR_SORT_OPTIONS}
-        sortHandler={sortHandler}
-      />
-
       {/* Quotes Section */}
-      <Quotes selectedSort={selectedSort} user={user} author={decodedAuthor} />
+      <Quotes selectedSort='newest' user={user} author={decodedAuthor} />
     </View>
   );
 }

@@ -28,6 +28,7 @@ const LIGHT_COLORS_VALUES = {
   accent: '#FF6F61',
   background: '#F5F5F5',
   surface: '#FFFFFF',
+  onPrimary: '#FFFFFF',
   text: '#212121',
   secondaryText: '#757575',
   placeholder: '#9E9E9E',
