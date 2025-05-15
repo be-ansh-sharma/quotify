@@ -31,6 +31,12 @@ const categories = [
   },
   {
     id: '5',
+    title: 'Trending Quotes',
+    route: '/browse/trending',
+    icon: 'flame-outline',
+  },
+  {
+    id: '6',
     title: 'Followed Authors',
     route: '/browse/favorites',
     icon: 'heart-outline',

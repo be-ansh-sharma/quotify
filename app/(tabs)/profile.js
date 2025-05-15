@@ -77,7 +77,11 @@ export default function Profile() {
         <List.Item
           title='Bookmarked Quotes'
           left={(props) => (
-            <List.Icon {...props} icon='bookmark' color={COLORS.primary} />
+            <List.Icon
+              {...props}
+              icon='bookmark-outline'
+              color={COLORS.primary}
+            />
           )}
           onPress={() => router.push('/profile/bookmarked')}
         />
@@ -85,7 +89,7 @@ export default function Profile() {
         <List.Item
           title='Liked Quotes'
           left={(props) => (
-            <List.Icon {...props} icon='heart' color='#E53935' /> // Red for heart
+            <List.Icon {...props} icon='heart' color={COLORS.primary} /> // Red for heart
           )}
           onPress={() => router.push('/profile/liked')}
         />

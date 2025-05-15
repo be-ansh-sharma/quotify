@@ -352,7 +352,6 @@ export const fetchUserProfile = async (email) => {
 
       if (!userSnapshot.empty) {
         const userProfile = userSnapshot.docs[0].data();
-        console.log('User profile fetched successfully::::', userProfile);
         return userProfile;
       } else {
         console.log('User not found');
@@ -1883,6 +1882,46 @@ export const updateUserPrivateQuotes = async (userId, quoteId) => {
     return true;
   } catch (error) {
     console.error('Error updating user private quotes:', error);
+    throw error;
+  }
+};
+
+// Add this function to update share count
+export const updateShareCount = async (quoteId) => {
+  if (!quoteId) return;
+
+  try {
+    const quoteRef = doc(db, 'quotes', quoteId);
+
+    await updateDoc(quoteRef, {
+      shareCount: increment(1),
+    });
+
+    console.log('Share count updated successfully for quote:', quoteId);
+  } catch (error) {
+    console.error('Error updating share count:', error);
+  }
+};
+
+/**
+ * Fetch trending quotes, sorted by trendingScore
+ * @param {number} limitCount - Maximum number of quotes to fetch
+ * @returns {Promise<Array>} Array of quote documents
+ */
+export const fetchTrendingQuotes = async (limitCount = 30) => {
+  try {
+    const q = query(
+      collection(db, 'quotes'),
+      orderBy('trendingScore', 'desc'),
+      limit(limitCount) // Use a different parameter name to avoid conflicts
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error fetching trending quotes:', error);
     throw error;
   }
 };

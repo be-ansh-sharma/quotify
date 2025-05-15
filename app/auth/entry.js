@@ -75,7 +75,7 @@ export default function Entry() {
           mode='contained'
           onPress={() => router.navigate('/auth/login')}
           style={[styles.button, { backgroundColor: COLORS.primary }]}
-          labelStyle={styles.buttonLabel}
+          labelStyle={styles.onPrimary}
         >
           Login
         </Button>

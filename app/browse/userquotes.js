@@ -116,7 +116,7 @@ const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.background, // Use the app's background color
+      backgroundColor: COLORS.background,
     },
     loadingContainer: {
       flex: 1,
@@ -127,6 +127,7 @@ const getStyles = (COLORS) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: COLORS.background,
     },
     emptyText: {
       fontSize: 16,

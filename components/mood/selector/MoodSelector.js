@@ -72,7 +72,7 @@ const MoodItem = ({ mood, isSelected, onSelect, COLORS, styles }) => {
           <MaterialIcons
             name={mood.icon}
             size={20} // Reduced size
-            color={isSelected ? COLORS.background : COLORS.primary}
+            color={isSelected ? COLORS.onPrimary : COLORS.primary}
           />
         </Animated.View>
         {/* Only show text for selected mood or All Moods */}
@@ -81,7 +81,7 @@ const MoodItem = ({ mood, isSelected, onSelect, COLORS, styles }) => {
             style={[
               styles.moodText,
               { color: COLORS.primary },
-              isSelected && { color: COLORS.background },
+              isSelected && { color: COLORS.onPrimary },
             ]}
           >
             {mood.label}

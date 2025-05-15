@@ -50,7 +50,10 @@ function setupNotifications() {
   const responseSubscription =
     Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('Notification response received:', response);
-      return response.notification.request.content.data;
+      const data = response.notification.request.content.data;
+      if (data?.quoteId) {
+        setNotificationData(data);
+      }
     });
 
   return { foregroundSubscription, responseSubscription };
@@ -81,7 +84,6 @@ export default function Layout() {
   // Set system theme detection immediately
   useEffect(() => {
     setSystemTheme(colorScheme === 'dark');
-    console.log(`[THEME] System theme set to: ${colorScheme}`);
   }, [colorScheme, setSystemTheme]);
 
   // Update all dynamic styles in profile.js
@@ -96,7 +98,6 @@ export default function Layout() {
 
   // ALSO update when theme changes
   useEffect(() => {
-    console.log(`[THEME] Theme changed to: ${isDarkMode ? 'dark' : 'light'}`);
     setAppTheme(isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
@@ -137,7 +138,6 @@ export default function Layout() {
       // 2. Fetch complete user profile instead of just setting auth data
       (async () => {
         try {
-          console.log('Fetching user profile for user:', user.email);
           const userProfile = await fetchUserProfile(user.email);
 
           if (!userProfile) {
@@ -285,7 +285,7 @@ export default function Layout() {
 
   useEffect(() => {
     if (notificationData?.quoteId && isLayoutMounted && isInitialRouteSet) {
-      router.push(`/quote/${notificationData.quoteId}`);
+      router.navigate('/(tabs)/home');
       setNotificationData(null);
     }
   }, [notificationData, isLayoutMounted, isInitialRouteSet, router]);

@@ -127,15 +127,9 @@ export const COLORS = {
 
 // Function to set the theme
 export function setAppTheme(theme) {
-  console.log(`[THEME] Setting theme to: ${theme}`);
   _currentTheme = theme;
   _currentColorValues =
     theme === 'light' ? LIGHT_COLORS_VALUES : DARK_COLORS_VALUES;
-
-  // Log confirmation that theme was updated
-  console.log(
-    `[THEME] Theme updated - background: ${COLORS.background}, text: ${COLORS.text}`
-  );
   return COLORS; // Return for chaining
 }
 

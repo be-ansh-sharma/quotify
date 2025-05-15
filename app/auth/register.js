@@ -88,14 +88,28 @@ export default function Register() {
         email,
         password
       );
+
       if (!userCredential) return;
 
       await createUser({
         uid: userCredential.user.uid,
         email: userCredential.user.email,
       });
-    } catch (err) {
-      switch (err.code) {
+    } catch (error) {
+      console.error('Error creating user:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      setUser({ email: user.user.email });
+      router.navigate('/(tabs)/home');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (error) {
+      switch (error.code) {
         case 'auth/email-already-in-use':
           setEmailError('Email already in use.');
           break;
@@ -106,17 +120,10 @@ export default function Register() {
           setPasswordError('Password too weak.');
           break;
         default:
-          console.error('Unexpected error:', err.message);
+          console.error('Unexpected error:', error.message);
       }
     }
-  };
-
-  useEffect(() => {
-    if (user) {
-      setUser({ email: user.user.email });
-      router.navigate('/(tabs)/home');
-    }
-  }, [user]);
+  }, [error]);
 
   if (loading) {
     return (

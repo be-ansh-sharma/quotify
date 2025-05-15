@@ -6,6 +6,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import {
   removeUserReaction,
   updateQuoteReactions,
+  updateShareCount,
 } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
@@ -180,6 +181,8 @@ export default function useQuoteInteractions({
           quote.author || 'Unknown'
         }\n\nShared via Quotify App`,
       });
+      await updateShareCount(quote.id);
+
       shareSheetRef.current?.closeBottomSheet();
     } catch (error) {
       console.error('Error sharing quote as text:', error);
@@ -190,7 +193,7 @@ export default function useQuoteInteractions({
     shareSheetRef.current?.closeBottomSheet();
     router.push({
       pathname: '/quotes/quoteshare',
-      params: { quote: quote.text, author: quote.author },
+      params: { quote: quote.text, author: quote.author, id: quote.id },
     });
   }, [quote, router, shareSheetRef]);
 

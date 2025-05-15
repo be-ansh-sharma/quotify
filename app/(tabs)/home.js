@@ -19,12 +19,9 @@ function useVersionCheck() {
     const uploadIfVersionChanged = async () => {
       try {
         const savedVersion = await AsyncStorage.getItem('quotes_version');
-        console.log('Current version:', savedVersion);
-        console.log('Stored version:', CURRENT_VERSION);
 
         if (savedVersion !== CURRENT_VERSION) {
           await uploadQuotes();
-          console.log('Quotes uploaded for version:', CURRENT_VERSION);
           await AsyncStorage.setItem('quotes_version', CURRENT_VERSION);
         } else {
           console.log('Quotes are already up-to-date.');
@@ -66,9 +63,7 @@ export default function Index() {
     }
   };
 
-  useVersionCheck();
-
-  console.log('Selected sort:', selectedSort);
+  //useVersionCheck();
 
   return (
     <View style={styles.container}>

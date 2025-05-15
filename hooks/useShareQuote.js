@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
+import { updateShareCount } from 'utils/firebase/firestore';
 
 export const useShareQuote = () => {
   const [mediaPermission, requestMediaPermission] =
@@ -42,14 +43,17 @@ export const useShareQuote = () => {
     }
   };
 
-  const handleShare = async (createImageFn, formatName) => {
+  const handleShare = async (createImageFn, formatName, quoteID) => {
     try {
       // Create the quote image with exact dimensions
       const imageUri = await createImageFn();
+      console.log('Image quoteIDquoteIDquoteID:', quoteID);
 
       if (!imageUri) {
         throw new Error('Failed to create image');
       }
+
+      await updateShareCount(quoteID);
 
       // Let user choose to share or download
       Alert.alert(
@@ -81,3 +85,4 @@ export const useShareQuote = () => {
     mediaPermission,
   };
 };
+

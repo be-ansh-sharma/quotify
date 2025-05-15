@@ -53,6 +53,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('User logged in:', user);
       resetGuest();
       setUser({ email: user.user.email });
       setHasCheckedProfileOnce(false);
@@ -77,6 +78,40 @@ const Login = () => {
     ]).start();
   }, []);
 
+  // Add this useEffect to handle authentication errors
+  useEffect(() => {
+    if (error) {
+      console.log('Auth error:', error);
+
+      // Set appropriate error message based on Firebase error code
+      switch (error.code) {
+        case 'auth/invalid-email':
+          setAuthError('Invalid email format.');
+          break;
+        case 'auth/user-disabled':
+          setAuthError('This account has been disabled.');
+          break;
+        case 'auth/user-not-found':
+          setAuthError('No account found with this email.');
+          break;
+        case 'auth/wrong-password':
+          setAuthError('Invalid password. Please try again.');
+          break;
+        case 'auth/invalid-credential':
+          setAuthError('Invalid email or password. Please try again.');
+          break;
+        case 'auth/too-many-requests':
+          setAuthError('Too many failed attempts. Try again later.');
+          break;
+        default:
+          setAuthError('Login failed. Please try again.');
+      }
+    } else {
+      // Clear error when no error exists
+      setAuthError(null);
+    }
+  }, [error]);
+
   const validate = () => {
     let valid = true;
 
@@ -87,6 +122,7 @@ const Login = () => {
     } else setEmailError(null);
 
     if (!password || password.length < 6) {
+      console.log('inside password error');
       setPasswordError('Password must be at least 6 characters');
       valid = false;
     } else setPasswordError(null);
@@ -94,13 +130,10 @@ const Login = () => {
     return valid;
   };
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (validate()) {
-      try {
-        await signInWithEmailAndPassword(email, password);
-      } catch (err) {
-        setAuthError('Invalid email or password. Please try again.');
-      }
+      // Remove the try-catch to allow the error to be handled by the hook
+      signInWithEmailAndPassword(email, password);
     }
   };
 

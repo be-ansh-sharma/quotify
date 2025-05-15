@@ -22,11 +22,12 @@ import { Platform } from 'react-native';
 import { useQuoteFormatting } from 'hooks/useQuoteFormatting';
 import { useShareQuote } from 'hooks/useShareQuote';
 import Header from 'components/header/Header'; // Import Header component
+import { updateShareCount } from 'utils/firebase/firestore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function QuoteShare() {
-  const { quote, author } = useLocalSearchParams();
+  const { quote, author, id } = useLocalSearchParams();
   const viewRef = useRef();
 
   // Store user data in ref to prevent re-render loops
@@ -102,10 +103,11 @@ export default function QuoteShare() {
   const { handleShare } = useShareQuote();
 
   // Handle share button press
-  const onSharePress = () => {
+  const onSharePress = async () => {
     handleShare(
       () => createFormattedQuoteImage(typography),
-      selectedFormat.name
+      selectedFormat.name,
+      id
     );
   };
 
