@@ -101,7 +101,7 @@ export default function LikedQuotes() {
         });
 
         // Then add new quotes, overwriting duplicates with newer versions
-        quotes.forEach((quote) => {
+        quotes?.forEach((quote) => {
           if (quote && quote.id) {
             quotesById[quote.id] = quote;
           }

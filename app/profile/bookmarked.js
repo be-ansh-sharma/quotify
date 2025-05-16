@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -20,26 +19,39 @@ export default function BookmarkedLists() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [lists, setLists] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Get COLORS from theme context
   const { COLORS } = useAppTheme();
 
-  // Generate styles with current COLORS
   const styles = getStyles(COLORS);
 
+  useFocusEffect(
+    useCallback(() => {
+      console.log('BookmarkedLists focused - refreshing data');
+      setRefreshKey((prev) => prev + 1);
+      return () => {};
+    }, [])
+  );
+
   useEffect(() => {
+    console.log('Processing bookmarklists, refreshKey:', refreshKey);
+    console.log('Current user bookmarklist:', user?.bookmarklist);
+
+    setLoading(true);
     if (user?.bookmarklist) {
-      // Convert the bookmarklist object into an array of lists
       const userLists = Object.entries(user.bookmarklist).map(
         ([name, quotes]) => ({
           name,
-          quotes,
+          quotes: Array.isArray(quotes) ? [...quotes] : [],
         })
       );
+      console.log('Processed lists:', userLists);
       setLists(userLists);
+    } else {
+      setLists([]);
     }
     setLoading(false);
-  }, [user?.bookmarklist]);
+  }, [user?.bookmarklist, refreshKey]);
 
   const renderEmptyState = (message) => (
     <View style={styles.container}>
@@ -67,7 +79,6 @@ export default function BookmarkedLists() {
   }
 
   const handleListPress = (listName, quotes) => {
-    // Navigate to the ListQuotes component and pass the list details
     router.push({
       pathname: '/profile/listquotes',
       params: { listName, quotes: JSON.stringify(quotes) },
@@ -76,10 +87,7 @@ export default function BookmarkedLists() {
 
   return (
     <View style={styles.container}>
-      {/* Using our reusable Header component */}
       <Header title='Your Lists' backRoute='/profile' />
-
-      {/* Lists */}
       <FlatList
         data={lists}
         keyExtractor={(item) => item.name}
@@ -107,7 +115,6 @@ export default function BookmarkedLists() {
   );
 }
 
-// Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {

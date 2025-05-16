@@ -563,19 +563,35 @@ export const fetchQuotesByAuthors = async (
  * @param {string[]} quoteIds - Array of quote IDs to fetch
  * @returns {Promise<Array>} Array of quote documents
  */
-export const fetchQuotesByIds = async (quoteIds) => {
+export const fetchQuotesByIds = async (
+  quoteIds,
+  nextIndex = 0,
+  pageSize = 10,
+  processedChunks = 0
+) => {
   try {
     if (!quoteIds || quoteIds.length === 0) {
-      return [];
+      return {
+        quotes: [],
+        hasMore: false,
+        nextIndex: 0,
+        processedChunks: 0,
+      };
     }
+
+    // Calculate end index for this page
+    const endIndex = Math.min(nextIndex + pageSize, quoteIds.length);
+
+    // Get IDs for this page
+    const pageIds = quoteIds.slice(nextIndex, endIndex);
 
     // Firestore has limits on how many IDs we can query at once
     const chunkSize = 10;
     let allQuotes = [];
 
     // Process in chunks to avoid Firestore limitations
-    for (let i = 0; i < quoteIds.length; i += chunkSize) {
-      const chunk = quoteIds.slice(i, i + chunkSize);
+    for (let i = 0; i < pageIds.length; i += chunkSize) {
+      const chunk = pageIds.slice(i, i + chunkSize);
 
       try {
         // Query this chunk of IDs
@@ -596,10 +612,20 @@ export const fetchQuotesByIds = async (quoteIds) => {
       }
     }
 
-    return allQuotes;
+    return {
+      quotes: allQuotes,
+      hasMore: endIndex < quoteIds.length,
+      nextIndex: endIndex,
+      processedChunks: processedChunks + 1,
+    };
   } catch (error) {
     console.error('Error fetching quotes by IDs:', error);
-    return []; // Always return an array, even on error
+    return {
+      quotes: [],
+      hasMore: false,
+      nextIndex: nextIndex,
+      processedChunks: processedChunks,
+    };
   }
 };
 

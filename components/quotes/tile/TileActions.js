@@ -1,8 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
+
+// Create a constant for reaction emoji mapping
+const reactionEmojis = {
+  mindblown: '🤯', // Thought-provoking
+  fire: '🔥', // Inspiring
+  love: '❤️', // Heartfelt
+  uplifting: '🙌', // Uplifting
+  insight: '💡', // Insightful
+  heartEyes: '😍', // Beautiful/Adoration
+  sparkles: '✨', // Magical/Beautiful
+};
 
 function TileActions({
   selectedReaction,
@@ -15,8 +25,8 @@ function TileActions({
   handleSelectReaction,
   toggleReactionTray,
 }) {
-  const { COLORS } = useAppTheme(); // Get COLORS from theme context
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
   const handleReactionPress = () => {
     if (selectedReaction) {
@@ -42,12 +52,9 @@ function TileActions({
         >
           <View style={styles.reactionIconWrapper}>
             <Text style={styles.reactionIcon}>
-              {selectedReaction === 'mindblown' && '🤯'}
-              {selectedReaction === 'fire' && '🔥'}
-              {selectedReaction === 'love' && '❤️'}
-              {selectedReaction === 'funny' && '😂'}
-              {selectedReaction === 'heartEyes' && '😍'}
-              {!selectedReaction && (
+              {selectedReaction ? (
+                reactionEmojis[selectedReaction]
+              ) : (
                 <FontAwesome name='heart-o' size={20} color={COLORS.icon} />
               )}
             </Text>
@@ -90,11 +97,7 @@ function TileActions({
                     ]}
                   >
                     <Text style={styles.reactionEmoji}>
-                      {type === 'mindblown' && '🤯'}
-                      {type === 'fire' && '🔥'}
-                      {type === 'love' && '❤️'}
-                      {type === 'funny' && '😂'}
-                      {type === 'heartEyes' && '😍'}
+                      {reactionEmojis[type] || '❓'}
                     </Text>
                   </View>
                 ))}

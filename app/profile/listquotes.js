@@ -100,11 +100,13 @@ export default function ListQuotes() {
             try {
               await deleteListFromUser(user.uid, listName);
 
-              const updatedLists = { ...user.lists };
-              delete updatedLists[listName];
+              // Update using bookmarklist instead of lists
+              const updatedBookmarklist = { ...user.bookmarklist };
+              delete updatedBookmarklist[listName];
+
               setUser({
                 ...user,
-                lists: updatedLists,
+                bookmarklist: updatedBookmarklist, // Use bookmarklist instead of lists
               });
 
               router.push('/profile/bookmarked');
@@ -126,10 +128,7 @@ export default function ListQuotes() {
       'Remove Quote',
       'Are you sure you want to remove this quote from the list?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
@@ -137,16 +136,20 @@ export default function ListQuotes() {
             try {
               await removeQuoteFromList(user.uid, listName, quoteId);
 
+              // Update local component state
               setQuoteDetails((prev) =>
                 prev.filter((quote) => quote.id !== quoteId)
               );
 
-              const updatedLists = { ...user.lists };
-              updatedLists[listName] =
-                updatedLists[listName]?.filter((id) => id !== quoteId) || [];
+              // Update Zustand store with the correct property name
+              const updatedBookmarklist = { ...user.bookmarklist };
+              updatedBookmarklist[listName] =
+                updatedBookmarklist[listName]?.filter((id) => id !== quoteId) ||
+                [];
+
               setUser({
                 ...user,
-                lists: updatedLists,
+                bookmarklist: updatedBookmarklist, // Use bookmarklist instead of lists
               });
             } catch (error) {
               console.error('Error removing quote from the list:', error);
