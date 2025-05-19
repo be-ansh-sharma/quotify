@@ -23,7 +23,15 @@ import {
 } from 'firebase/firestore';
 import quotes from 'assets/quotes.json';
 import * as Localization from 'expo-localization';
-import { calculateTimeSlots, deepEqual, determineMood } from 'utils/helpers';
+import {
+  calculateTimeSlots,
+  deepEqual,
+  determineMood,
+  getSlotInfo,
+} from 'utils/helpers';
+
+// A simple Set to track recent updates (can be kept minimal)
+const recentUpdates = new Set();
 
 export const uploadQuotes = async () => {
   const quotesRef = collection(db, 'quotes');
@@ -1026,22 +1034,27 @@ export const storeFCMToken = async (
 
     const timeZone = Localization.timezone;
 
-    // STEP 1: Only check if token has changed and remove from slots if needed
-    if (userId && !isGuest) {
-      // Use the passed userData if available, otherwise fetch it
-      const currentUserData = userData || (await fetchUserData(userId));
+    // Check if this is a duplicate update
+    const updateKey = `${userId || 'guest'}-${fcmToken.substring(0, 10)}`;
+    if (recentUpdates.has(updateKey)) {
+      console.log('Duplicate token update detected. Skipping.');
+      return userData?.preferences || defaultPreferences;
+    }
 
+    // Add to tracking set and auto-remove after 5 seconds
+    recentUpdates.add(updateKey);
+    setTimeout(() => recentUpdates.delete(updateKey), 5000);
+
+    // Remove old token from slots if needed
+    if (userId && !isGuest) {
+      const currentUserData = userData || (await fetchUserData(userId));
       if (currentUserData?.fcmToken && currentUserData.fcmToken !== fcmToken) {
-        console.log(
-          `Token changed for user ${userId}. Removing old token from slots.`
-        );
         await removeUserFromAllNotificationSlots(userId);
       }
     }
 
-    // STEP 2: Continue with existing logic to store new token
+    // Store token for guest or user
     if (isGuest) {
-      // Store the token and default preferences in the guest_tokens collection
       const guestTokenRef = collection(db, 'guest_tokens');
       const guestDoc = await addDoc(guestTokenRef, {
         fcmToken,
@@ -1051,70 +1064,50 @@ export const storeFCMToken = async (
         updatedAt: serverTimestamp(),
       });
 
-      console.log('FCM Token and default preferences stored for guest user.');
-
-      // Calculate and save notification slots for the guest
-      const timeSlots = calculateTimeSlots(defaultPreferences, timeZone);
-      for (const slot of timeSlots) {
-        await updateNotificationSlots(
-          guestDoc.id,
-          defaultPreferences,
-          null,
-          timeZone
-        );
-      }
+      // Call updateNotificationSlots ONCE - not in a loop
+      await updateNotificationSlots(
+        guestDoc.id,
+        defaultPreferences,
+        null,
+        timeZone
+      );
     } else if (userId) {
-      // Store the token and default preferences in the users collection
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
         const userData = userSnap.data();
+        const preferences = userData.preferences || defaultPreferences;
 
-        // Update the FCM token and retain existing preferences or set defaults
         await updateDoc(userRef, {
           fcmToken,
-          preferences: userData.preferences || defaultPreferences,
-          timeZone: userData.timeZone || timeZone, // Retain existing time zone or set default
+          timeZone: userData.timeZone || timeZone,
           updatedAt: serverTimestamp(),
         });
 
-        console.log('FCM Token and preferences updated for logged-in user.');
-
-        // Calculate and save notification slots for the user
-        const preferences = userData.preferences || defaultPreferences;
-        const timeSlots = calculateTimeSlots(preferences, timeZone);
-        for (const slot of timeSlots) {
-          await updateNotificationSlots(userId, preferences, null, timeZone);
-        }
+        // Call updateNotificationSlots ONCE - not in a loop
+        await updateNotificationSlots(userId, preferences, null, timeZone);
       } else {
-        // If the user document doesn't exist, create it with the FCM token and default preferences
+        // Create new user
         await setDoc(userRef, {
           fcmToken,
           preferences: defaultPreferences,
-          timeZone, // Store the user's time zone
+          timeZone,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
 
-        console.log(
-          'FCM Token and default preferences stored for new logged-in user.'
+        // Call updateNotificationSlots ONCE - not in a loop
+        await updateNotificationSlots(
+          userId,
+          defaultPreferences,
+          null,
+          timeZone
         );
-
-        // Calculate and save notification slots for the new user
-        const timeSlots = calculateTimeSlots(defaultPreferences, timeZone);
-        for (const slot of timeSlots) {
-          await updateNotificationSlots(
-            userId,
-            defaultPreferences,
-            null,
-            timeZone
-          );
-        }
       }
     }
 
-    return defaultPreferences;
+    return userData?.preferences || defaultPreferences;
   } catch (error) {
     console.error('Error storing FCM token and preferences:', error);
     throw error;
@@ -1244,20 +1237,6 @@ export const updateNotificationSlots = async (
   previousPreferences,
   timeZone
 ) => {
-  // Helper function to get the correct reference with proper field name
-  const getSlotInfo = (slot) => {
-    // Check if this is a random quote slot
-    const isRandomSlot = typeof slot === 'string' && slot.startsWith('random-');
-
-    // For random slots, extract the actual time bucket
-    const docId = isRandomSlot ? slot.replace('random-', '') : slot;
-
-    // The field name is 'randomQuotes' for random slots, 'users' for regular slots
-    const fieldName = isRandomSlot ? 'randomQuotes' : 'users';
-
-    return { docId, fieldName, isRandomSlot };
-  };
-
   try {
     // Validate timeZone
     if (!timeZone || typeof timeZone !== 'string') {
@@ -1271,40 +1250,11 @@ export const updateNotificationSlots = async (
       return;
     }
 
-    // Remove user from old slots
-    if (previousPreferences) {
-      const oldSlots = calculateTimeSlots(previousPreferences, timeZone);
-      console.log('Removing user from old slots:', oldSlots);
+    // IMPORTANT: Always remove from ALL slots first
+    // regardless of whether previousPreferences exists
+    await removeUserFromAllNotificationSlots(userId);
 
-      for (const slot of oldSlots) {
-        try {
-          const { docId, fieldName } = getSlotInfo(slot);
-          const slotDocRef = doc(db, 'notificationSlots', docId);
-          const slotDoc = await getDoc(slotDocRef);
-
-          if (slotDoc.exists()) {
-            const slotData = slotDoc.data();
-
-            // Check if the appropriate field exists and contains userId
-            if (
-              slotData[fieldName] &&
-              Array.isArray(slotData[fieldName]) &&
-              slotData[fieldName].includes(userId)
-            ) {
-              // Remove the user from the appropriate array
-              await updateDoc(slotDocRef, {
-                [fieldName]: slotData[fieldName].filter((id) => id !== userId),
-              });
-              console.log(`Removed user from ${fieldName} in slot ${docId}`);
-            }
-          }
-        } catch (error) {
-          console.warn(`Error removing user from slot ${slot}:`, error);
-        }
-      }
-    }
-
-    // Add user to new slots
+    // Calculate new slots and add user to them
     const newSlots = calculateTimeSlots(preferences, timeZone);
     console.log('Adding user to new slots:', newSlots);
 
@@ -1709,7 +1659,7 @@ export const addMoodToAllQuotes = async () => {
       lastDoc = snapshot.docs[snapshot.docs.length - 1];
 
       console.log(
-        `Progress: ${totalUpdated} updated, ${totalSkipped} already had mood, ${totalErrors} errors`
+        `Progress: ${totalUpdated} updated, ${totalSkipped} skipped, ${totalErrors} errors`
       );
 
       // Break if we've reached the end

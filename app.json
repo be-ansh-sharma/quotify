@@ -13,13 +13,15 @@
       "backgroundColor": "#121212"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.epoch.quotify",
+      "icon": "./assets/icon.png"
     },
     "android": {
       "package": "com.epoch.quotify",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/splash-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#121212"
       }
     },

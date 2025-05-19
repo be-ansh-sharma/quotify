@@ -106,7 +106,7 @@ export default function ListQuotes() {
 
               setUser({
                 ...user,
-                bookmarklist: updatedBookmarklist, // Use bookmarklist instead of lists
+                bookmarklist: updatedBookmarklist,
               });
 
               router.push('/profile/bookmarked');

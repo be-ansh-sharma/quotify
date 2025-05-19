@@ -176,7 +176,6 @@ export default function Layout() {
       foregroundSubscription.remove();
       responseSubscription.remove();
     };
-    // Only re-run when these truly change:
   }, [isStoresHydrated, isLayoutMounted, isGuest, user?.uid]);
 
   // Add the FCM token handler function

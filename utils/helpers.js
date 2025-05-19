@@ -470,3 +470,21 @@ export const determineMood = (quote) => {
   return resultMood;
 };
 
+/**
+ * Helper function to get document ID and field name for a notification slot
+ * @param {string} slot - The slot identifier (e.g., "12-00" or "random-14-45")
+ * @returns {Object} Object containing docId and fieldName
+ */
+export const getSlotInfo = (slot) => {
+  // Check if this is a random quote slot
+  const isRandomSlot = typeof slot === 'string' && slot.startsWith('random-');
+
+  // For random slots, extract the actual time bucket
+  const docId = isRandomSlot ? slot.replace('random-', '') : slot;
+
+  // The field name is 'randomQuotes' for random slots, 'users' for regular slots
+  const fieldName = isRandomSlot ? 'randomQuotes' : 'users';
+
+  return { docId, fieldName };
+};
+
