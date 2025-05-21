@@ -9,7 +9,11 @@ function TileTags({ tags, onTagPress }) {
   return (
     <View style={styles.container}>
       {tags.map((tag, index) => (
-        <TouchableOpacity key={index} onPress={() => onTagPress(tag)}>
+        <TouchableOpacity
+          key={index}
+          onPress={() => onTagPress(tag)}
+          activeOpacity={1}
+        >
           <View style={styles.tag}>
             <Text style={styles.tagText}>#{tag}</Text>
           </View>
@@ -28,7 +32,7 @@ const getStyles = (COLORS) =>
       marginTop: 4,
     },
     tag: {
-      backgroundColor: COLORS.tag, // Now uses theme color
+      backgroundColor: COLORS.tag,
       borderRadius: 12,
       paddingVertical: 3,
       paddingHorizontal: 8,

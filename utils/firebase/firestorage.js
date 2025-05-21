@@ -1,5 +1,4 @@
 import * as FileSystem from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebaseconfig';
 

@@ -43,6 +43,7 @@ function TileHeader({ quote, onPress, onLongPress }) {
         style={styles.header}
         onPress={onPress}
         onLongPress={onLongPress}
+        activeOpacity={1}
       >
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{getInitials(quote.author)}</Text>
@@ -51,13 +52,12 @@ function TileHeader({ quote, onPress, onLongPress }) {
         <View style={styles.authorContainer}>
           <Text style={styles.author}>{quote.author}</Text>
 
-          {/* User created quote indicator with user icon */}
           {quote.userQuote && (
             <TouchableOpacity onPress={toggleTooltip}>
               <MaterialCommunityIcons
                 name='account-circle'
                 size={18}
-                color={COLORS.primary} // Changed from accent to primary
+                color={COLORS.primary}
                 style={styles.userQuoteIcon}
               />
             </TouchableOpacity>

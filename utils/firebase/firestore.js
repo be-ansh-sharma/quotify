@@ -1019,7 +1019,7 @@ export const storeFCMToken = async (
   userId,
   fcmToken,
   isGuest,
-  userData = null
+  userData = null // This userData is passed as an argument, might be from auth state
 ) => {
   try {
     const defaultPreferences = {
@@ -1038,24 +1038,27 @@ export const storeFCMToken = async (
     const updateKey = `${userId || 'guest'}-${fcmToken.substring(0, 10)}`;
     if (recentUpdates.has(updateKey)) {
       console.log('Duplicate token update detected. Skipping.');
+      // Return current preferences if available from argument, else default
       return userData?.preferences || defaultPreferences;
     }
 
-    // Add to tracking set and auto-remove after 5 seconds
     recentUpdates.add(updateKey);
-    setTimeout(() => recentUpdates.delete(updateKey), 5000);
+    setTimeout(() => recentUpdates.delete(updateKey), 3000);
 
-    // Remove old token from slots if needed
     if (userId && !isGuest) {
-      const currentUserData = userData || (await fetchUserData(userId));
-      if (currentUserData?.fcmToken && currentUserData.fcmToken !== fcmToken) {
+      const currentUserDataForTokenCheck =
+        userData || (await fetchUserData(userId));
+      if (
+        currentUserDataForTokenCheck?.fcmToken &&
+        currentUserDataForTokenCheck.fcmToken !== fcmToken
+      ) {
         await removeUserFromAllNotificationSlots(userId);
       }
     }
 
-    // Store token for guest or user
     if (isGuest) {
       const guestTokenRef = collection(db, 'guest_tokens');
+      // For guests, we'll use the guest document ID for notification slots
       const guestDoc = await addDoc(guestTokenRef, {
         fcmToken,
         preferences: defaultPreferences,
@@ -1063,51 +1066,49 @@ export const storeFCMToken = async (
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-
-      // Call updateNotificationSlots ONCE - not in a loop
       await updateNotificationSlots(
-        guestDoc.id,
+        guestDoc.id, // Use guest document ID
         defaultPreferences,
         null,
         timeZone
       );
+      return defaultPreferences; // Guest always gets default initially via this function
     } else if (userId) {
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
+      let preferencesToUse;
 
       if (userSnap.exists()) {
-        const userData = userSnap.data();
-        const preferences = userData.preferences || defaultPreferences;
+        const existingDbUserData = userSnap.data();
+        preferencesToUse = existingDbUserData.preferences || defaultPreferences;
 
-        await updateDoc(userRef, {
+        const updatePayload = {
           fcmToken,
-          timeZone: userData.timeZone || timeZone,
+          timeZone: existingDbUserData.timeZone || timeZone,
           updatedAt: serverTimestamp(),
-        });
+        };
 
-        // Call updateNotificationSlots ONCE - not in a loop
-        await updateNotificationSlots(userId, preferences, null, timeZone);
+        // If preferences were missing on the user document, add them now
+        if (!existingDbUserData.preferences) {
+          updatePayload.preferences = defaultPreferences;
+        }
+        await updateDoc(userRef, updatePayload);
       } else {
-        // Create new user
+        preferencesToUse = defaultPreferences;
         await setDoc(userRef, {
           fcmToken,
           preferences: defaultPreferences,
           timeZone,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
+          uid: userId, // Ensure UID is stored if creating here
         });
-
-        // Call updateNotificationSlots ONCE - not in a loop
-        await updateNotificationSlots(
-          userId,
-          defaultPreferences,
-          null,
-          timeZone
-        );
       }
+      await updateNotificationSlots(userId, preferencesToUse, null, timeZone);
+      return preferencesToUse;
     }
-
-    return userData?.preferences || defaultPreferences;
+    // Fallback, though one of the branches should have returned
+    return defaultPreferences;
   } catch (error) {
     console.error('Error storing FCM token and preferences:', error);
     throw error;
