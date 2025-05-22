@@ -21,8 +21,7 @@ import { useAppTheme } from 'context/AppThemeContext';
 import { Platform } from 'react-native';
 import { useQuoteFormatting } from 'hooks/useQuoteFormatting';
 import { useShareQuote } from 'hooks/useShareQuote';
-import Header from 'components/header/Header'; // Import Header component
-import { updateShareCount } from 'utils/firebase/firestore';
+import Header from 'components/header/Header';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

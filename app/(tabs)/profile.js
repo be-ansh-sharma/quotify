@@ -7,6 +7,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import useUserStore from 'stores/userStore';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { useAppTheme } from 'context/AppThemeContext';
+import { logoutUser } from 'utils/helpers';
 
 const ADMIN = 'us@yopmail.com';
 
@@ -20,21 +21,13 @@ export default function Profile() {
 
   const styles = getStyles(COLORS);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: async () => {
-          try {
-            await auth.signOut();
-            resetUser();
-            router.replace('/auth/entry');
-          } catch (error) {
-            console.error('Error logging out:', error);
-          }
-        },
+        onPress: () => logoutUser(router),
       },
     ]);
   };

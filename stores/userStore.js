@@ -20,6 +20,7 @@ const useUserStore = create(
       theme: 'system', // 'system', 'dark', or 'light'
       hydrated: false,
       systemIsDark: null, // Store the system theme here instead of calling hook
+      lastKnownUser: null, // Add lastKnownUser to state
 
       // Theme getters - don't call hooks here
       getThemeColors: () => {
@@ -45,7 +46,11 @@ const useUserStore = create(
       setTheme: (theme) => set({ theme }),
       setSelectedSort: (sort) => set({ selectedSort: sort }),
       setSelectedMood: (mood) => set({ selectedMood: mood }),
-      setUser: (user) => set({ user }),
+      setUser: (user) =>
+        set({
+          user,
+          lastAuthTimestamp: Date.now(),
+        }),
       setGuest: () =>
         set({
           isGuest: true,
@@ -56,14 +61,17 @@ const useUserStore = create(
           },
         }),
       resetUser: () =>
-        set({
+        set((state) => ({
+          lastKnownUser: state.user?.uid
+            ? { ...state.user }
+            : state.lastKnownUser,
           user: {
             uid: null,
             email: null,
             name: null,
           },
           isGuest: false,
-        }),
+        })),
       resetGuest: () =>
         set({
           isGuest: false,
@@ -75,6 +83,17 @@ const useUserStore = create(
         }),
       setHasCheckedProfileOnce: (val) => set({ hasCheckedProfileOnce: val }),
       setHydrated: (val) => set({ hydrated: val }),
+
+      // New functions
+      isAuthenticated: () => {
+        const state = get();
+        return !!state.user?.uid || state.isGuest;
+      },
+
+      wasAuthenticated: () => {
+        const state = get();
+        return !!state.user?.uid || state.lastKnownUser?.uid || state.isGuest;
+      },
     }),
     {
       name: 'user-storage',

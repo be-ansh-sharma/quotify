@@ -31,6 +31,9 @@ import {
 } from 'utils/firebase/firestore';
 import { setAppTheme } from 'styles/theme';
 import { AppThemeProvider } from 'context/AppThemeContext';
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import OfflineBanner from '../components/offline/OfflineBanner';
 
 function setupNotifications() {
   Notifications.setNotificationHandler({
@@ -81,6 +84,11 @@ export default function Layout() {
   const colorScheme = useColorScheme();
   const setSystemTheme = useUserStore((state) => state.setSystemTheme);
 
+  // New state variables for network status
+  const [isOnline, setIsOnline] = useState(true);
+  const [offlinePreviouslyLoggedIn, setOfflinePreviouslyLoggedIn] =
+    useState(false);
+
   // Set system theme detection immediately
   useEffect(() => {
     setSystemTheme(colorScheme === 'dark');
@@ -130,12 +138,43 @@ export default function Layout() {
 
     if (isGuest) {
       setupTokenRefreshListener(null, true);
-      // Handle guest FCM token if needed
-    } else if (user?.uid) {
-      // 1. Setup token refresh listener
-      setupTokenRefreshListener(user.uid, false);
 
-      // 2. Fetch complete user profile instead of just setting auth data
+      (async () => {
+        try {
+          // Get current user state, which is already persisted
+          const currentUser = useUserStore.getState().user;
+
+          // If we already have a guest ID, use it; otherwise create a new one
+          const guestId =
+            currentUser?.uid ||
+            `guest-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+          console.log(`Guest ID: ${currentUser?.uid}`);
+          if (!currentUser?.uid) {
+            console.log(`New guest user created with ID: ${guestId}`);
+          } else {
+            console.log(`Reusing existing guest ID: ${guestId}`);
+          }
+
+          // Set consistent guest user data
+          setUser({
+            uid: guestId,
+            email: null,
+            name: 'Guest',
+            isGuest: true,
+          });
+
+          // Call fetchAndStoreFCMToken with the guest ID
+          await fetchAndStoreFCMToken({
+            uid: guestId,
+            isGuest: true,
+          });
+        } catch (err) {
+          console.error('Error handling FCM token for guest:', err);
+        }
+      })();
+    } else if (user?.uid) {
+      setupTokenRefreshListener(user.uid, false);
       (async () => {
         try {
           const userProfile = await fetchUserProfile(user.email);
@@ -147,6 +186,12 @@ export default function Layout() {
           }
 
           setUser(userProfile);
+
+          // Add this line to track offline login validity
+          await AsyncStorage.setItem(
+            'lastSuccessfulLogin',
+            Date.now().toString()
+          );
 
           await fetchAndStoreFCMToken(userProfile);
         } catch (err) {
@@ -202,17 +247,27 @@ export default function Layout() {
       }
 
       if (isGuest) {
-        // Guest FCM token handling
-        const guestData = await fetchGuestFCMToken(fcmToken);
+        const guestData = await fetchGuestFCMToken(currentUser.uid);
 
         if (guestData) {
+          // We found existing guest data - use it
           setUser({
             ...currentUser,
-            fcmToken: guestData.fcmToken,
+            fcmToken: guestData.fcmToken || fcmToken,
             preferences: guestData.preferences,
           });
+
+          // Update FCM token if needed
+          if (guestData.fcmToken !== fcmToken) {
+            await storeFCMToken(currentUser.uid, fcmToken, true);
+          }
         } else {
-          let defaultPreferences = await storeFCMToken(null, fcmToken, true);
+          // No existing data found - create new
+          let defaultPreferences = await storeFCMToken(
+            currentUser.uid,
+            fcmToken,
+            true
+          );
           setUser({
             ...currentUser,
             fcmToken,
@@ -257,6 +312,32 @@ export default function Layout() {
     return () => subscription.remove();
   }, []);
 
+  // Network monitoring effect
+  useEffect(() => {
+    // Subscribe to network state updates
+    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+      setIsOnline(state.isConnected && state.isInternetReachable !== false);
+    });
+
+    // Check for persisted auth on mount
+    const checkPersistedAuth = async () => {
+      try {
+        const persistedAuth = await AsyncStorage.getItem('persistedAuthUser');
+        if (persistedAuth) {
+          setOfflinePreviouslyLoggedIn(true);
+        }
+      } catch (e) {
+        console.error('Error reading persisted auth:', e);
+      }
+    };
+
+    checkPersistedAuth();
+
+    return () => {
+      unsubscribeNetInfo();
+    };
+  }, []);
+
   useEffect(() => {
     if (
       !isStoresHydrated ||
@@ -266,17 +347,24 @@ export default function Layout() {
     )
       return;
 
-    if (user || isGuest) {
+    const isAuthenticated = useUserStore.getState().isAuthenticated();
+    const wasAuthenticated = useUserStore.getState().wasAuthenticated();
+
+    if (isAuthenticated) {
+      // User is logged in
+      router.replace('/(tabs)/home');
+    } else if (!isOnline && wasAuthenticated) {
+      // Offline but previously logged in
       router.replace('/(tabs)/home');
     } else {
+      // Not logged in and online
       router.replace('/auth/entry');
     }
     setIsInitialRouteSet(true);
   }, [
     isStoresHydrated,
     authLoading,
-    user,
-    isGuest,
+    isOnline,
     router,
     isInitialRouteSet,
     isLayoutMounted,
@@ -293,6 +381,7 @@ export default function Layout() {
     <TabBarProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppThemeProvider>
+          <OfflineBanner visible={!isOnline} />
           <StatusBar
             backgroundColor={
               isDarkMode ? COLORS.background : LIGHT_COLORS.background

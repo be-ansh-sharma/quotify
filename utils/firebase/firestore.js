@@ -412,8 +412,8 @@ export const unbookmarkQuote = async (userId, quoteId) => {
 
 export const fetchAuthors = async (lastDoc = null) => {
   try {
-    const authorsRef = collection(db, 'authors'); // Replace 'authors' with your Firestore collection name
-    let authorsQuery = query(authorsRef, orderBy('name', 'asc'), limit(10)); // Fetch 10 authors at a time
+    const authorsRef = collection(db, 'authors');
+    let authorsQuery = query(authorsRef, orderBy('name', 'asc'), limit(30)); // Fetch 10 authors at a time
 
     if (lastDoc) {
       authorsQuery = query(authorsQuery, startAfter(lastDoc)); // Start after the last document for pagination
@@ -426,8 +426,8 @@ export const fetchAuthors = async (lastDoc = null) => {
       ...doc.data(),
     }));
 
-    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
-    const hasMoreAuthors = snapshot.docs.length === 10; // Check if there are more authors to load
+    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+    const hasMoreAuthors = snapshot.docs.length === 30;
 
     return { newAuthors, lastVisibleDoc, hasMoreAuthors };
   } catch (error) {
@@ -439,7 +439,7 @@ export const fetchAuthors = async (lastDoc = null) => {
 export const fetchTags = async (lastDoc = null) => {
   try {
     const tagsRef = collection(db, 'tags'); // Replace 'tags' with your Firestore collection name
-    let tagsQuery = query(tagsRef, orderBy('name', 'asc'), limit(10)); // Fetch 10 tags at a time
+    let tagsQuery = query(tagsRef, orderBy('name', 'asc'), limit(30)); // Fetch 10 tags at a time
 
     if (lastDoc) {
       tagsQuery = query(tagsQuery, startAfter(lastDoc)); // Start after the last document for pagination
@@ -453,7 +453,7 @@ export const fetchTags = async (lastDoc = null) => {
     }));
 
     const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
-    const hasMoreTags = snapshot.docs.length === 10; // Check if there are more tags to load
+    const hasMoreTags = snapshot.docs.length === 30; // Check if there are more tags to load
 
     return { newTags, lastVisibleDoc, hasMoreTags };
   } catch (error) {
@@ -820,7 +820,7 @@ export const fetchQuotesByUser = async (
     let queryConstraints = [
       where('userId', '==', userId),
       orderBy('createdAt', 'desc'),
-      limit(10), // Fetch 10 quotes at a time
+      limit(20), // Fetch 10 quotes at a time
     ];
 
     if (isPrivate) {
@@ -1019,11 +1019,11 @@ export const storeFCMToken = async (
   userId,
   fcmToken,
   isGuest,
-  userData = null // This userData is passed as an argument, might be from auth state
+  userData = null
 ) => {
   try {
     const defaultPreferences = {
-      tags: ['Motivational'],
+      tags: ['motivational'],
       frequency: 'daily',
       time: '09:00',
       randomQuoteEnabled: false,
@@ -1038,12 +1038,40 @@ export const storeFCMToken = async (
     const updateKey = `${userId || 'guest'}-${fcmToken.substring(0, 10)}`;
     if (recentUpdates.has(updateKey)) {
       console.log('Duplicate token update detected. Skipping.');
-      // Return current preferences if available from argument, else default
       return userData?.preferences || defaultPreferences;
     }
 
     recentUpdates.add(updateKey);
     setTimeout(() => recentUpdates.delete(updateKey), 3000);
+
+    // NEW: Find and clean up any users with this same FCM token
+    const usersRef = collection(db, 'users');
+    const userQuery = query(usersRef, where('fcmToken', '==', fcmToken));
+    const userSnapshot = await getDocs(userQuery);
+
+    // Clean up regular users (except current user)
+    for (const userDoc of userSnapshot.docs) {
+      const foundUserId = userDoc.id;
+      if (foundUserId !== userId) {
+        console.log(
+          `Found user ${foundUserId} with same FCM token. Cleaning up.`
+        );
+        await removeUserFromAllNotificationSlots(foundUserId);
+      }
+    }
+
+    // Clean up guests with the same token
+    const guestRef = collection(db, 'guest_tokens');
+    const guestQuery = query(guestRef, where('fcmToken', '==', fcmToken));
+    const guestSnapshot = await getDocs(guestQuery);
+
+    for (const guestDoc of guestSnapshot.docs) {
+      const guestId = guestDoc.id;
+      if ((isGuest && guestId !== userId) || !isGuest) {
+        console.log(`Found guest ${guestId} with same FCM token. Cleaning up.`);
+        await removeUserFromAllNotificationSlots(guestId);
+      }
+    }
 
     if (userId && !isGuest) {
       const currentUserDataForTokenCheck =
@@ -1057,22 +1085,28 @@ export const storeFCMToken = async (
     }
 
     if (isGuest) {
-      const guestTokenRef = collection(db, 'guest_tokens');
-      // For guests, we'll use the guest document ID for notification slots
-      const guestDoc = await addDoc(guestTokenRef, {
+      const guestId =
+        userId ||
+        `guest-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const guestTokenRef = doc(db, 'guest_tokens', guestId);
+
+      await setDoc(guestTokenRef, {
         fcmToken,
         preferences: defaultPreferences,
         timeZone,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        uid: guestId,
       });
+
       await updateNotificationSlots(
-        guestDoc.id, // Use guest document ID
+        guestId,
         defaultPreferences,
         null,
         timeZone
       );
-      return defaultPreferences; // Guest always gets default initially via this function
+
+      return { ...defaultPreferences, guestId };
     } else if (userId) {
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
@@ -1088,7 +1122,6 @@ export const storeFCMToken = async (
           updatedAt: serverTimestamp(),
         };
 
-        // If preferences were missing on the user document, add them now
         if (!existingDbUserData.preferences) {
           updatePayload.preferences = defaultPreferences;
         }
@@ -1126,7 +1159,7 @@ export const handleGuestTokenRefresh = async (oldToken, newToken) => {
     const oldSnap = await getDoc(oldRef);
 
     const defaultPreferences = {
-      tags: ['Motivational'],
+      tags: ['motivational'],
       frequency: 'daily',
       time: '09:00',
       randomQuoteEnabled: false,
@@ -1205,22 +1238,59 @@ export const saveUserPreferences = async (
   timeZone
 ) => {
   try {
-    // Save preferences to Firestore
-    const userDocRef = doc(db, 'users', userId);
-    await setDoc(userDocRef, { preferences }, { merge: true });
+    // Input validation
+    if (!userId) {
+      console.error('No userId provided for saving preferences');
+      return false;
+    }
+
+    // Sanitize preferences
+    const sanitizedPreferences = {
+      tags: Array.isArray(preferences.tags)
+        ? preferences.tags
+        : ['motivational'],
+      frequency: preferences.frequency || 'daily',
+      time: preferences.time || '09:00',
+      interval: preferences.interval || 1,
+      randomQuoteEnabled: preferences.randomQuoteEnabled ?? false,
+      dndEnabled: preferences.dndEnabled ?? true,
+      dndStartTime: preferences.dndStartTime || '22:00',
+      dndEndTime: preferences.dndEndTime || '07:00',
+    };
+
+    // Check if this is a guest user based on ID format
+    const isGuest = userId.startsWith('guest-');
+
+    if (isGuest) {
+      // CHANGED: Use guest_tokens collection consistently
+      const guestRef = doc(db, 'guest_tokens', userId);
+      await setDoc(
+        guestRef,
+        { preferences: sanitizedPreferences },
+        { merge: true }
+      );
+    } else {
+      // Regular users, save to users collection
+      const userDocRef = doc(db, 'users', userId);
+      await setDoc(
+        userDocRef,
+        { preferences: sanitizedPreferences },
+        { merge: true }
+      );
+    }
 
     // Update notification slots
     await updateNotificationSlots(
       userId,
-      preferences,
+      sanitizedPreferences,
       previousPreferences,
-      timeZone
+      timeZone || 'UTC'
     );
 
-    console.log('Preferences and notification slots updated successfully.');
+    return true;
   } catch (error) {
     console.error('Error saving preferences to Firestore:', error);
-    throw error;
+    return false;
   }
 };
 
@@ -1535,29 +1605,45 @@ export const getTopQuote = async () => {
 };
 
 /**
- * Fetches a random quote from Firestore.
+ * Fetches a random quote from Firestore using the random field for efficiency.
  * @returns {Promise<Object>} A random quote document
  */
 export const getRandomQuote = async () => {
   try {
     const quotesRef = collection(db, 'quotes');
+    const randomValue = Math.random(); // Generate random value between 0 and 1
 
-    // Query for public quotes
-    const publicQuotesQuery = query(
-      quotesRef,
-      where('visibility', 'in', ['public', null]),
-      limit(100) // Limit to 100 quotes for performance
+    // First try: query for docs where random >= randomValue
+    let querySnapshot = await getDocs(
+      query(
+        quotesRef,
+        where('visibility', 'in', ['public', null]),
+        where('random', '>=', randomValue),
+        orderBy('random', 'asc'),
+        limit(1)
+      )
     );
 
-    const snapshot = await getDocs(publicQuotesQuery);
+    // If no results, try the other side of the range
+    if (querySnapshot.empty) {
+      querySnapshot = await getDocs(
+        query(
+          quotesRef,
+          where('visibility', 'in', ['public', null]),
+          where('random', '<', randomValue),
+          orderBy('random', 'desc'),
+          limit(1)
+        )
+      );
+    }
 
-    if (snapshot.empty) {
+    // If still no results (unlikely), fallback to old method
+    if (querySnapshot.empty) {
       throw new Error('No quotes found');
     }
 
-    // Select a random quote from the result set
-    const randomIndex = Math.floor(Math.random() * snapshot.size);
-    const quoteDoc = snapshot.docs[randomIndex];
+    // Get the first document
+    const quoteDoc = querySnapshot.docs[0];
 
     return {
       id: quoteDoc.id,
@@ -1568,7 +1654,6 @@ export const getRandomQuote = async () => {
     throw error;
   }
 };
-
 /**
  * Updates all quotes in Firebase with the mood attribute
  * @returns {Promise<{updated: number, skipped: number, errors: number}>} Stats about the operation

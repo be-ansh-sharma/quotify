@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import * as Localization from 'expo-localization';
 import {
   View,
   Text,
@@ -131,69 +132,103 @@ export default function NotificationSettings() {
   };
 
   const savePreferences = async () => {
-    setLoading(true); // Start loading
-
-    const formattedNotificationTime = notificationTime?.isValid()
-      ? notificationTime.format('HH:mm')
-      : '09:00';
-
-    const preferences = {
-      tags: selectedTags,
-      frequency,
-      time: frequency === 'daily' ? formattedNotificationTime : null,
-      interval: frequency === 'Interval' ? interval : null,
-      dndEnabled,
-      dndStartTime: dndStartTime?.isValid()
-        ? dndStartTime.format('HH:mm')
-        : '22:00',
-      dndEndTime: dndEndTime?.isValid() ? dndEndTime.format('HH:mm') : '07:00',
-      randomQuoteEnabled,
-    };
-
-    // Validate if the notification time falls within the DND range
-    if (frequency === 'daily' && dndEnabled) {
-      const notificationTimeInMinutes =
-        notificationTime.hour() * 60 + notificationTime.minute();
-      const dndStartInMinutes =
-        dndStartTime.hour() * 60 + dndStartTime.minute();
-      const dndEndInMinutes = dndEndTime.hour() * 60 + dndEndTime.minute();
-
-      const isWithinDND =
-        dndStartInMinutes < dndEndInMinutes
-          ? notificationTimeInMinutes >= dndStartInMinutes &&
-            notificationTimeInMinutes < dndEndInMinutes
-          : notificationTimeInMinutes >= dndStartInMinutes ||
-            notificationTimeInMinutes < dndEndInMinutes;
-
-      if (isWithinDND) {
-        setLoading(false); // Stop loading
-        SnackbarService.show(
-          'Notification time cannot fall within the Do Not Disturb hours.'
-        );
-        return;
-      }
-    }
+    setLoading(true);
 
     try {
-      // Save preferences to Firestore
+      // Get current user data (with guest check)
+      const isGuest = useUserStore.getState().isGuest;
+      const currentUser = useUserStore.getState().user;
+
+      if (!currentUser && !isGuest) {
+        throw new Error('User not found and not in guest mode');
+      }
+
+      // Format times with proper validation
+      const formattedNotificationTime = notificationTime?.isValid?.()
+        ? notificationTime.format('HH:mm')
+        : '09:00';
+
+      const formattedDndStart = dndStartTime?.isValid?.()
+        ? dndStartTime.format('HH:mm')
+        : '22:00';
+
+      const formattedDndEnd = dndEndTime?.isValid?.()
+        ? dndEndTime.format('HH:mm')
+        : '07:00';
+
+      // Build sanitized preferences object (no null values)
+      const preferences = {
+        tags: selectedTags.length > 0 ? selectedTags : ['motivational'],
+        frequency: frequency || 'daily',
+        time: frequency === 'daily' ? formattedNotificationTime : '09:00',
+        interval: frequency === 'Interval' ? interval : 1,
+        dndEnabled,
+        dndStartTime: formattedDndStart,
+        dndEndTime: formattedDndEnd,
+        randomQuoteEnabled,
+      };
+
+      // Validate DND time range if enabled and using daily notifications
+      if (frequency === 'daily' && dndEnabled) {
+        // Only validate if all time objects are valid
+        if (
+          notificationTime?.isValid?.() &&
+          dndStartTime?.isValid?.() &&
+          dndEndTime?.isValid?.()
+        ) {
+          const notificationTimeInMinutes =
+            notificationTime.hour() * 60 + notificationTime.minute();
+          const dndStartInMinutes =
+            dndStartTime.hour() * 60 + dndStartTime.minute();
+          const dndEndInMinutes = dndEndTime.hour() * 60 + dndEndTime.minute();
+
+          const isWithinDND =
+            dndStartInMinutes < dndEndInMinutes
+              ? notificationTimeInMinutes >= dndStartInMinutes &&
+                notificationTimeInMinutes < dndEndInMinutes
+              : notificationTimeInMinutes >= dndStartInMinutes ||
+                notificationTimeInMinutes < dndEndInMinutes;
+
+          if (isWithinDND) {
+            SnackbarService.show(
+              'Notification time cannot fall within the Do Not Disturb hours.'
+            );
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
+      // Get current timezone with fallbacks
+      const timezone = currentUser?.timeZone || Localization.timezone || 'UTC';
+
+      // Use appropriate user ID
+      const userId = currentUser.uid;
+
+      if (!userId) {
+        throw new Error('Could not determine user ID');
+      }
+
+      // Save to Firestore
       await saveUserPreferences(
-        user?.uid,
+        userId,
         preferences,
-        user?.preferences,
-        user?.timeZone
+        currentUser?.preferences || {},
+        timezone
       );
 
       // Update local state
       setUser({
-        ...user,
-        preferences: { ...user?.preferences, ...preferences },
+        ...currentUser,
+        preferences: { ...currentUser?.preferences, ...preferences },
       });
 
       SnackbarService.show('Preferences saved successfully!');
     } catch (error) {
-      alert('Failed to save preferences. Please try again.');
+      console.error('Error saving preferences:', error);
+      SnackbarService.show('Failed to save preferences. Please try again.');
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 

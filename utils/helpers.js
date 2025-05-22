@@ -1,6 +1,8 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { auth } from 'utils/firebase/firebaseconfig';
+import useUserStore from 'stores/userStore';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -486,5 +488,24 @@ export const getSlotInfo = (slot) => {
   const fieldName = isRandomSlot ? 'randomQuotes' : 'users';
 
   return { docId, fieldName };
+};
+
+/**
+ * Logs out the user, removes them from all notification slots,
+ * resets the user store, and navigates to the entry screen.
+ * @param {object} router - The router object for navigation.
+ */
+export const logoutUser = async (router) => {
+  try {
+    const userId = useUserStore.getState().user?.uid;
+    if (userId) {
+      await removeUserFromAllNotificationSlots(userId);
+    }
+    await auth.signOut();
+    useUserStore.getState().resetUser?.();
+    router.replace('/auth/entry');
+  } catch (error) {
+    console.error('Error logging out:', error);
+  }
 };
 

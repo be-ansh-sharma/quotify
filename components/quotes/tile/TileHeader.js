@@ -103,7 +103,7 @@ const getStyles = (COLORS) =>
     author: {
       fontSize: 14,
       fontWeight: '500',
-      color: COLORS.text,
+      color: COLORS.primary,
     },
     userQuoteIcon: {
       marginLeft: 6,
