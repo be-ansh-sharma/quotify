@@ -5,7 +5,6 @@ import { List, Divider, Surface } from 'react-native-paper';
 import { FontAwesome } from '@expo/vector-icons';
 
 import useUserStore from 'stores/userStore';
-import { auth } from 'utils/firebase/firebaseconfig';
 import { useAppTheme } from 'context/AppThemeContext';
 import { logoutUser } from 'utils/helpers';
 
@@ -14,11 +13,8 @@ const ADMIN = 'us@yopmail.com';
 export default function Profile() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
-  const resetUser = useUserStore((state) => state.resetUser);
-  const isGuest = useUserStore((state) => state.isGuest);
 
   const { COLORS } = useAppTheme();
-
   const styles = getStyles(COLORS);
 
   const handleLogout = () => {
@@ -35,23 +31,14 @@ export default function Profile() {
   return (
     <View style={styles.container}>
       <View style={styles.editContainer}>
-        {isGuest ? (
-          <TouchableOpacity
-            onPress={() => router.push('/auth/entry')}
-            style={styles.editButton}
-          >
-            <FontAwesome name='sign-in' size={18} color={COLORS.primary} />
-            <Text style={styles.editText}>Log In</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => router.push('/profile/edit')}
-            style={styles.editButton}
-          >
-            <FontAwesome name='edit' size={18} color={COLORS.primary} />
-            <Text style={styles.editText}>Edit Profile</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          onPress={() => router.push('/profile/edit')}
+          style={styles.editButton}
+          disabled={!user?.uid}
+        >
+          <FontAwesome name='edit' size={18} color={COLORS.primary} />
+          <Text style={styles.editText}>Edit Profile</Text>
+        </TouchableOpacity>
       </View>
 
       <Surface style={styles.userCard} elevation={2}>
@@ -82,7 +69,7 @@ export default function Profile() {
         <List.Item
           title='Liked Quotes'
           left={(props) => (
-            <List.Icon {...props} icon='heart' color={COLORS.primary} /> // Red for heart
+            <List.Icon {...props} icon='heart' color={COLORS.primary} />
           )}
           onPress={() => router.push('/profile/liked')}
         />
@@ -132,21 +119,21 @@ export default function Profile() {
           onPress={() => router.push('/settings')}
         />
         <Divider />
-        {isGuest ? (
-          <List.Item
-            title='Login'
-            left={(props) => (
-              <List.Icon {...props} icon='key' color={COLORS.primary} />
-            )}
-            onPress={() => router.push('/auth/entry')}
-          />
-        ) : (
+        {user?.uid ? (
           <List.Item
             title='Logout'
             left={(props) => (
               <List.Icon {...props} icon='logout' color={COLORS.error} />
             )}
             onPress={handleLogout}
+          />
+        ) : (
+          <List.Item
+            title='Login'
+            left={(props) => (
+              <List.Icon {...props} icon='key' color={COLORS.primary} />
+            )}
+            onPress={() => router.push('/auth/entry')}
           />
         )}
       </List.Section>

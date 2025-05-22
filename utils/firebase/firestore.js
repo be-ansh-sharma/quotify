@@ -984,44 +984,18 @@ export const deleteListFromUser = async (userId, listName) => {
 };
 
 /**
- * Add a user or guest to a time bucket.
- * @param {string} timeBucket - The time bucket (e.g., "09-00").
- * @param {string} id - The user ID or guest token.
- * @param {boolean} isGuest - Whether the ID belongs to a guest.
- */
-const addToTimeBucket = async (timeBucket, id, isGuest) => {
-  try {
-    const bucketRef = doc(db, 'timeBuckets', timeBucket);
-
-    await setDoc(
-      bucketRef,
-      {
-        [isGuest ? 'guests' : 'users']: arrayUnion(id),
-      },
-      { merge: true }
-    );
-
-    console.log(`Added ${id} to time bucket ${timeBucket}.`);
-  } catch (error) {
-    console.error(`Error adding ${id} to time bucket ${timeBucket}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Store the FCM token in Firestore for a user or guest and calculate notification slots.
- * @param {string|null} userId - The ID of the user (null for guests).
+ * Store the FCM token in Firestore for a user and calculate notification slots.
+ * @param {string|null} userId - The ID of the user.
  * @param {string} fcmToken - The FCM token to store.
- * @param {boolean} isGuest - Whether the user is a guest.
  * @param {object|null} userData - Optional user data to avoid redundant queries.
  */
-export const storeFCMToken = async (
-  userId,
-  fcmToken,
-  isGuest,
-  userData = null
-) => {
+export const storeFCMToken = async (userId, fcmToken, userData = null) => {
   try {
+    if (!userId || !fcmToken) {
+      console.error('Missing userId or FCM token');
+      return null;
+    }
+
     const defaultPreferences = {
       tags: ['motivational'],
       frequency: 'daily',
@@ -1034,8 +1008,8 @@ export const storeFCMToken = async (
 
     const timeZone = Localization.timezone;
 
-    // Check if this is a duplicate update
-    const updateKey = `${userId || 'guest'}-${fcmToken.substring(0, 10)}`;
+    // Prevent duplicate updates
+    const updateKey = `${userId}-${fcmToken.substring(0, 10)}`;
     if (recentUpdates.has(updateKey)) {
       console.log('Duplicate token update detected. Skipping.');
       return userData?.preferences || defaultPreferences;
@@ -1044,12 +1018,11 @@ export const storeFCMToken = async (
     recentUpdates.add(updateKey);
     setTimeout(() => recentUpdates.delete(updateKey), 3000);
 
-    // NEW: Find and clean up any users with this same FCM token
+    // Clean up other users with the same token
     const usersRef = collection(db, 'users');
     const userQuery = query(usersRef, where('fcmToken', '==', fcmToken));
     const userSnapshot = await getDocs(userQuery);
 
-    // Clean up regular users (except current user)
     for (const userDoc of userSnapshot.docs) {
       const foundUserId = userDoc.id;
       if (foundUserId !== userId) {
@@ -1060,166 +1033,42 @@ export const storeFCMToken = async (
       }
     }
 
-    // Clean up guests with the same token
-    const guestRef = collection(db, 'guest_tokens');
-    const guestQuery = query(guestRef, where('fcmToken', '==', fcmToken));
-    const guestSnapshot = await getDocs(guestQuery);
+    // Update or create user record
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    let preferencesToUse;
 
-    for (const guestDoc of guestSnapshot.docs) {
-      const guestId = guestDoc.id;
-      if ((isGuest && guestId !== userId) || !isGuest) {
-        console.log(`Found guest ${guestId} with same FCM token. Cleaning up.`);
-        await removeUserFromAllNotificationSlots(guestId);
+    if (userSnap.exists()) {
+      const existingDbUserData = userSnap.data();
+      preferencesToUse = existingDbUserData.preferences || defaultPreferences;
+
+      const updatePayload = {
+        fcmToken,
+        timeZone: existingDbUserData.timeZone || timeZone,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (!existingDbUserData.preferences) {
+        updatePayload.preferences = defaultPreferences;
       }
-    }
-
-    if (userId && !isGuest) {
-      const currentUserDataForTokenCheck =
-        userData || (await fetchUserData(userId));
-      if (
-        currentUserDataForTokenCheck?.fcmToken &&
-        currentUserDataForTokenCheck.fcmToken !== fcmToken
-      ) {
-        await removeUserFromAllNotificationSlots(userId);
-      }
-    }
-
-    if (isGuest) {
-      const guestId =
-        userId ||
-        `guest-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      const guestTokenRef = doc(db, 'guest_tokens', guestId);
-
-      await setDoc(guestTokenRef, {
+      await updateDoc(userRef, updatePayload);
+    } else {
+      preferencesToUse = defaultPreferences;
+      await setDoc(userRef, {
         fcmToken,
         preferences: defaultPreferences,
         timeZone,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        uid: guestId,
+        uid: userId,
       });
-
-      await updateNotificationSlots(
-        guestId,
-        defaultPreferences,
-        null,
-        timeZone
-      );
-
-      return { ...defaultPreferences, guestId };
-    } else if (userId) {
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await getDoc(userRef);
-      let preferencesToUse;
-
-      if (userSnap.exists()) {
-        const existingDbUserData = userSnap.data();
-        preferencesToUse = existingDbUserData.preferences || defaultPreferences;
-
-        const updatePayload = {
-          fcmToken,
-          timeZone: existingDbUserData.timeZone || timeZone,
-          updatedAt: serverTimestamp(),
-        };
-
-        if (!existingDbUserData.preferences) {
-          updatePayload.preferences = defaultPreferences;
-        }
-        await updateDoc(userRef, updatePayload);
-      } else {
-        preferencesToUse = defaultPreferences;
-        await setDoc(userRef, {
-          fcmToken,
-          preferences: defaultPreferences,
-          timeZone,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          uid: userId, // Ensure UID is stored if creating here
-        });
-      }
-      await updateNotificationSlots(userId, preferencesToUse, null, timeZone);
-      return preferencesToUse;
     }
-    // Fallback, though one of the branches should have returned
-    return defaultPreferences;
+
+    await updateNotificationSlots(userId, preferencesToUse, null, timeZone);
+    return preferencesToUse;
   } catch (error) {
     console.error('Error storing FCM token and preferences:', error);
-    throw error;
-  }
-};
-
-/**
- * Handle FCM token refresh for guest users.
- * @param {string} oldToken - The old FCM token.
- * @param {string} newToken - The new FCM token.
- */
-export const handleGuestTokenRefresh = async (oldToken, newToken) => {
-  try {
-    const oldRef = doc(db, 'guest_tokens', oldToken);
-    const oldSnap = await getDoc(oldRef);
-
-    const defaultPreferences = {
-      tags: ['motivational'],
-      frequency: 'daily',
-      time: '09:00',
-      randomQuoteEnabled: false,
-      dndEnabled: true,
-      dndStartTime: '22:00',
-      dndEndTime: '07:00',
-    };
-
-    if (oldSnap.exists()) {
-      const data = oldSnap.data();
-
-      // Copy preferences and retain the original createdAt timestamp
-      const newRef = doc(db, 'guest_tokens', newToken);
-      await setDoc(newRef, {
-        ...data,
-        fcmToken: newToken,
-        preferences: data.preferences || defaultPreferences, // Retain existing preferences or set defaults
-        createdAt: data.createdAt || new Date(), // Retain old createdAt or fallback to now
-        updatedAt: new Date(), // Update the updatedAt timestamp
-      });
-
-      // Delete the old token
-      await deleteDoc(oldRef);
-      console.log('Guest token refreshed and preferences migrated.');
-    } else {
-      // If the old token doesn't exist, create a new document with default preferences
-      const newRef = doc(db, 'guest_tokens', newToken);
-      await setDoc(newRef, {
-        fcmToken: newToken,
-        preferences: defaultPreferences,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      console.log('Default preferences set for new guest token.');
-    }
-  } catch (error) {
-    console.error('Error handling guest token refresh:', error);
-  }
-};
-
-/**
- * Fetch the FCM token for a guest user from the database.
- * @param {string} fcmToken - The FCM token to fetch.
- * @returns {Promise<object|null>} - The guest user data or null if not found.
- */
-export const fetchGuestFCMToken = async (fcmToken) => {
-  try {
-    const guestTokenRef = doc(db, 'guest_tokens', fcmToken);
-    const guestTokenSnap = await getDoc(guestTokenRef);
-
-    if (guestTokenSnap.exists()) {
-      console.log('Guest FCM token found:', guestTokenSnap.data());
-      return guestTokenSnap.data();
-    } else {
-      console.log('Guest FCM token not found in the database.');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error fetching guest FCM token:', error);
-    throw error;
+    return null;
   }
 };
 
@@ -1258,26 +1107,12 @@ export const saveUserPreferences = async (
       dndEndTime: preferences.dndEndTime || '07:00',
     };
 
-    // Check if this is a guest user based on ID format
-    const isGuest = userId.startsWith('guest-');
-
-    if (isGuest) {
-      // CHANGED: Use guest_tokens collection consistently
-      const guestRef = doc(db, 'guest_tokens', userId);
-      await setDoc(
-        guestRef,
-        { preferences: sanitizedPreferences },
-        { merge: true }
-      );
-    } else {
-      // Regular users, save to users collection
-      const userDocRef = doc(db, 'users', userId);
-      await setDoc(
-        userDocRef,
-        { preferences: sanitizedPreferences },
-        { merge: true }
-      );
-    }
+    const userDocRef = doc(db, 'users', userId);
+    await setDoc(
+      userDocRef,
+      { preferences: sanitizedPreferences },
+      { merge: true }
+    );
 
     // Update notification slots
     await updateNotificationSlots(
@@ -1322,13 +1157,18 @@ export const updateNotificationSlots = async (
     }
 
     // IMPORTANT: Always remove from ALL slots first
-    // regardless of whether previousPreferences exists
     await removeUserFromAllNotificationSlots(userId);
 
     // Calculate new slots and add user to them
     const newSlots = calculateTimeSlots(preferences, timeZone);
     console.log('Adding user to new slots:', newSlots);
 
+    // Create a batch for better performance
+    const batch = writeBatch(db);
+    let batchCount = 0;
+    const MAX_BATCH_SIZE = 490; // Firestore limit is 500 operations per batch
+
+    // Process slots in batches
     for (const slot of newSlots) {
       try {
         const { docId, fieldName } = getSlotInfo(slot);
@@ -1338,38 +1178,48 @@ export const updateNotificationSlots = async (
         if (slotDoc.exists()) {
           const slotData = slotDoc.data();
 
-          // Check if the appropriate field exists and is an array
           if (slotData[fieldName] && Array.isArray(slotData[fieldName])) {
             // Only add if not already in the array
             if (!slotData[fieldName].includes(userId)) {
-              await updateDoc(slotDocRef, {
-                [fieldName]: [...slotData[fieldName], userId],
+              batch.update(slotDocRef, {
+                [fieldName]: arrayUnion(userId), // Use arrayUnion for atomic operations
               });
-              console.log(
-                `Added user to existing ${fieldName} in slot ${docId}`
-              );
+              batchCount++;
             }
           } else {
             // Field doesn't exist or isn't an array - initialize it
-            await setDoc(
+            batch.set(
               slotDocRef,
               {
                 [fieldName]: [userId],
               },
               { merge: true }
             );
-            console.log(`Created ${fieldName} field in slot ${docId}`);
+            batchCount++;
           }
         } else {
           // Document doesn't exist - create it
-          await setDoc(slotDocRef, {
+          batch.set(slotDocRef, {
             [fieldName]: [userId],
           });
-          console.log(`Created new slot ${docId} with user in ${fieldName}`);
+          batchCount++;
+        }
+
+        // If batch is getting large, commit it and start a new one
+        if (batchCount >= MAX_BATCH_SIZE) {
+          await batch.commit();
+          console.log(`Committed batch of ${batchCount} slot operations`);
+          batchCount = 0;
         }
       } catch (error) {
-        console.warn(`Error adding user to slot ${slot}:`, error);
+        console.warn(`Error processing slot ${slot}:`, error);
       }
+    }
+
+    // Commit any remaining operations in the batch
+    if (batchCount > 0) {
+      await batch.commit();
+      console.log(`Committed final batch of ${batchCount} slot operations`);
     }
 
     console.log(`Updated notification slots for user ${userId}`);
@@ -1985,6 +1835,28 @@ export const fetchTrendingQuotes = async (limitCount = 30) => {
   } catch (error) {
     console.error('Error fetching trending quotes:', error);
     throw error;
+  }
+};
+
+/**
+ * Removes the FCM token for a user
+ * @param {string} userId - The user ID
+ * @returns {Promise<void>}
+ */
+export const removeFCMToken = async (userId) => {
+  try {
+    if (!userId) {
+      console.error('No userId provided for removing FCM token');
+      return;
+    }
+
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      fcmToken: deleteField(), // Use deleteField() function instead of FieldValue.delete()
+    });
+    console.log(`FCM token removed for user ${userId}`);
+  } catch (error) {
+    console.error('Error removing FCM token:', error);
   }
 };
 

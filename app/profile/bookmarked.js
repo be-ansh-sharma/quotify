@@ -15,7 +15,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 export default function BookmarkedLists() {
   const user = useUserStore((state) => state.user);
-  const isGuest = useUserStore((state) => state.isGuest);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [lists, setLists] = useState([]);
@@ -27,16 +26,12 @@ export default function BookmarkedLists() {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('BookmarkedLists focused - refreshing data');
       setRefreshKey((prev) => prev + 1);
       return () => {};
     }, [])
   );
 
   useEffect(() => {
-    console.log('Processing bookmarklists, refreshKey:', refreshKey);
-    console.log('Current user bookmarklist:', user?.bookmarklist);
-
     setLoading(true);
     if (user?.bookmarklist) {
       const userLists = Object.entries(user.bookmarklist).map(
@@ -45,7 +40,6 @@ export default function BookmarkedLists() {
           quotes: Array.isArray(quotes) ? [...quotes] : [],
         })
       );
-      console.log('Processed lists:', userLists);
       setLists(userLists);
     } else {
       setLists([]);
@@ -70,7 +64,7 @@ export default function BookmarkedLists() {
     );
   }
 
-  if (isGuest) {
+  if (!user?.uid) {
     return renderEmptyState('Login to create your custom lists');
   }
 

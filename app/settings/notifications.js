@@ -135,12 +135,12 @@ export default function NotificationSettings() {
     setLoading(true);
 
     try {
-      // Get current user data (with guest check)
-      const isGuest = useUserStore.getState().isGuest;
       const currentUser = useUserStore.getState().user;
 
-      if (!currentUser && !isGuest) {
-        throw new Error('User not found and not in guest mode');
+      if (!currentUser?.uid) {
+        throw new Error(
+          'You must be logged in to save notification preferences.'
+        );
       }
 
       // Format times with proper validation
@@ -170,7 +170,6 @@ export default function NotificationSettings() {
 
       // Validate DND time range if enabled and using daily notifications
       if (frequency === 'daily' && dndEnabled) {
-        // Only validate if all time objects are valid
         if (
           notificationTime?.isValid?.() &&
           dndStartTime?.isValid?.() &&
@@ -202,16 +201,9 @@ export default function NotificationSettings() {
       // Get current timezone with fallbacks
       const timezone = currentUser?.timeZone || Localization.timezone || 'UTC';
 
-      // Use appropriate user ID
-      const userId = currentUser.uid;
-
-      if (!userId) {
-        throw new Error('Could not determine user ID');
-      }
-
       // Save to Firestore
       await saveUserPreferences(
-        userId,
+        currentUser.uid,
         preferences,
         currentUser?.preferences || {},
         timezone

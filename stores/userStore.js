@@ -13,7 +13,6 @@ const useUserStore = create(
         name: null,
         bookmarked: [],
       },
-      isGuest: false,
       selectedSort: 'newest',
       selectedMood: 'all',
       hasCheckedProfileOnce: false,
@@ -51,15 +50,6 @@ const useUserStore = create(
           user,
           lastAuthTimestamp: Date.now(),
         }),
-      setGuest: () =>
-        set({
-          isGuest: true,
-          user: {
-            uid: null,
-            email: null,
-            name: null,
-          },
-        }),
       resetUser: () =>
         set((state) => ({
           lastKnownUser: state.user?.uid
@@ -70,29 +60,18 @@ const useUserStore = create(
             email: null,
             name: null,
           },
-          isGuest: false,
         })),
-      resetGuest: () =>
-        set({
-          isGuest: false,
-          user: {
-            uid: null,
-            email: null,
-            name: null,
-          },
-        }),
       setHasCheckedProfileOnce: (val) => set({ hasCheckedProfileOnce: val }),
       setHydrated: (val) => set({ hydrated: val }),
 
-      // New functions
       isAuthenticated: () => {
         const state = get();
-        return !!state.user?.uid || state.isGuest;
+        return !!state.user?.uid;
       },
 
       wasAuthenticated: () => {
         const state = get();
-        return !!state.user?.uid || state.lastKnownUser?.uid || state.isGuest;
+        return !!state.user?.uid || !!state.lastKnownUser?.uid;
       },
     }),
     {

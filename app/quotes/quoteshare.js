@@ -48,13 +48,12 @@ export default function QuoteShare() {
 
   // Get user data once and update ref
   useEffect(() => {
-    const { isGuest, user } = useUserStore.getState();
-    storeDataRef.current = { isGuest, user };
+    const { user } = useUserStore.getState();
+    storeDataRef.current = { user };
 
     // Subscribe to store changes
     const unsubscribe = useUserStore.subscribe((state) => {
       storeDataRef.current = {
-        isGuest: state.isGuest,
         user: state.user,
       };
     });
@@ -121,7 +120,6 @@ export default function QuoteShare() {
 
   return (
     <View style={styles.container}>
-      {/* Replace custom header with Header component */}
       <Header
         title='Share Quote'
         backAction={() => router.push('/home')}
@@ -149,8 +147,8 @@ export default function QuoteShare() {
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true} // Show scroll indicator
-        alwaysBounceVertical={true} // Enable bounce
+        showsVerticalScrollIndicator={true}
+        alwaysBounceVertical={true}
       >
         {/* Format Selector */}
         <FormatSelector
@@ -216,7 +214,6 @@ export default function QuoteShare() {
   );
 }
 
-// Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
@@ -224,12 +221,12 @@ const getStyles = (COLORS) =>
       backgroundColor: COLORS.background,
     },
     previewContainer: {
-      height: SCREEN_HEIGHT * 0.6, // Match the preview height
+      height: SCREEN_HEIGHT * 0.6,
       width: '100%',
       padding: 0,
       borderBottomWidth: 1,
       borderBottomColor: COLORS.surface,
-      marginBottom: 0, // Remove extra margin if you want no gap
+      marginBottom: 0,
     },
     viewShot: {
       width: '100%',

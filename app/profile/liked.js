@@ -8,9 +8,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Header from 'components/header/Header'; // Import the Header component
+import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
 import { fetchQuotesByIds } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile';
@@ -20,7 +19,6 @@ const PAGE_SIZE = 10;
 
 export default function LikedQuotes() {
   const user = useUserStore((state) => state.user);
-  const isGuest = useUserStore((state) => state.isGuest);
   const router = useRouter();
   const [likedQuotes, setLikedQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,21 +28,13 @@ export default function LikedQuotes() {
   const [processedChunks, setProcessedChunks] = useState(0);
   const prevReactionsRef = useRef([]);
 
-  // Get COLORS from theme context
   const { COLORS } = useAppTheme();
-
-  // Generate styles with current COLORS
   const styles = getStyles(COLORS);
 
   const getUserReactedQuoteIds = () => {
     if (!user || !user.reactions) return [];
-
-    // Get all reaction types dynamically from the user object
     const reactionTypes = Object.keys(user.reactions || {});
-
-    // Combine all reaction types into a single array of quote IDs
     const allReactedQuoteIds = [];
-
     reactionTypes.forEach((type) => {
       if (Array.isArray(user.reactions[type])) {
         user.reactions[type].forEach((id) => {
@@ -54,16 +44,10 @@ export default function LikedQuotes() {
         });
       }
     });
-
     return allReactedQuoteIds;
   };
 
   const loadLikedQuotes = async (isLoadMore = false) => {
-    if (isGuest) {
-      setLoading(false);
-      return;
-    }
-
     const reactedQuoteIds = getUserReactedQuoteIds();
 
     if (reactedQuoteIds.length === 0) {
@@ -90,24 +74,17 @@ export default function LikedQuotes() {
       );
 
       setLikedQuotes((prevQuotes) => {
-        // Create map of existing quotes by ID
         const quotesById = {};
-
-        // Process existing quotes first
         prevQuotes.forEach((quote) => {
           if (quote && quote.id) {
             quotesById[quote.id] = quote;
           }
         });
-
-        // Then add new quotes, overwriting duplicates with newer versions
         quotes?.forEach((quote) => {
           if (quote && quote.id) {
             quotesById[quote.id] = quote;
           }
         });
-
-        // Convert back to array
         return Object.values(quotesById);
       });
 
@@ -126,15 +103,10 @@ export default function LikedQuotes() {
   }, []);
 
   useEffect(() => {
-    // Get all reacted quote IDs
     const reactedQuoteIds = getUserReactedQuoteIds();
-
-    // Ensure prevReactionsRef is always a valid array
     const prevReactions = Array.isArray(prevReactionsRef.current)
       ? prevReactionsRef.current
       : [];
-
-    // Safely check if reactions changed
     let hasReactionsChanged = reactedQuoteIds.length !== prevReactions.length;
     if (!hasReactionsChanged && reactedQuoteIds.length > 0) {
       try {
@@ -143,39 +115,26 @@ export default function LikedQuotes() {
         );
       } catch (error) {
         console.error('Error comparing reaction arrays:', error);
-        hasReactionsChanged = true; // Force update if comparison fails
+        hasReactionsChanged = true;
       }
     }
-
     if (!hasReactionsChanged) {
       return;
     }
-
-    // Update ref with a copy of the array
     prevReactionsRef.current = [...reactedQuoteIds];
-
     if (reactedQuoteIds.length === 0) {
       setLikedQuotes([]);
       return;
     }
-
-    // Extra safety when updating state
     setLikedQuotes((prevQuotes) => {
-      // Ensure prevQuotes is always a valid array
       const currentQuotes = Array.isArray(prevQuotes) ? prevQuotes : [];
-
       try {
-        // Safely filter quotes
         const updatedQuotes = currentQuotes.filter(
           (quote) => quote && quote.id && reactedQuoteIds.includes(quote.id)
         );
-
-        // Safely get missing quote IDs
         const missingQuoteIds = reactedQuoteIds.filter(
           (id) => !updatedQuotes.some((quote) => quote && quote.id === id)
         );
-
-        // Fetch missing quotes asynchronously
         if (missingQuoteIds.length > 0) {
           fetchQuotesByIds(missingQuoteIds)
             .then(({ quotes: newQuotes }) => {
@@ -192,14 +151,13 @@ export default function LikedQuotes() {
               console.error('Error fetching missing quotes:', error);
             });
         }
-
         return updatedQuotes;
       } catch (error) {
         console.error('Error updating liked quotes:', error);
-        return currentQuotes; // Return unchanged if there's an error
+        return currentQuotes;
       }
     });
-  }, [user?.reactions, user?.likes]); // Watch both reactions and likes
+  }, [user?.reactions, user?.likes]);
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -223,7 +181,7 @@ export default function LikedQuotes() {
     );
   }
 
-  if (isGuest) {
+  if (!user?.uid) {
     return renderEmptyState('Login to view your reactions to quotes.');
   }
 
@@ -234,11 +192,9 @@ export default function LikedQuotes() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header title='Your Reactions' backRoute='/profile' />
-
       <FlatList
         data={likedQuotes.filter(
           (quote, index, self) =>
-            // Only keep the first occurrence of each ID
             index === self.findIndex((q) => q.id === quote.id)
         )}
         keyExtractor={(item) => item.id}
@@ -256,7 +212,6 @@ export default function LikedQuotes() {
   );
 }
 
-// Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
     safeArea: {

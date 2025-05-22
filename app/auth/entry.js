@@ -7,7 +7,6 @@ import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
 
 export default function Entry() {
   const router = useRouter();
-  const setGuest = useUserStore((state) => state.setGuest);
 
   const { COLORS } = useAppTheme(); // Get theme colors dynamically
   const styles = getStyles(COLORS); // Generate styles dynamically
@@ -41,11 +40,6 @@ export default function Entry() {
       }),
     ]).start();
   }, []);
-
-  const guestHandler = () => {
-    setGuest();
-    router.replace('/(tabs)/home');
-  };
 
   return (
     <View style={styles.container}>
@@ -87,10 +81,6 @@ export default function Entry() {
           labelStyle={{ color: COLORS.primary }}
         >
           Register
-        </Button>
-
-        <Button mode='text' onPress={guestHandler} style={styles.button}>
-          Continue as Guest
         </Button>
       </Animated.View>
     </View>

@@ -15,7 +15,7 @@ export default function useQuoteInteractions({
   quote,
   user,
   shareSheetRef,
-  listManagerRef, // Add this parameter
+  listManagerRef,
 }) {
   const [selectedReaction, setSelectedReaction] = useState(
     Object.keys(user?.reactions || {}).find((reactionType) =>
@@ -29,7 +29,6 @@ export default function useQuoteInteractions({
   const isTrayVisibleRef = useRef(false);
 
   const router = useRouter();
-  const isGuest = useUserStore((state) => state.isGuest);
   const setUser = useUserStore((state) => state.setUser);
 
   const bookmarklist = user?.bookmarklist || {};
@@ -66,7 +65,7 @@ export default function useQuoteInteractions({
 
   const handleSelectReaction = useCallback(
     async (reactionType) => {
-      if (isGuest) {
+      if (!user?.uid) {
         SnackbarService.show('Please log in to react to quotes');
         return;
       }
@@ -155,11 +154,11 @@ export default function useQuoteInteractions({
         console.error('Error updating reactions:', error);
       }
     },
-    [isGuest, reactions, selectedReaction, quote.id, user, setUser]
+    [reactions, selectedReaction, quote.id, user, setUser]
   );
 
   const toggleBookmark = useCallback(() => {
-    if (isGuest) {
+    if (!user?.uid) {
       SnackbarService.show('Please log in to manage bookmarks');
       return;
     }
@@ -167,7 +166,7 @@ export default function useQuoteInteractions({
     if (listManagerRef.current) {
       listManagerRef.current.openBottomSheet();
     }
-  }, [isGuest, listManagerRef]);
+  }, [user, listManagerRef]);
 
   const handleLongPressTile = useCallback(() => {
     Clipboard.setString(`"${quote.text}" - ${quote.author || 'Unknown'}`);

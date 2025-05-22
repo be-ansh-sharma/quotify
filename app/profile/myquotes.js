@@ -9,34 +9,25 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Header from 'components/header/Header'; // Import Header component
+import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
-import {
-  fetchQuotesByIds,
-  fetchQuotesByUser,
-  deletePrivateQuote,
-} from 'utils/firebase/firestore';
+import { fetchQuotesByIds, deletePrivateQuote } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile';
 import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 
 export default function MyQuotes() {
   const user = useUserStore((state) => state.user);
-  const isGuest = useUserStore((state) => state.isGuest);
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMoreQuotes, setHasMoreQuotes] = useState(true);
   const [filter, setFilter] = useState('public'); // 'public' or 'private'
-  const [pageSize] = useState(10); // Number of quotes to load per page
+  const [pageSize] = useState(10);
 
-  // Get COLORS from theme context
   const { COLORS } = useAppTheme();
-
-  // Generate styles with current COLORS
   const styles = getStyles(COLORS);
 
   const loadQuotes = async (isLoadMore = false) => {
@@ -45,34 +36,20 @@ export default function MyQuotes() {
     isLoadMore ? setLoadingMore(true) : setLoading(true);
 
     try {
-      // Get the appropriate quote IDs array from user object based on filter
       const quoteIds =
         filter === 'private'
           ? user?.privateQuotes || []
           : user?.publicQuotes || [];
 
-      console.log(`📝 Found ${quoteIds.length} ${filter} quotes in user data`);
-
       if (quoteIds.length > 0) {
-        // Calculate pagination indices
         const startIndex = isLoadMore ? lastDoc || 0 : 0;
         const endIndex = startIndex + pageSize;
-
-        // Get the slice of IDs for this page
         const pageIds = quoteIds.slice(startIndex, endIndex);
 
         if (pageIds.length > 0) {
-          // Fetch the actual quote documents by their IDs
           const fetchedQuotes = await fetchQuotesByIds(pageIds);
-
-          // Ensure we have an array before sorting
           const newQuotes = Array.isArray(fetchedQuotes) ? fetchedQuotes : [];
 
-          console.log(
-            `📦 Fetched ${newQuotes.length} quotes of ${pageIds.length} requested IDs`
-          );
-
-          // Only sort if we have quotes
           if (newQuotes.length > 0) {
             newQuotes.sort(
               (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
@@ -82,18 +59,12 @@ export default function MyQuotes() {
           setQuotes((prev) =>
             isLoadMore ? [...prev, ...newQuotes] : newQuotes
           );
-          setLastDoc(endIndex); // Next starting point
+          setLastDoc(endIndex);
           setHasMoreQuotes(endIndex < quoteIds.length);
-
-          console.log(
-            `📊 Loaded ${newQuotes.length} quotes (${startIndex}-${endIndex} of ${quoteIds.length})`
-          );
         } else {
-          // No more quotes to load
           setHasMoreQuotes(false);
         }
       }
-      // Rest of function remains the same...
     } catch (error) {
       console.error('Error fetching user quotes:', error);
       setQuotes(isLoadMore ? quotes : []);
@@ -107,26 +78,17 @@ export default function MyQuotes() {
       'Confirm Delete',
       'Are you sure you want to delete this private quote? This action cannot be undone.',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           onPress: async () => {
             try {
               await deletePrivateQuote(quoteId);
-
-              // Update local component state
               setQuotes((prev) => prev.filter((quote) => quote.id !== quoteId));
-
-              // Update user store to keep privateQuotes in sync
               if (user && user.privateQuotes) {
                 const updatedPrivateQuotes = user.privateQuotes.filter(
                   (id) => id !== quoteId
                 );
-
-                // Update the entire user object with the modified privateQuotes array
                 useUserStore.setState({
                   user: {
                     ...user,
@@ -134,7 +96,6 @@ export default function MyQuotes() {
                   },
                 });
               }
-
               SnackbarService.show('Private quote deleted successfully.');
             } catch (error) {
               console.error('Error deleting private quote:', error);
@@ -150,13 +111,17 @@ export default function MyQuotes() {
   };
 
   useEffect(() => {
-    if (!isGuest) {
+    if (!user?.uid) {
+      setLoading(false);
+    } else {
       loadQuotes();
     }
-  }, [filter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, user?.uid]);
 
   const renderEmptyState = (message) => (
     <View style={styles.container}>
+      <Header title='My Quotes' backRoute='/profile' />
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>{message}</Text>
       </View>
@@ -198,7 +163,7 @@ export default function MyQuotes() {
     );
   }
 
-  if (isGuest) {
+  if (!user?.uid) {
     return renderEmptyState('Login to view your posted quotes.');
   }
 
@@ -252,7 +217,6 @@ export default function MyQuotes() {
   );
 }
 
-// Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {

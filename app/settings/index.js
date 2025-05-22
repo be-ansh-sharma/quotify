@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, Alert, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { List, Divider, Surface } from 'react-native-paper';
 import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
-import { auth } from 'utils/firebase/firebaseconfig';
 import { useAppTheme } from 'context/AppThemeContext';
 import { logoutUser } from 'utils/helpers';
 
@@ -12,10 +11,9 @@ export default function Settings() {
   const router = useRouter();
   const resetUser = useUserStore((state) => state.resetUser);
   const theme = useUserStore((state) => state.theme);
-  const isGuest = useUserStore((state) => state.isGuest);
+  const user = useUserStore((state) => state.user);
 
   const { COLORS } = useAppTheme();
-
   const styles = getStyles(COLORS);
 
   const handleLogout = () => {
@@ -98,21 +96,21 @@ export default function Settings() {
               rippleColor={`${COLORS.primary}20`}
             />
             <Divider style={styles.divider} />
-            {isGuest ? (
-              <List.Item
-                title='Login'
-                left={(props) => (
-                  <List.Icon {...props} icon='key' color={COLORS.primary} />
-                )}
-                onPress={() => router.push('/auth/entry')}
-              />
-            ) : (
+            {user?.uid ? (
               <List.Item
                 title='Logout'
                 left={(props) => (
                   <List.Icon {...props} icon='logout' color={COLORS.error} />
                 )}
                 onPress={handleLogout}
+              />
+            ) : (
+              <List.Item
+                title='Login'
+                left={(props) => (
+                  <List.Icon {...props} icon='key' color={COLORS.primary} />
+                )}
+                onPress={() => router.push('/auth/entry')}
               />
             )}
           </List.Section>

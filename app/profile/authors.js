@@ -9,23 +9,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Header from 'components/header/Header'; // Import the Header component
+import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
-import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
+import { useAppTheme } from 'context/AppThemeContext';
 
 export default function FavoriteAuthors() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
-  const isGuest = useUserStore((state) => state.isGuest);
 
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
   const renderEmptyState = (message) => (
     <SafeAreaView style={styles.safeArea}>
-      {/* Use the reusable Header component */}
       <Header title='Favorite Authors' backRoute='/profile' />
-
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>{message}</Text>
       </View>
@@ -72,7 +69,7 @@ export default function FavoriteAuthors() {
     );
   };
 
-  if (isGuest) {
+  if (!user?.uid) {
     return renderEmptyState('Login to follow your favorite authors.');
   }
 
@@ -82,22 +79,19 @@ export default function FavoriteAuthors() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Use the reusable Header component */}
       <Header title='Favorite Authors' backRoute='/profile' />
-
       <FlatList
         data={user.followedAuthors}
         keyExtractor={(item, index) => `${item}-${index}`}
         renderItem={renderAuthor}
-        numColumns={2} // Display 2 tiles per row
-        columnWrapperStyle={styles.row} // Style for rows
-        contentContainerStyle={styles.grid} // Style for the grid
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.grid}
       />
     </SafeAreaView>
   );
 }
 
-// Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
     safeArea: {

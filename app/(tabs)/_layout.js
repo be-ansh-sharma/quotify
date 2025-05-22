@@ -10,7 +10,6 @@ import { useMemo } from 'react'; // Add this import
 
 export default function Layout() {
   const router = useRouter();
-  const isGuest = useUserStore((state) => state.isGuest);
   const { visible } = useTabBar();
 
   // Add theme detection code
@@ -50,13 +49,7 @@ export default function Layout() {
             color={colors.primary}
             style={{ marginRight: 16 }}
             onPress={() => {
-              if (isGuest) {
-                // Show snackbar if the user is a guest
-                SnackbarService.show('You need to log in to post a quote.');
-              } else {
-                // Navigate to the post quote page
-                router.push('/postquote');
-              }
+              router.push('/postquote');
             }}
           />
         ),

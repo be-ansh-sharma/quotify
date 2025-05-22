@@ -45,7 +45,6 @@ const Login = () => {
   const setHasCheckedProfileOnce = useUserStore(
     (state) => state.setHasCheckedProfileOnce
   );
-  const resetGuest = useUserStore((state) => state.resetGuest);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -54,7 +53,6 @@ const Login = () => {
   useEffect(() => {
     if (user) {
       console.log('User logged in:', user);
-      resetGuest();
       setUser({ email: user.user.email });
       setHasCheckedProfileOnce(false);
       router.navigate('/(tabs)/home');

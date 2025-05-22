@@ -16,8 +16,6 @@ dayjs.extend(timezone);
  */
 export const convertToUTCTimeBucket = (timeStr, timeZone, interval = 15) => {
   try {
-    console.log('Converting to UTC time bucket:', { timeStr, timeZone });
-
     // Validate inputs
     if (!timeStr || typeof timeStr !== 'string') {
       console.warn('Invalid time string:', timeStr);
@@ -91,7 +89,6 @@ export const calculateTimeSlots = (preferences, timeZone) => {
     // Daily notification handling - unchanged
     if (preferences.frequency === 'daily' && preferences.time) {
       const utcBucket = convertToUTCTimeBucket(preferences.time, timeZone, 15);
-      console.log('Generated UTC Bucket:', utcBucket);
       if (utcBucket) {
         slots.push(utcBucket);
       } else {
@@ -106,17 +103,12 @@ export const calculateTimeSlots = (preferences, timeZone) => {
       const endOfDay = dayjs().endOf('day');
 
       while (currentTime.isBefore(endOfDay)) {
-        console.log('Current Time:', currentTime.format('HH:mm'));
-
-        if (isWithinDND(currentTime)) {
-          console.log('Excluded due to DND:', currentTime.format('HH:mm'));
-        } else {
+        if (!isWithinDND(currentTime)) {
           const utcBucket = convertToUTCTimeBucket(
             currentTime.format('HH:mm'),
             timeZone,
             15
           );
-          console.log('Generated UTC Bucket:', utcBucket);
 
           if (utcBucket) {
             slots.push(utcBucket);
@@ -147,10 +139,6 @@ export const calculateTimeSlots = (preferences, timeZone) => {
         if (!isWithinDND(randomTime)) {
           // Convert to UTC bucket
           const randomBucket = randomTime.utc().format('HH-mm');
-          console.log(
-            'Generated random time bucket outside DND period:',
-            randomBucket
-          );
 
           slots.push(`random-${randomBucket}`);
           validTimeFound = true;
@@ -491,7 +479,7 @@ export const getSlotInfo = (slot) => {
 };
 
 /**
- * Logs out the user, removes them from all notification slots,
+ * Logs out the user, removes FCM token, cleans up notification slots,
  * resets the user store, and navigates to the entry screen.
  * @param {object} router - The router object for navigation.
  */
@@ -499,10 +487,24 @@ export const logoutUser = async (router) => {
   try {
     const userId = useUserStore.getState().user?.uid;
     if (userId) {
+      // Remove user from notification slots
+      const { removeUserFromAllNotificationSlots, removeFCMToken } =
+        await import('./firebase/firestore');
+
+      // First remove from notification slots
       await removeUserFromAllNotificationSlots(userId);
+
+      // Then remove the FCM token from the user's document
+      await removeFCMToken(userId);
+
+      console.log('User removed from notification slots and FCM token cleared');
     }
+
+    // Sign out and reset local state
     await auth.signOut();
     useUserStore.getState().resetUser?.();
+
+    // Navigate to entry screen
     router.replace('/auth/entry');
   } catch (error) {
     console.error('Error logging out:', error);
