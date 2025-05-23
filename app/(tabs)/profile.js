@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { List, Divider, Surface } from 'react-native-paper';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 
 import useUserStore from 'stores/userStore';
 import { useAppTheme } from 'context/AppThemeContext';
@@ -44,11 +44,21 @@ export default function Profile() {
       <Surface style={styles.userCard} elevation={2}>
         <List.Icon icon='account' color={COLORS.primary} size={48} />
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>
-            {user?.firstName
-              ? `${user?.firstName} ${user?.lastName}`
-              : `Anonymous`}
-          </Text>
+          <View style={styles.nameContainer}>
+            <Text style={styles.userName}>
+              {user?.firstName
+                ? `${user?.firstName} ${user?.lastName}`
+                : `Anonymous`}
+            </Text>
+
+            {/* Pro Badge - Only shown for Pro users */}
+            {user?.isPro && (
+              <View style={styles.proBadgeContainer}>
+                <FontAwesome5 name='crown' size={16} color='#FFD700' />
+                <Text style={styles.proBadgeText}>PRO</Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.userEmail}>{user?.email || 'Not logged in'}</Text>
         </View>
       </Surface>
@@ -110,7 +120,18 @@ export default function Profile() {
             <Divider />
           </>
         )}
-
+        {!user?.isPro && (
+          <>
+            <List.Item
+              title='Go Pro'
+              left={(props) => (
+                <List.Icon {...props} icon='star' color={COLORS.primary} />
+              )}
+              onPress={() => router.push('/profile/pro/')}
+            />
+            <Divider />
+          </>
+        )}
         <List.Item
           title='Settings'
           left={(props) => (
@@ -178,6 +199,10 @@ const getStyles = (COLORS) =>
     userDetails: {
       marginLeft: 12,
     },
+    nameContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
     userName: {
       fontSize: 20,
       fontWeight: 'bold',
@@ -187,6 +212,23 @@ const getStyles = (COLORS) =>
       fontSize: 14,
       color: COLORS.placeholder,
       marginTop: 2,
+    },
+    proBadgeContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: COLORS.primary,
+      borderRadius: 16, // Slightly larger radius
+      paddingVertical: 4, // More vertical padding
+      paddingHorizontal: 8, // More horizontal padding
+      marginLeft: 12, // Slightly more margin from name
+      borderWidth: 1,
+      borderColor: COLORS.primary,
+    },
+    proBadgeText: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: COLORS.onPrimary, // Use onPrimary color for better contrast
+      marginLeft: 4,
     },
     linksSection: {
       backgroundColor: COLORS.surface,

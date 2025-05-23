@@ -62,10 +62,7 @@ export default function QuoteShare() {
   }, []);
 
   // Use isPremiumUser from ref, wrapped in useMemo to prevent dependency changes
-  const isPremiumUser = useMemo(
-    () => !!storeDataRef.current?.user?.isPremiumUser,
-    []
-  );
+  const isPremiumUser = useMemo(() => !!storeDataRef.current?.user?.isPro, []);
 
   // Use the backgrounds hook with the stable isPremiumUser value
   const { backgrounds, selectedBackground, setSelectedBackground, loading } =

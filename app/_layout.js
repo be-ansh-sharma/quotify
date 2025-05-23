@@ -1,4 +1,5 @@
 import * as NavigationBar from 'expo-navigation-bar';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import { Slot, useRouter } from 'expo-router';
@@ -217,25 +218,27 @@ export default function Layout() {
   return (
     <TabBarProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppThemeProvider>
-          <OfflineBanner visible={!isOnline} />
-          <StatusBar
-            backgroundColor={
-              isDarkMode ? COLORS.background : LIGHT_COLORS.background
-            }
-            barStyle={statusBarStyle}
-          />
-          <PaperProvider theme={paperTheme}>
-            <ThemeProvider value={navigationTheme}>
-              <SnackbarProvider>
-                <Slot />
-                {(!isStoresHydrated || authLoading || !isInitialRouteSet) && (
-                  <LoadingScreen message='Getting everything ready...' />
-                )}
-              </SnackbarProvider>
-            </ThemeProvider>
-          </PaperProvider>
-        </AppThemeProvider>
+        <StripeProvider publishableKey='pk_test_51RRhnICuI7euS6mCOyL8qUOd9I2BodVS1niHmfoGgTCv3F8hqktOOj0BP4LdTjRESW4Aj3VjVwjqj7wZn3m1U7gu00BxVrkPqX'>
+          <AppThemeProvider>
+            <OfflineBanner visible={!isOnline} />
+            <StatusBar
+              backgroundColor={
+                isDarkMode ? COLORS.background : LIGHT_COLORS.background
+              }
+              barStyle={statusBarStyle}
+            />
+            <PaperProvider theme={paperTheme}>
+              <ThemeProvider value={navigationTheme}>
+                <SnackbarProvider>
+                  <Slot />
+                  {(!isStoresHydrated || authLoading || !isInitialRouteSet) && (
+                    <LoadingScreen message='Getting everything ready...' />
+                  )}
+                </SnackbarProvider>
+              </ThemeProvider>
+            </PaperProvider>
+          </AppThemeProvider>
+        </StripeProvider>
       </GestureHandlerRootView>
     </TabBarProvider>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Alert, StyleSheet, Text } from 'react-native';
+import { View, Alert, StyleSheet, Text, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { List, Divider, Surface } from 'react-native-paper';
 import Header from 'components/header/Header';
@@ -25,6 +25,28 @@ export default function Settings() {
         onPress: () => logoutUser(router),
       },
     ]);
+  };
+
+  const handleContactSupport = async () => {
+    const supportEmail = 'epoch.feedback@gmail.com';
+    const subject = 'Quotify Support Request';
+    const body = user?.uid ? `\n\n\nUser ID: ${user.uid}` : '';
+
+    const url = `mailto:${supportEmail}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+
+    const canOpen = await Linking.canOpenURL(url);
+
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert(
+        'Cannot Open Email',
+        `Please email us directly at ${supportEmail}`,
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   return (
@@ -65,6 +87,20 @@ export default function Settings() {
                 <List.Icon {...props} icon='bell' color={COLORS.primary} />
               )}
               onPress={() => router.push('/settings/notifications')}
+              rippleColor={`${COLORS.primary}20`}
+            />
+            <Divider style={styles.divider} />
+            <List.Item
+              title='Contact Support'
+              titleStyle={styles.listItemTitle}
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon='email-outline'
+                  color={COLORS.primary}
+                />
+              )}
+              onPress={handleContactSupport}
               rippleColor={`${COLORS.primary}20`}
             />
             <Divider style={styles.divider} />

@@ -12,8 +12,10 @@ import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import useUserStore from 'stores/userStore';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppTheme } from 'context/AppThemeContext'; // Import theme context
+import { router } from 'expo-router';
 
-const MAX_LISTS = 10;
+const FREE_MAX_LISTS = 5;
+const PREMIUM_MAX_LISTS = 20;
 
 const ListManager = React.forwardRef(({ user, quote }, ref) => {
   const bottomSheetRef = useRef(null);
@@ -25,6 +27,9 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
   const setUser = useUserStore((state) => state.setUser);
 
   const { COLORS } = useAppTheme(); // Get theme colors
+
+  const isPro = !!user?.isPro;
+  const MAX_LISTS = isPro ? PREMIUM_MAX_LISTS : FREE_MAX_LISTS;
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -86,7 +91,11 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
 
   const handleNewListClick = () => {
     if (Object.keys(bookmarklist).length >= MAX_LISTS) {
-      SnackbarService.show(`You can only create up to ${MAX_LISTS} lists.`);
+      SnackbarService.show(
+        isPro
+          ? `You can only create up to ${PREMIUM_MAX_LISTS} lists.`
+          : `Free users can only create up to ${FREE_MAX_LISTS} lists. Upgrade to Pro for up to ${PREMIUM_MAX_LISTS} lists!`
+      );
       return;
     }
     setShowInput(true);
@@ -192,7 +201,22 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
             </TouchableOpacity>
           )}
 
-          <Text style={styles.existingListsTitle}>Your Lists</Text>
+          <Text style={styles.existingListsTitle}>
+            Your Lists ({Object.keys(bookmarklist).length} / {MAX_LISTS})
+          </Text>
+          {!isPro && (
+            <Text style={styles.noListsText}>
+              Free users can create up to {FREE_MAX_LISTS} lists.{' '}
+              <Text
+                style={{ color: COLORS.primary, fontWeight: 'bold' }}
+                onPress={() => {
+                  router.push('/profile/pro/');
+                }}
+              >
+                Upgrade to Pro for more lists!
+              </Text>
+            </Text>
+          )}
           {Object.keys(bookmarklist).length > 0 ? (
             Object.keys(bookmarklist).map((name, index) => (
               <View key={index} style={styles.listContainer}>

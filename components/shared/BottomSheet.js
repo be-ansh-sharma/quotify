@@ -1,9 +1,4 @@
-import React, {
-  forwardRef,
-  useImperativeHandle,
-  useState,
-  useEffect,
-} from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import {
   View,
   Modal,
@@ -27,7 +22,6 @@ const BottomSheet = forwardRef(({ children, height = '40%', onClose }, ref) => {
 
   useImperativeHandle(ref, () => ({
     expand: () => {
-      console.log('Custom BottomSheet expand called');
       setVisible(true);
       Animated.timing(slideAnim, {
         toValue: 1,
@@ -36,7 +30,6 @@ const BottomSheet = forwardRef(({ children, height = '40%', onClose }, ref) => {
       }).start();
     },
     close: () => {
-      console.log('Custom BottomSheet close called');
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 300,
@@ -47,7 +40,6 @@ const BottomSheet = forwardRef(({ children, height = '40%', onClose }, ref) => {
       });
     },
     openBottomSheet: () => {
-      console.log('Custom BottomSheet openBottomSheet called');
       setVisible(true);
       Animated.timing(slideAnim, {
         toValue: 1,
@@ -56,7 +48,6 @@ const BottomSheet = forwardRef(({ children, height = '40%', onClose }, ref) => {
       }).start();
     },
     closeBottomSheet: () => {
-      console.log('Custom BottomSheet closeBottomSheet called');
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 300,

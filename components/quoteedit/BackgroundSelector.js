@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from 'styles/theme';
+import { router } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -42,9 +43,17 @@ function BackgroundSelector({
     if (background.type === 'premium' && !isPremiumUser) {
       Alert.alert(
         'Premium Feature',
-        'This is a premium background. Upgrade to access all backgrounds!'
+        'This is a premium background. Upgrade to access all backgrounds!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Upgrade',
+            onPress: () => router.push('/profile/pro/'),
+            style: 'default',
+          },
+        ]
       );
-      return; // Prevent selection
+      return;
     }
     onSelectBackground(background.uri);
   };

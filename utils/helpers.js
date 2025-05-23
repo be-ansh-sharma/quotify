@@ -142,12 +142,6 @@ export const calculateTimeSlots = (preferences, timeZone) => {
 
           slots.push(`random-${randomBucket}`);
           validTimeFound = true;
-        } else {
-          console.log(
-            `Random time ${randomTime.format(
-              'HH:mm'
-            )} is within DND period, trying again.`
-          );
         }
 
         attempts++;
