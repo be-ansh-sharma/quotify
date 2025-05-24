@@ -1,24 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as Localization from 'expo-localization';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet, FlatList } from 'react-native';
 import { Chip, Button, List, Switch, Portal } from 'react-native-paper';
 import { TimePickerModal } from 'react-native-paper-dates';
 import dayjs from 'dayjs';
-// Change this import
 import { useAppTheme } from 'context/AppThemeContext';
-import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
 import Header from 'components/header/Header'; // Import the reusable Header component
 import { saveUserPreferences } from 'utils/firebase/firestore'; // Import the Firestore utility function
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
-import { calculateTimeSlots } from 'utils/helpers';
+import { showMessage } from 'react-native-flash-message';
+
 // --- Static Data ---
 const TAGS = [
   'motivational',
@@ -189,9 +181,11 @@ export default function NotificationSettings() {
                 notificationTimeInMinutes < dndEndInMinutes;
 
           if (isWithinDND) {
-            SnackbarService.show(
-              'Notification time cannot fall within the Do Not Disturb hours.'
-            );
+            showMessage({
+              message:
+                'Notification time cannot fall within the Do Not Disturb hours.',
+              type: 'warning',
+            });
             setLoading(false);
             return;
           }
@@ -215,10 +209,16 @@ export default function NotificationSettings() {
         preferences: { ...currentUser?.preferences, ...preferences },
       });
 
-      SnackbarService.show('Preferences saved successfully!');
+      showMessage({
+        message: 'Preferences saved successfully!',
+        type: 'success',
+      });
     } catch (error) {
       console.error('Error saving preferences:', error);
-      SnackbarService.show('Failed to save preferences. Please try again.');
+      showMessage({
+        message: 'Failed to save preferences. Please try again.',
+        type: 'danger',
+      });
     } finally {
       setLoading(false);
     }

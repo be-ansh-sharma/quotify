@@ -218,7 +218,7 @@ export default function ProCheckout() {
 
   return (
     <View style={styles.container}>
-      <Header title='Go Pro Checkout' backRoute='/profile/pro' />
+      <Header title='Go Pro Checkout' />
       <View style={styles.content}>
         <Text style={styles.title}>Upgrade to Quotify Pro</Text>
         <Text style={styles.price}>$4.99</Text>

@@ -93,16 +93,16 @@ const getStyles = (COLORS) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.2)', // was 0.5, try 0.2 or 0.1
       justifyContent: 'flex-end',
-      zIndex: 1000,
+      zIndex: 100,
     },
     container: {
       backgroundColor: COLORS.surface,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       paddingTop: 8,
-      zIndex: 1000,
+      zIndex: 100,
     },
     handle: {
       width: 40,

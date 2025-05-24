@@ -23,15 +23,11 @@ import { updateProfile } from 'firebase/auth';
 import { updateUserProfile } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { useAppTheme } from 'context/AppThemeContext';
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import { showMessage } from 'react-native-flash-message';
 import Header from 'components/header/Header';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useUpdatePassword } from 'react-firebase-hooks/auth';
-import {
-  signInWithEmailAndPassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-} from 'firebase/auth';
+import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -76,11 +72,17 @@ export default function EditProfile() {
 
       setUser({ ...user, ...updatedProfile });
 
-      SnackbarService.show('Profile updated successfully');
+      showMessage({
+        message: 'Profile updated successfully',
+        type: 'success',
+      });
       router.push('/profile');
     } catch (error) {
       console.error('Error updating profile:', error);
-      SnackbarService.show('Failed to update profile. Please try again.');
+      showMessage({
+        message: 'Failed to update profile. Please try again.',
+        type: 'danger',
+      });
     } finally {
       setLoading(false);
     }
@@ -92,8 +94,10 @@ export default function EditProfile() {
 
     try {
       await updatePassword(password);
-      // If we get here without an error, the update was successful
-      SnackbarService.show('Password updated successfully');
+      showMessage({
+        message: 'Password updated successfully',
+        type: 'success',
+      });
       setPassword('');
       setConfirmPassword('');
     } catch (error) {
@@ -104,7 +108,10 @@ export default function EditProfile() {
         setError(null); // Clear any previous errors
         setShowReauthDialog(true); // Show the dialog
       } else {
-        SnackbarService.show('Failed to update password. Please try again.');
+        showMessage({
+          message: 'Failed to update password. Please try again.',
+          type: 'danger',
+        });
       }
     }
   };
@@ -123,7 +130,10 @@ export default function EditProfile() {
       // Retry password update after successful reauthentication
       const success = await updatePassword(password);
       if (success) {
-        SnackbarService.show('Password updated successfully');
+        showMessage({
+          message: 'Password updated successfully',
+          type: 'success',
+        });
         setPassword('');
         setConfirmPassword('');
       }

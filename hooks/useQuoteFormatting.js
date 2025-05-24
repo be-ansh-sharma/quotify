@@ -5,41 +5,76 @@ import * as FileSystem from 'expo-file-system';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Define standard formats with proper aspect ratios
+// Simplified formats - one optimal format per platform
 const SHARE_FORMATS = [
-  { id: 'square', name: 'Square', aspectRatio: 1, width: 1080, height: 1080 },
   {
-    id: 'portrait',
-    name: 'Portrait',
-    aspectRatio: 4 / 5,
+    id: 'instagram',
+    name: 'Instagram',
+    aspectRatio: 1, // Square is most versatile for Instagram
     width: 1080,
-    height: 1350,
-  },
-  {
-    id: 'landscape',
-    name: 'Landscape',
-    aspectRatio: 16 / 9,
-    width: 1920,
     height: 1080,
+    platform: 'instagram',
   },
   {
-    id: 'story',
-    name: 'Story',
+    id: 'instagram-story',
+    name: 'Instagram Story',
     aspectRatio: 9 / 16,
     width: 1080,
     height: 1920,
+    platform: 'instagram',
+  },
+  {
+    id: 'facebook',
+    name: 'Facebook',
+    aspectRatio: 1.91, // Facebook recommended ratio
+    width: 1200,
+    height: 630,
+    platform: 'facebook',
   },
   {
     id: 'twitter',
     name: 'Twitter',
-    aspectRatio: 1.91 / 1,
+    aspectRatio: 16 / 9, // Twitter's ideal ratio
     width: 1200,
-    height: 628,
+    height: 675,
+    platform: 'twitter',
+  },
+  {
+    id: 'linkedin',
+    name: 'LinkedIn',
+    aspectRatio: 1.91,
+    width: 1200,
+    height: 627,
+    platform: 'linkedin',
+  },
+  {
+    id: 'pinterest',
+    name: 'Pinterest',
+    aspectRatio: 2 / 3, // Pinterest vertical pins work best
+    width: 1000,
+    height: 1500,
+    platform: 'pinterest',
+  },
+  {
+    id: 'tiktok',
+    name: 'TikTok',
+    aspectRatio: 9 / 16, // TikTok uses vertical format
+    width: 1080,
+    height: 1920,
+    platform: 'tiktok',
+  },
+  {
+    id: 'wallpaper',
+    name: 'Phone Wallpaper',
+    aspectRatio: 9 / 19.5, // iPhone aspect ratio
+    width: 1170,
+    height: 2532,
+    platform: 'general',
   },
 ];
 
 export const useQuoteFormatting = (viewRef, selectedBackground) => {
-  const [selectedFormat, setSelectedFormat] = useState(SHARE_FORMATS[0]); // Default to square
+  const [selectedFormat, setSelectedFormat] = useState(SHARE_FORMATS[0]); // Default to Instagram
   const [previewUri, setPreviewUri] = useState(null);
   const [processing, setProcessing] = useState(false);
   const invisibleViewRef = useRef(null);

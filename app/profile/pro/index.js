@@ -29,37 +29,32 @@ export default function ProPage() {
           </View>
           <View style={styles.featureItem}>
             <Icon name='bookmark' size={24} color={COLORS.primary} />
-            <Text style={styles.feature}>Multiple bookmark collections</Text>
+            <Text style={styles.feature}>Larger bookmark collections</Text>
           </View>
           <View style={styles.featureItem}>
             <Icon name='library-books' size={24} color={COLORS.primary} />
-            <Text style={styles.feature}>Unlimited private quote library</Text>
+            <Text style={styles.feature}>Larger private quote library</Text>
           </View>
           <View style={styles.featureItem}>
             <Icon name='share' size={24} color={COLORS.primary} />
-            <Text style={styles.feature}>Advanced sharing options</Text>
+            <Text style={styles.feature}>
+              Advanced sharing options (Coming Soon)
+            </Text>
           </View>
           <View style={styles.featureItem}>
             <Icon name='verified' size={24} color={COLORS.primary} />
-            <Text style={styles.feature}>Premium badges on your quotes</Text>
+            <Text style={styles.feature}>
+              Premium badges on your public quotes (Coming Soon)
+            </Text>
           </View>
           <View style={styles.featureItem}>
             <Icon name='block' size={24} color={COLORS.primary} />
             <Text style={styles.feature}>Ad-free experience</Text>
           </View>
           <View style={styles.featureItem}>
-            <Icon name='palette' size={24} color={COLORS.primary} />
-            <Text style={styles.feature}>Custom themes and fonts</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Icon name='auto-awesome' size={24} color={COLORS.primary} />
-            <Text style={styles.feature}>Priority access to new features</Text>
-          </View>
-          <View style={styles.featureItem}>
             <Icon name='support-agent' size={24} color={COLORS.primary} />
             <Text style={styles.feature}>Priority customer support</Text>
           </View>
-          {/* You could also add this more specific support feature */}
           <View style={styles.featureItem}>
             <Icon name='email' size={24} color={COLORS.primary} />
             <Text style={styles.feature}>Direct email support</Text>

@@ -13,7 +13,6 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
-import { SnackbarProvider } from 'components/snackbar/SnackbarProvider';
 import useUserStore from 'stores/userStore';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { StatusBar, AppState, useColorScheme } from 'react-native';
@@ -33,9 +32,12 @@ import {
   setupNotificationHandlers,
   getInitialNotification,
 } from 'utils/services/notificationService';
+import FlashMessage from 'react-native-flash-message';
+import { useAppTheme } from 'context/AppThemeContext';
 
 // In your Layout component
 export default function Layout() {
+  const { COLORS } = useAppTheme();
   const router = useRouter();
   const [user, authLoading] = useAuthState(auth);
   const isStoresHydrated = useUserStore((state) => state.hydrated);
@@ -229,12 +231,17 @@ export default function Layout() {
             />
             <PaperProvider theme={paperTheme}>
               <ThemeProvider value={navigationTheme}>
-                <SnackbarProvider>
-                  <Slot />
-                  {(!isStoresHydrated || authLoading || !isInitialRouteSet) && (
-                    <LoadingScreen message='Getting everything ready...' />
-                  )}
-                </SnackbarProvider>
+                <Slot />
+                {(!isStoresHydrated || authLoading || !isInitialRouteSet) && (
+                  <LoadingScreen message='Getting everything ready...' />
+                )}
+                <FlashMessage
+                  position='top'
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    borderBottomColor: COLORS.onPrimary,
+                  }}
+                />
               </ThemeProvider>
             </PaperProvider>
           </AppThemeProvider>

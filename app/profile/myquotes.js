@@ -15,23 +15,27 @@ import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { fetchQuotesByIds, deletePrivateQuote } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile';
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import { showMessage } from 'react-native-flash-message';
+
+const PAGE_SIZE = 10;
 
 export default function MyQuotes() {
   const user = useUserStore((state) => state.user);
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [lastDoc, setLastDoc] = useState(null);
-  const [hasMoreQuotes, setHasMoreQuotes] = useState(true);
   const [filter, setFilter] = useState('public'); // 'public' or 'private'
-  const [pageSize] = useState(10);
+
+  // Pagination state variables
+  const [nextIndex, setNextIndex] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [processedChunks, setProcessedChunks] = useState(0);
 
   const { COLORS } = useAppTheme();
   const styles = getStyles(COLORS);
 
   const loadQuotes = async (isLoadMore = false) => {
-    if (isLoadMore && !hasMoreQuotes) return;
+    if (isLoadMore && !hasMore) return;
 
     isLoadMore ? setLoadingMore(true) : setLoading(true);
 
@@ -42,32 +46,41 @@ export default function MyQuotes() {
           : user?.publicQuotes || [];
 
       if (quoteIds.length > 0) {
-        const startIndex = isLoadMore ? lastDoc || 0 : 0;
-        const endIndex = startIndex + pageSize;
-        const pageIds = quoteIds.slice(startIndex, endIndex);
+        // Get the result object with quotes and pagination info
+        const {
+          quotes: fetchedQuotes,
+          hasMore: moreAvailable,
+          nextIndex: newNextIndex,
+          processedChunks: updatedChunks,
+        } = await fetchQuotesByIds(
+          quoteIds,
+          isLoadMore ? nextIndex : 0,
+          PAGE_SIZE,
+          isLoadMore ? processedChunks : 0
+        );
 
-        if (pageIds.length > 0) {
-          const fetchedQuotes = await fetchQuotesByIds(pageIds);
-          const newQuotes = Array.isArray(fetchedQuotes) ? fetchedQuotes : [];
-
-          if (newQuotes.length > 0) {
-            newQuotes.sort(
-              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-            );
-          }
-
-          setQuotes((prev) =>
-            isLoadMore ? [...prev, ...newQuotes] : newQuotes
+        // If we have quotes
+        if (fetchedQuotes && fetchedQuotes.length > 0) {
+          // Sort by createdAt if needed
+          const sortedQuotes = [...fetchedQuotes].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
           );
-          setLastDoc(endIndex);
-          setHasMoreQuotes(endIndex < quoteIds.length);
-        } else {
-          setHasMoreQuotes(false);
+
+          // Update state with new quotes
+          setQuotes((prev) =>
+            isLoadMore ? [...prev, ...sortedQuotes] : sortedQuotes
+          );
         }
+
+        // Update pagination state
+        setNextIndex(newNextIndex);
+        setHasMore(moreAvailable);
+        setProcessedChunks(updatedChunks);
+      } else {
+        setHasMore(false);
       }
     } catch (error) {
       console.error('Error fetching user quotes:', error);
-      setQuotes(isLoadMore ? quotes : []);
     } finally {
       isLoadMore ? setLoadingMore(false) : setLoading(false);
     }
@@ -96,12 +109,16 @@ export default function MyQuotes() {
                   },
                 });
               }
-              SnackbarService.show('Private quote deleted successfully.');
+              showMessage({
+                message: 'Private quote deleted successfully.',
+                type: 'success',
+              });
             } catch (error) {
               console.error('Error deleting private quote:', error);
-              SnackbarService.show(
-                'Failed to delete the quote. Please try again.'
-              );
+              showMessage({
+                message: 'Failed to delete the quote. Please try again.',
+                type: 'danger',
+              });
             }
           },
         },
@@ -110,50 +127,27 @@ export default function MyQuotes() {
     );
   };
 
+  // Reset pagination when filter changes
   useEffect(() => {
-    if (!user?.uid) {
-      setLoading(false);
-    } else {
-      loadQuotes();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setNextIndex(0);
+    setHasMore(true);
+    setProcessedChunks(0);
+    setQuotes([]);
+    loadQuotes();
   }, [filter, user?.uid]);
 
   const renderEmptyState = (message) => (
     <View style={styles.container}>
-      <Header title='My Quotes' backRoute='/profile' />
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>{message}</Text>
       </View>
     </View>
   );
 
-  const renderQuoteList = () => (
-    <FlatList
-      data={quotes}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <View style={styles.tileContainer}>
-          <Tile quote={item} user={user} />
-          {filter === 'private' && (
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeletePrivateQuote(item.id)}
-            >
-              <MaterialIcons name='delete' size={16} color={COLORS.error} />
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-      contentContainerStyle={styles.listContent}
-      onEndReached={() => loadQuotes(true)}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={
-        loadingMore && <ActivityIndicator size='small' color={COLORS.primary} />
-      }
-    />
-  );
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return <ActivityIndicator size='small' color={COLORS.primary} />;
+  };
 
   if (loading) {
     return (
@@ -206,13 +200,38 @@ export default function MyQuotes() {
         </TouchableOpacity>
       </View>
 
-      {quotes.length > 0
-        ? renderQuoteList()
-        : renderEmptyState(
-            filter === 'public'
-              ? "You haven't posted any public quotes yet."
-              : "You haven't saved any private quotes yet."
+      {quotes.length > 0 ? (
+        <FlatList
+          data={quotes}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.tileContainer}>
+              <Tile quote={item} user={user} />
+              {filter === 'private' && (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeletePrivateQuote(item.id)}
+                >
+                  <MaterialIcons name='delete' size={16} color={COLORS.error} />
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
+          contentContainerStyle={styles.listContent}
+          onEndReached={() => loadQuotes(true)}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+        />
+      ) : loading ? (
+        <ActivityIndicator size='large' color={COLORS.primary} />
+      ) : (
+        renderEmptyState(
+          filter === 'public'
+            ? "You haven't posted any public quotes yet."
+            : "You haven't saved any private quotes yet."
+        )
+      )}
     </View>
   );
 }

@@ -9,7 +9,7 @@ import {
   updateShareCount,
 } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import { showMessage } from 'react-native-flash-message';
 
 export default function useQuoteInteractions({
   quote,
@@ -66,7 +66,10 @@ export default function useQuoteInteractions({
   const handleSelectReaction = useCallback(
     async (reactionType) => {
       if (!user?.uid) {
-        SnackbarService.show('Please log in to react to quotes');
+        showMessage({
+          message: 'Please log in to react to quotes',
+          type: 'warning',
+        });
         return;
       }
 
@@ -159,7 +162,10 @@ export default function useQuoteInteractions({
 
   const toggleBookmark = useCallback(() => {
     if (!user?.uid) {
-      SnackbarService.show('Please log in to manage bookmarks');
+      showMessage({
+        message: 'Please log in to manage bookmarks',
+        type: 'warning',
+      });
       return;
     }
     // Open list manager
@@ -170,7 +176,10 @@ export default function useQuoteInteractions({
 
   const handleLongPressTile = useCallback(() => {
     Clipboard.setString(`"${quote.text}" - ${quote.author || 'Unknown'}`);
-    SnackbarService.show('Quote copied to clipboard!');
+    showMessage({
+      message: 'Quote copied to clipboard!',
+      type: 'success',
+    });
   }, [quote]);
 
   const handleShareAsText = useCallback(async () => {

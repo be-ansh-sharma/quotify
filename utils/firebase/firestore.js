@@ -178,7 +178,6 @@ export const fetchAllQuotes = async () => {
 
       const snapshot = await getDocs(quotesQuery);
 
-      // Add fetched quotes to the Set
       snapshot.forEach((doc) => {
         existingQuotes.add(doc.data().text);
       });
@@ -616,7 +615,6 @@ export const fetchQuotesByIds = async (
         allQuotes = [...allQuotes, ...chunkQuotes];
       } catch (chunkError) {
         console.error(`Error fetching chunk ${i / chunkSize + 1}:`, chunkError);
-        // Continue with next chunk even if one fails
       }
     }
 

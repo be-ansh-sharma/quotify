@@ -4,15 +4,21 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { Portal, Button, TextInput } from 'react-native-paper';
 import BottomSheet from '../shared/BottomSheet'; // Use our custom BottomSheet
 import { addQuoteToList, removeQuoteFromList } from 'utils/firebase/firestore';
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
 import useUserStore from 'stores/userStore';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppTheme } from 'context/AppThemeContext'; // Import theme context
 import { router } from 'expo-router';
+import { showMessage } from 'react-native-flash-message';
 
 const FREE_MAX_LISTS = 5;
 const PREMIUM_MAX_LISTS = 20;
@@ -79,11 +85,15 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
         bookmarklist: updatedBookmarklist,
       });
 
-      SnackbarService.show('Changes saved successfully.');
-      bottomSheetRef.current?.close(); // Use our custom method
+      showMessage({
+        message: 'Changes saved successfully.',
+      });
+      bottomSheetRef.current?.close();
     } catch (error) {
       console.error('Error saving changes:', error);
-      SnackbarService.show('Failed to save changes.');
+      showMessage({
+        message: 'Failed to save changes.',
+      });
     } finally {
       setLoading(false);
     }
@@ -91,11 +101,11 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
 
   const handleNewListClick = () => {
     if (Object.keys(bookmarklist).length >= MAX_LISTS) {
-      SnackbarService.show(
-        isPro
+      showMessage({
+        message: isPro
           ? `You can only create up to ${PREMIUM_MAX_LISTS} lists.`
-          : `Free users can only create up to ${FREE_MAX_LISTS} lists. Upgrade to Pro for up to ${PREMIUM_MAX_LISTS} lists!`
-      );
+          : `Free users can only create up to ${FREE_MAX_LISTS} lists. Upgrade to Pro for up to ${PREMIUM_MAX_LISTS} lists!`,
+      });
       return;
     }
     setShowInput(true);
@@ -108,7 +118,9 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
 
   const handleCreateNewList = async () => {
     if (!listName.trim()) {
-      SnackbarService.show('Please enter a list name');
+      showMessage({
+        message: 'Please enter a list name',
+      });
       return;
     }
 
@@ -116,7 +128,9 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
     try {
       // Check if list name already exists
       if (bookmarklist[listName]) {
-        SnackbarService.show('A list with this name already exists');
+        showMessage({
+          message: 'A list with this name already exists',
+        });
         return;
       }
 
@@ -145,10 +159,16 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
         [listName]: true,
       }));
 
-      SnackbarService.show('New list created successfully');
+      showMessage({
+        message: 'New list created successfully',
+        type: 'success',
+      });
     } catch (error) {
       console.error('Error creating new list:', error);
-      SnackbarService.show('Failed to create new list');
+      showMessage({
+        message: 'Failed to create new list',
+        type: 'danger',
+      });
     } finally {
       setLoading(false);
     }
@@ -159,7 +179,11 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
   return (
     <Portal>
       <BottomSheet ref={bottomSheetRef} height='60%'>
-        <View style={styles.bottomSheetContent}>
+        <ScrollView
+          contentContainerStyle={styles.bottomSheetContent}
+          keyboardShouldPersistTaps='handled'
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.bottomSheetTitle}>Manage Your Lists</Text>
 
           {showInput ? (
@@ -253,7 +277,7 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
           >
             Save Changes
           </Button>
-        </View>
+        </ScrollView>
       </BottomSheet>
     </Portal>
   );
@@ -262,7 +286,8 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
 const getStyles = (COLORS) =>
   StyleSheet.create({
     bottomSheetContent: {
-      flex: 1,
+      padding: 20,
+      paddingBottom: 32,
     },
     bottomSheetTitle: {
       fontSize: 20,

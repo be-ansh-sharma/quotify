@@ -15,7 +15,7 @@ import {
   rejectQuote,
 } from 'utils/firebase/firestore';
 import { router } from 'expo-router';
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import { showMessage } from 'react-native-flash-message';
 
 export default function PendingQuotes() {
   const [pendingQuotes, setPendingQuotes] = useState([]);
@@ -46,10 +46,16 @@ export default function PendingQuotes() {
     try {
       await rejectQuote(quote);
       setPendingQuotes((prev) => prev.filter((q) => q.id !== quote.id)); // Remove the rejected quote from the list
-      SnackbarService.show('Quote rejected and moved to private.');
+      showMessage({
+        message: 'Quote rejected and moved to private.',
+        type: 'success',
+      });
     } catch (error) {
       console.error('Error rejecting quote:', error);
-      SnackbarService.show('Failed to reject the quote. Please try again.');
+      showMessage({
+        message: 'Failed to reject the quote. Please try again.',
+        type: 'danger',
+      });
     }
   };
 

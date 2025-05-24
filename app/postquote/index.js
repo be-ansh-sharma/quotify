@@ -10,7 +10,7 @@ import {
   updateUserPrivateQuotes,
 } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-import { SnackbarService } from 'utils/services/snackbar/SnackbarService';
+import { showMessage } from 'react-native-flash-message';
 import Header from 'components/header/Header';
 import { FontAwesome5 } from '@expo/vector-icons';
 
@@ -35,7 +35,9 @@ export default function PostQuote() {
 
   const handlePostQuote = async () => {
     if (!quoteText.trim() || !author.trim()) {
-      SnackbarService.show('Please fill in both the quote and the author.');
+      showMessage({
+        message: 'Please fill in both the quote and the author.',
+      });
       return;
     }
 
@@ -113,19 +115,27 @@ export default function PostQuote() {
             );
           }
 
-          SnackbarService.show('Quote saved privately!');
+          showMessage({
+            message: 'Quote saved privately!',
+          });
         } catch (error) {
           console.error('Error saving private quote:', error);
-          SnackbarService.show('Failed to save your private quote.');
+          showMessage({
+            message: 'Failed to save your private quote.',
+          });
         }
       } else {
         await addQuoteToPendingList(quoteData); // Add to "pendingquotes" collection
-        SnackbarService.show('Quote submitted! It’ll be reviewed soon.');
+        showMessage({
+          message: 'Quote submitted! It’ll be reviewed soon.',
+        });
       }
 
       router.push('/home');
     } catch (error) {
-      SnackbarService.show('Failed to submit the quote. Please try again.');
+      showMessage({
+        message: 'Failed to submit the quote. Please try again.',
+      });
     } finally {
       setLoading(false);
     }
