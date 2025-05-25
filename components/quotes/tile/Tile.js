@@ -124,7 +124,6 @@ const getStyles = (COLORS) =>
       shadowOffset: { width: 0, height: 1 },
       borderLeftWidth: 3, // Add an accent border on the left
       borderLeftColor: COLORS.secondary || COLORS.accent1 || '#9C27B0', // Use an accent color
-      // Optional: Add a very subtle inner border
       borderWidth: 0.5,
       borderColor: 'rgba(255,255,255,0.05)', // Very subtle white border for depth
     },

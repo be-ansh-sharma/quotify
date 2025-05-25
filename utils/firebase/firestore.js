@@ -266,17 +266,16 @@ export const fetchQuotes = async (
     // Apply sorting based on context
     if (author) {
       // When filtering by author, use simplified sorting to avoid index issues
-      // Complex queries with author filter + exotic sorting require special indexes
       console.log(
         `Using simplified query for author filter with ${selectedSort} sort`
       );
 
-      // For author pages, we only support two sort types for better compatibility
+      // For author pages, we only support limited sort types
       if (selectedSort === 'mostPopular' && false) {
         // Disabled for now until index is created
         constraints.push(orderBy('totalReactions', 'desc'));
       } else {
-        // Default to creation date which usually works without special indexes
+        // Default to creation date
         constraints.push(orderBy('createdAt', 'desc'));
       }
     } else {
@@ -307,28 +306,38 @@ export const fetchQuotes = async (
       constraints.push(startAfter(lastDoc));
     }
 
-    // Add limit constraint
-    constraints.push(limit(20));
+    // Fetch one more document than needed to determine if there are more
+    const fetchLimit = 21; // Fetch 21 instead of 20
+    constraints.push(limit(fetchLimit));
 
     // Create a single query with all constraints
     const quotesQuery = query(quotesRef, ...constraints);
     const snapshot = await getDocs(quotesQuery);
 
     if (!snapshot.empty) {
-      const newQuotes = snapshot.docs.map((doc) => ({
+      // If we got more than 20 docs, we know there are more to fetch
+      const hasMoreQuotes = snapshot.docs.length > 20;
+
+      // Only return the requested 20 docs to the client
+      const newQuotes = snapshot.docs.slice(0, 20).map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+
+      // Get the last doc of the ones we're returning (not the extra one)
+      const lastVisibleDoc =
+        snapshot.docs[19] || snapshot.docs[snapshot.docs.length - 1];
+
       console.log(
         `Found ${newQuotes.length} quotes${
           author ? ` for author: ${author}` : ''
-        }`
+        }, hasMore: ${hasMoreQuotes}`
       );
+
       return {
         newQuotes,
         lastVisibleDoc,
-        hasMoreQuotes: newQuotes.length === 20,
+        hasMoreQuotes,
       };
     } else {
       console.log(`No quotes found${author ? ` for author: ${author}` : ''}`);
@@ -862,6 +871,7 @@ export const fetchUserQuotesPaginated = async (pageSize, lastVisible) => {
     let userQuotesQuery = query(
       quotesRef,
       where('userQuote', '==', true),
+      where('visibility', 'in', ['public', null]), // Fetch only public quotes
       orderBy('createdAt', 'desc'),
       limit(pageSize)
     );
@@ -870,6 +880,7 @@ export const fetchUserQuotesPaginated = async (pageSize, lastVisible) => {
       userQuotesQuery = query(
         quotesRef,
         where('userQuote', '==', true),
+        where('visibility', 'in', ['public', null]), // Fetch only public quotes
         orderBy('createdAt', 'desc'),
         startAfter(lastVisible),
         limit(pageSize)
@@ -1623,86 +1634,82 @@ export const addMoodToAllQuotes = async () => {
  * @param {string} selectedSort Sort option for the quotes
  * @returns {Promise<{newQuotes: Array, lastVisibleDoc: DocumentSnapshot, hasMoreQuotes: boolean}>}
  */
+/**
+ * Fetch quotes with modified pagination for oldest sort
+ */
 export const fetchQuotesByMood = async (
   mood = 'all',
   lastDoc = null,
   selectedSort = 'newest'
 ) => {
   try {
+    console.log(`Fetching quotes by mood: '${mood}', sort: '${selectedSort}'`);
     const quotesRef = collection(db, 'quotes');
-    let quotesQuery;
+    const fetchLimit = 21; // Fetch 21 instead of 20
 
-    // Determine base query with sort order
+    // Build constraints - UNIFIED approach for ALL sort types
+    let constraints = [where('visibility', 'in', ['public', null])];
+
+    // Add mood filter if specified
+    if (mood && mood !== 'all') {
+      constraints.push(where('mood', '==', mood));
+    }
+
+    // Apply sorting based on selected option
     switch (selectedSort) {
       case 'newest':
-        quotesQuery = orderBy('createdAt', 'desc');
+        constraints.push(orderBy('createdAt', 'desc'));
         break;
       case 'oldest':
-        quotesQuery = orderBy('createdAt', 'asc');
+        // Use EXACTLY the same approach as other sorts, just with ascending order
+        constraints.push(orderBy('createdAt', 'asc'));
         break;
       case 'mostPopular':
-        quotesQuery = orderBy('totalReactions', 'desc');
+        constraints.push(orderBy('totalReactions', 'desc'));
         break;
       case 'a_z_author':
-        quotesQuery = orderBy('author', 'asc');
+        constraints.push(orderBy('author', 'asc'));
         break;
       case 'z_a_author':
-        quotesQuery = orderBy('author', 'desc');
+        constraints.push(orderBy('author', 'desc'));
         break;
       default:
-        quotesQuery = orderBy('likes', 'desc');
+        constraints.push(orderBy('createdAt', 'desc'));
     }
 
-    // If 'all' mood is selected, don't filter by mood
-    if (mood === 'all') {
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            quotesQuery,
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            quotesQuery,
-            limit(20)
-          );
-    } else {
-      // Filter by the selected mood
-      quotesQuery = lastDoc
-        ? query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            where('mood', '==', mood),
-            quotesQuery,
-            startAfter(lastDoc),
-            limit(20)
-          )
-        : query(
-            quotesRef,
-            where('visibility', 'in', ['public', null]),
-            where('mood', '==', mood),
-            quotesQuery,
-            limit(20)
-          );
+    // Add pagination constraint if there's a lastDoc
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
     }
+
+    // Add limit constraint
+    constraints.push(limit(fetchLimit));
+
+    // Create the query with all constraints
+    const quotesQuery = query(quotesRef, ...constraints);
 
     const snapshot = await getDocs(quotesQuery);
+    console.log(`Query returned ${snapshot.docs.length} documents`);
 
     if (!snapshot.empty) {
-      const newQuotes = snapshot.docs.map((doc) => ({
+      const hasMoreQuotes = snapshot.docs.length > 20;
+      const newQuotes = snapshot.docs.slice(0, 20).map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+
+      const lastVisibleDoc =
+        snapshot.docs[Math.min(19, snapshot.docs.length - 1)];
+
       return {
         newQuotes,
         lastVisibleDoc,
-        hasMoreQuotes: newQuotes.length === 20,
+        hasMoreQuotes,
       };
     } else {
+      console.log(
+        `No quotes found for mood: '${mood || 'all'}', sort: ${selectedSort}`
+      );
       return {
         newQuotes: [],
         lastVisibleDoc: null,

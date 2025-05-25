@@ -10,6 +10,7 @@ import SkeletonLoader from 'components/skelton/Skelton';
 import { saveQuotesToCache, getQuotesFromCache } from 'utils/quotesCache';
 import { useTabBar } from 'context/TabBarContext';
 import { useAppTheme } from 'context/AppThemeContext'; // Add this import
+import QuoteTileAd from 'components/ads/QuoteTileAd';
 
 export default Quotes = ({
   selectedSort = 'recent', // Add this prop with a default value
@@ -259,6 +260,15 @@ export default Quotes = ({
     return <SkeletonLoader />;
   };
 
+  const renderItem = ({ item, index }) => {
+    // Show an ad every 5 quotes
+    if (index > 0 && index % 7 === 0) {
+      return <QuoteTileAd adUnitID='your-ad-unit-id' />;
+    }
+
+    return <Tile quote={item} user={user} />;
+  };
+
   if (!loading && quotes.length === 0) {
     // Display a message if no quotes are found
     return (
@@ -283,7 +293,7 @@ export default Quotes = ({
       <FlatList
         data={quotes}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <Tile quote={item} user={user} />}
+        renderItem={renderItem}
         onEndReached={loadQuotes}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}

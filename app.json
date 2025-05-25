@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.epoch.quotify",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-XXXXXXXXXX~YYYYYYYYYY"
+      }
     },
     "android": {
       "package": "com.epoch.quotify",
@@ -37,6 +40,14 @@
           "merchantIdentifier": "",
           "enableGooglePay": true
         }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "android_app_id": "ca-app-pub-2290547364208155~4370478475",
+          "user_tracking_description": "This identifier will be used to deliver personalized ads to you.",
+          "delay_app_measurement_init": true
+        }
       ]
     ],
     "scheme": "quotify",
@@ -50,6 +61,9 @@
       }
     },
     "owner": "meraki-apps"
+  },
+  "react-native-google-mobile-ads": {
+    "androidAppId": "ca-app-pub-2290547364208155~4370478475"
   }
 }
 

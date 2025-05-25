@@ -6,9 +6,6 @@ import { useRouter } from 'expo-router';
 export default function Home() {
   const router = useRouter();
 
-  // This page should never be seen since routing is handled in _layout.js
-  // Just a fallback to ensure redirection happens
-
   React.useEffect(() => {
     // Redirect after a short delay
     const timer = setTimeout(() => {

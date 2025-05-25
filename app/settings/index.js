@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Alert, StyleSheet, Text, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
-import { List, Divider, Surface } from 'react-native-paper';
+import { List, Divider, Surface, ActivityIndicator } from 'react-native-paper';
 import Header from 'components/header/Header';
 import useUserStore from 'stores/userStore';
 import { useAppTheme } from 'context/AppThemeContext';
 import { logoutUser } from 'utils/helpers';
+import { showSupportAd } from 'utils/ads/supportAds';
 
 export default function Settings() {
   const router = useRouter();
-  const resetUser = useUserStore((state) => state.resetUser);
   const theme = useUserStore((state) => state.theme);
   const user = useUserStore((state) => state.user);
+  const [isLoadingAd, setIsLoadingAd] = useState(false);
 
   const { COLORS } = useAppTheme();
   const styles = getStyles(COLORS);
@@ -49,6 +50,16 @@ export default function Settings() {
     }
   };
 
+  const handleSupportWithAd = () => {
+    showSupportAd(
+      () => setIsLoadingAd(true),
+      (success) => setIsLoadingAd(false),
+      () => {
+        console.log('User supported app by watching ad');
+      }
+    );
+  };
+
   return (
     <View style={styles.safeArea}>
       <Header title='Settings' backRoute='/profile' />
@@ -79,6 +90,32 @@ export default function Settings() {
               rippleColor={`${COLORS.primary}20`}
             />
             <Divider style={styles.divider} />
+
+            {user?.uid && (
+              <>
+                <List.Item
+                  title='Support with Ad'
+                  description='Watch an ad to support us'
+                  titleStyle={styles.listItemTitle}
+                  left={(props) => (
+                    <List.Icon
+                      {...props}
+                      icon='heart'
+                      color={COLORS.accent1 || '#E91E63'}
+                    />
+                  )}
+                  onPress={handleSupportWithAd}
+                  right={(props) =>
+                    isLoadingAd && (
+                      <ActivityIndicator size={20} color={COLORS.primary} />
+                    )
+                  }
+                  disabled={isLoadingAd}
+                  rippleColor={`${COLORS.accent1 || '#E91E63'}20`}
+                />
+                <Divider style={styles.divider} />
+              </>
+            )}
 
             <List.Item
               title='Manage Notifications'

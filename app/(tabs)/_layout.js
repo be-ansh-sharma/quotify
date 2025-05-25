@@ -1,11 +1,12 @@
 import { Tabs } from 'expo-router';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { COLORS, LIGHT_COLORS } from 'styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import AnimatedTabBar from 'components/animatedtabbar/AnimatedTabBar';
 import { useTabBar } from 'context/TabBarContext';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import useUserStore from 'stores/userStore';
+import NavigationMiddleware from 'components/navigation/NavigationMiddleware';
 
 export default function Layout() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function Layout() {
   const colors = isDarkMode ? COLORS : LIGHT_COLORS;
 
   return (
-    <>
+    <NavigationMiddleware>
       <Tabs
         tabBar={(props) => <AnimatedTabBar {...props} isDark={isDarkMode} />}
         colorScheme={isDarkMode ? 'dark' : 'light'}
@@ -99,7 +100,7 @@ export default function Layout() {
           }}
         />
       </Tabs>
-    </>
+    </NavigationMiddleware>
   );
 }
 

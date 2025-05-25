@@ -175,6 +175,9 @@ export default function useQuoteInteractions({
   }, [user, listManagerRef]);
 
   const handleLongPressTile = useCallback(() => {
+    if (__DEV__) {
+      console.log('quote ID', quote.id);
+    }
     Clipboard.setString(`"${quote.text}" - ${quote.author || 'Unknown'}`);
     showMessage({
       message: 'Quote copied to clipboard!',
