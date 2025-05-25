@@ -24,6 +24,7 @@ import {
 import quotes from 'assets/dev/quotes.json';
 import * as Localization from 'expo-localization';
 import {
+  areQuotesSimilar,
   calculateTimeSlots,
   deepEqual,
   determineMood,
@@ -34,19 +35,28 @@ import {
 const recentUpdates = new Set();
 
 export const uploadQuotes = async () => {
+  console.log('🚀 Starting upload process for quotes.json');
+  console.time('Total upload time');
+
   const quotesRef = collection(db, 'quotes');
   const tagsRef = collection(db, 'tags');
   const authorsRef = collection(db, 'authors'); // Authors collection
 
+  console.log(`📊 Found ${quotes.length} quotes to process`);
+
   let added = 0;
   let skipped = 0;
   let similarSkipped = 0;
+  let batchNumber = 1;
+  let currentProgress = 0;
 
   try {
     // Fetch all existing quotes using fetchAllQuotes
+    console.time('Fetching existing quotes');
     const existingQuotes = await fetchAllQuotes();
+    console.timeEnd('Fetching existing quotes');
     console.log(
-      `Fetched ${existingQuotes.size} existing quotes for duplicate check.`
+      `🔍 Fetched ${existingQuotes.size} existing quotes for duplicate check.`
     );
 
     // Use Firestore batch for efficient writes
@@ -56,7 +66,18 @@ export const uploadQuotes = async () => {
     // Track authors and their quote counts
     const authorQuoteCounts = {};
 
-    for (const quote of quotes) {
+    console.log('⏳ Processing quotes...');
+    for (const [index, quote] of quotes.entries()) {
+      // Progress tracking
+      const progress = Math.floor((index / quotes.length) * 100);
+      if (progress >= currentProgress + 10) {
+        // Log every 10%
+        currentProgress = progress;
+        console.log(
+          `📈 Progress: ${progress}% (${index}/${quotes.length} quotes processed)`
+        );
+      }
+
       // Check for exact duplicates first (for efficiency)
       if (existingQuotes.has(quote.text)) {
         skipped++;
@@ -127,22 +148,38 @@ export const uploadQuotes = async () => {
 
       // Commit batch if it reaches Firestore's limit of 500 writes
       if (batchCount >= 500) {
+        console.log(
+          `🔄 Committing batch ${batchNumber} (${batchCount} operations)...`
+        );
+        console.time(`Batch ${batchNumber} commit time`);
         await batch.commit();
-        console.log('Batch committed.');
+        console.timeEnd(`Batch ${batchNumber} commit time`);
+        console.log(`✅ Batch ${batchNumber} committed successfully.`);
+
         batch = writeBatch(db); // Start a new batch
         batchCount = 0;
+        batchNumber++;
       }
     }
 
     // Commit any remaining writes in the batch
     if (batchCount > 0) {
+      console.log(
+        `🔄 Committing final quote batch (${batchCount} operations)...`
+      );
+      console.time('Final batch commit time');
       await batch.commit();
-      console.log('Final batch committed.');
+      console.timeEnd('Final batch commit time');
+      console.log('✅ Final quote batch committed successfully.');
     }
 
     // Update authors collection with quote counts
+    console.log(
+      `📚 Processing ${Object.keys(authorQuoteCounts).length} authors...`
+    );
     batch = writeBatch(db); // Start a new batch for authors
     batchCount = 0;
+    batchNumber = 1;
 
     for (const [author, quoteCount] of Object.entries(authorQuoteCounts)) {
       const authorRef = doc(authorsRef, author);
@@ -159,24 +196,42 @@ export const uploadQuotes = async () => {
 
       // Commit batch if it reaches Firestore's limit of 500 writes
       if (batchCount >= 500) {
+        console.log(
+          `🔄 Committing author batch ${batchNumber} (${batchCount} operations)...`
+        );
+        console.time(`Author batch ${batchNumber} commit time`);
         await batch.commit();
-        console.log('Author batch committed.');
+        console.timeEnd(`Author batch ${batchNumber} commit time`);
+
         batch = writeBatch(db); // Start a new batch
         batchCount = 0;
+        batchNumber++;
       }
     }
 
     // Commit any remaining writes in the batch for authors
     if (batchCount > 0) {
+      console.log(
+        `🔄 Committing final author batch (${batchCount} operations)...`
+      );
+      console.time('Final author batch commit time');
       await batch.commit();
-      console.log('Final author batch committed.');
+      console.timeEnd('Final author batch commit time');
+      console.log('✅ Final author batch committed successfully.');
     }
 
+    console.timeEnd('Total upload time');
+    console.log('\n📊 UPLOAD SUMMARY:');
+    console.log(`✅ Added: ${added} quotes`);
+    console.log(`⏭️ Skipped (exact duplicate): ${skipped} quotes`);
+    console.log(`⏭️ Skipped (similar): ${similarSkipped} quotes`);
+    console.log(`📚 Authors updated: ${Object.keys(authorQuoteCounts).length}`);
     console.log(
-      `✅ Added: ${added}, Skipped (exact duplicate): ${skipped}, Skipped (similar): ${similarSkipped}`
+      `🏷️ Tags processed: ${[...new Set(quotes.flatMap((q) => q.tags))].length}`
     );
   } catch (error) {
-    console.error('Error uploading quotes:', error);
+    console.error('❌ Error uploading quotes:', error);
+    throw error;
   }
 };
 

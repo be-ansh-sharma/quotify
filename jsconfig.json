@@ -5,7 +5,10 @@
       "utils/*": ["utils/*"],
       "components/*": ["components/*"],
       "app/*": ["app/*"],
-      "assets/*": ["assets/*"]
+      "assets/*": ["assets/*"],
+      "context/*": ["context/*"],
+      "config": ["config/*"],
+      "hooks": ["hooks/*"]
     }
   }
 }

@@ -6,9 +6,12 @@ function TileTags({ tags, onTagPress }) {
   const { COLORS } = useAppTheme(); // Get dynamic theme colors
   const styles = getStyles(COLORS); // Generate styles with current theme colors
 
+  // Show at most 4 tags
+  const visibleTags = tags.slice(0, 4);
+
   return (
     <View style={styles.container}>
-      {tags.map((tag, index) => (
+      {visibleTags.map((tag, index) => (
         <TouchableOpacity
           key={index}
           onPress={() => onTagPress(tag)}

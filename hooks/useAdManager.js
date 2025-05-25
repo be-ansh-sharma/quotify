@@ -67,9 +67,6 @@ export function useAdManager(isPremium) {
           const timeInBackground = now - shortBackgroundDuration.current;
           console.log('App has come to the foreground!');
 
-          // Only clear cache if:
-          // 1. It's been more than an hour since last clear OR
-          // 2. The app was in background for more than 5 minutes (not just for an ad)
           if (
             now - lastCacheClear.current > CACHE_CLEAR_INTERVAL ||
             timeInBackground > 300000
@@ -121,7 +118,15 @@ export function useAdManager(isPremium) {
 
   // Initialize cache clear timestamp on mount
   useEffect(() => {
-    lastCacheClear.current = Date.now();
+    const now = Date.now();
+    if (now - lastCacheClear.current > CACHE_CLEAR_INTERVAL) {
+      // Cache is stale, clear it
+      clearAllQuotesCache();
+      lastCacheClear.current = now;
+      console.log('Clearing quotes cache on cold start');
+    } else {
+      lastCacheClear.current = now;
+    }
   }, []);
 
   // Clean up when isPremium changes

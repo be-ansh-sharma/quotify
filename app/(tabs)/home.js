@@ -14,7 +14,7 @@ import { useAppTheme } from 'context/AppThemeContext';
 // Separate the version check logic
 function useVersionCheck() {
   useEffect(() => {
-    const CURRENT_VERSION = '4.5';
+    const CURRENT_VERSION = '4.4';
 
     const uploadIfVersionChanged = async () => {
       try {
@@ -31,7 +31,7 @@ function useVersionCheck() {
       }
     };
 
-    uploadIfVersionChanged();
+    //uploadIfVersionChanged();
   }, []);
 }
 

@@ -36,9 +36,6 @@ import { useAuthNavigation } from 'hooks/useAuthNavigation';
 import { useNotifications } from 'hooks/useNotifications';
 import useUserStore from 'stores/userStore';
 
-// Cache utils
-import { clearAllQuotesCache } from 'utils/quotesCache';
-
 export default function Layout() {
   const currentPath = usePathname();
   const previousPathRef = useRef(currentPath);
