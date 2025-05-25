@@ -238,8 +238,21 @@ export const determineMood = (quote) => {
         'challeng',
         'strive',
         'motivat',
+        'determin',
+        'persist',
+        'discipline',
+        'commit',
+        'effort',
+        'drive',
       ],
       tags: ['motivational', 'motivation', 'success', 'goals', 'achievement'],
+      phrases: [
+        'never give up',
+        'you can do',
+        'take action',
+        'keep going',
+        'push yourself',
+      ],
     },
     inspirational: {
       keywords: [
@@ -251,8 +264,19 @@ export const determineMood = (quote) => {
         'path',
         'journey',
         'possib',
+        'potenti',
+        'hope',
+        'faith',
+        'spirit',
+        'heart',
       ],
       tags: ['inspiration', 'inspire', 'dreams', 'believe'],
+      phrases: [
+        'follow your dream',
+        'believe in yourself',
+        'have faith',
+        'sky is the limit',
+      ],
     },
     wise: {
       keywords: [
@@ -263,8 +287,14 @@ export const determineMood = (quote) => {
         'truth',
         'insight',
         'teach',
+        'philosoph',
+        'meaning',
+        'realize',
+        'comprehend',
+        'discern',
       ],
       tags: ['wisdom', 'knowledge', 'truth', 'philosophy', 'learning'],
+      phrases: ['the wise', 'true wisdom', 'understand that', 'lesson in'],
     },
     peaceful: {
       keywords: [
@@ -276,6 +306,11 @@ export const determineMood = (quote) => {
         'balanc',
         'quiet',
         'still',
+        'gentle',
+        'breath',
+        'relax',
+        'clear mind',
+        'center',
       ],
       tags: [
         'peace',
@@ -285,6 +320,7 @@ export const determineMood = (quote) => {
         'balance',
         'meditation',
       ],
+      phrases: ['inner peace', 'find calm', 'be still', 'present moment'],
     },
     happy: {
       keywords: [
@@ -296,8 +332,14 @@ export const determineMood = (quote) => {
         'cheer',
         'enjoy',
         'content',
+        'pleas',
+        'bliss',
+        'lightheart',
+        'merry',
+        'glee',
       ],
       tags: ['happiness', 'joy', 'positivity', 'optimism'],
+      phrases: ['be happy', 'find joy', 'happiness is', 'smile more'],
     },
     loving: {
       keywords: [
@@ -308,8 +350,21 @@ export const determineMood = (quote) => {
         'care',
         'affect',
         'empath',
+        'tender',
+        'gentle',
+        'nurtur',
+        'devot',
+        'cherish',
+        'adore',
       ],
       tags: ['love', 'kindness', 'compassion', 'relationships', 'heart'],
+      phrases: [
+        'love is',
+        'with love',
+        'loving heart',
+        'be kind',
+        'show compassion',
+      ],
     },
     ambitious: {
       keywords: [
@@ -320,6 +375,12 @@ export const determineMood = (quote) => {
         'potent',
         'futur',
         'creat',
+        'accomplish',
+        'achiev',
+        'aspir',
+        'bold',
+        'daring',
+        'reach',
       ],
       tags: [
         'ambition',
@@ -329,6 +390,7 @@ export const determineMood = (quote) => {
         'achievement',
         'creation',
       ],
+      phrases: ['reach for', 'aim high', 'set goals', 'your potential'],
     },
     resilient: {
       keywords: [
@@ -339,12 +401,43 @@ export const determineMood = (quote) => {
         'persever',
         'overcom',
         'resilien',
+        'bounce back',
+        'recover',
+        'tough',
+        'persist',
+        'standup',
+        'rise',
       ],
       tags: ['resilience', 'strength', 'courage', 'perseverance', 'endurance'],
+      phrases: [
+        'bounce back',
+        'stand up',
+        'rise again',
+        'through adversity',
+        'after failure',
+      ],
     },
     grateful: {
-      keywords: ['gratitude', 'thank', 'appreciat', 'bless', 'gift', 'grace'],
+      keywords: [
+        'gratitude',
+        'thank',
+        'appreciat',
+        'bless',
+        'gift',
+        'grace',
+        'fortun',
+        'grate',
+        'recogniz',
+        'acknowledg',
+        'value',
+      ],
       tags: ['gratitude', 'thankfulness', 'appreciation', 'blessings'],
+      phrases: [
+        'be grateful',
+        'give thanks',
+        'count your blessing',
+        'appreciate what',
+      ],
     },
     reflective: {
       keywords: [
@@ -354,6 +447,12 @@ export const determineMood = (quote) => {
         'ponder',
         'consider',
         'wonder',
+        'meditat',
+        'introsp',
+        'self-aware',
+        'conscious',
+        'mindful',
+        'deep',
       ],
       tags: [
         'reflection',
@@ -362,6 +461,22 @@ export const determineMood = (quote) => {
         'introspection',
         'philosophy',
       ],
+      phrases: ['look within', 'think about', 'consider how', 'ask yourself'],
+    },
+    humorous: {
+      keywords: [
+        'humor',
+        'laugh',
+        'funny',
+        'joke',
+        'wit',
+        'comic',
+        'amus',
+        'light',
+        'silly',
+      ],
+      tags: ['humor', 'funny', 'laughter', 'comedy', 'jokes'],
+      phrases: ['laugh at', 'sense of humor', 'life is funny', 'with a smile'],
     },
   };
 
@@ -389,64 +504,138 @@ export const determineMood = (quote) => {
         moodScores[mood] += 1;
       }
     });
+
+    // Score based on phrases (stronger signal than keywords)
+    if (criteria.phrases) {
+      criteria.phrases.forEach((phrase) => {
+        if (text.includes(phrase)) {
+          moodScores[mood] += 1.5;
+        }
+      });
+    }
   });
 
-  // Author-based adjustments
-  const wiseAuthors = [
-    'buddha',
-    'dalai lama',
-    'confucius',
-    'socrates',
-    'aristotle',
-    'plato',
-  ];
-  const peacefulAuthors = ['gandhi', 'mother teresa', 'thich nhat hanh'];
-  const motivationalAuthors = [
-    'tony robbins',
-    'zig ziglar',
-    'les brown',
-    'jim rohn',
-  ];
+  // Author-based adjustments (expanded)
+  const authorMoodMap = {
+    wise: [
+      'buddha',
+      'dalai lama',
+      'confucius',
+      'socrates',
+      'aristotle',
+      'plato',
+      'seneca',
+      'marcus aurelius',
+    ],
+    peaceful: [
+      'gandhi',
+      'mother teresa',
+      'thich nhat hanh',
+      'eckhart tolle',
+      'deepak chopra',
+    ],
+    motivational: [
+      'tony robbins',
+      'zig ziglar',
+      'les brown',
+      'jim rohn',
+      'brian tracy',
+      'napoleon hill',
+    ],
+    inspirational: [
+      'maya angelou',
+      'rumi',
+      'ralph waldo emerson',
+      'helen keller',
+    ],
+    reflective: [
+      'albert camus',
+      'friedrich nietzsche',
+      'henry david thoreau',
+      'carl jung',
+    ],
+    resilient: ['winston churchill', 'nelson mandela', 'theodore roosevelt'],
+  };
 
-  if (wiseAuthors.some((a) => author.includes(a))) {
-    moodScores.wise += 1;
-  }
-  if (peacefulAuthors.some((a) => author.includes(a))) {
-    moodScores.peaceful += 1;
-  }
-  if (motivationalAuthors.some((a) => author.includes(a))) {
-    moodScores.motivational += 1;
+  Object.entries(authorMoodMap).forEach(([mood, authors]) => {
+    if (authors.some((a) => author.includes(a))) {
+      moodScores[mood] += 1.5; // Increased from 1 to 1.5
+    }
+  });
+
+  // Contextual clues - quote length, punctuation, and structure
+  if (text.length > 150) {
+    moodScores.reflective += 0.5;
+    moodScores.wise += 0.5;
   }
 
-  // Specific phrases (with partial matching)
-  if (/follow your (heart|dream)/.test(text)) {
-    moodScores.inspirational += 1;
+  if (text.length < 50) {
+    moodScores.motivational += 0.5; // Short quotes tend to be punchier/motivational
   }
-  if (/never give up|keep going/.test(text)) {
-    moodScores.resilient += 1;
+
+  // Quotes with exclamation marks tend to be motivational or happy
+  const exclamationCount = (text.match(/!/g) || []).length;
+  if (exclamationCount > 0) {
+    moodScores.motivational += exclamationCount * 0.5;
+    moodScores.happy += exclamationCount * 0.3;
   }
-  if (/be grateful|count your blessing/.test(text)) {
-    moodScores.grateful += 1;
+
+  // Quotes with question marks tend to be reflective
+  const questionCount = (text.match(/\?/g) || []).length;
+  if (questionCount > 0) {
+    moodScores.reflective += questionCount * 0.5;
+  }
+
+  // Check for negations that could reverse mood
+  const negationWords = [
+    'not',
+    'never',
+    'no ',
+    "don't",
+    "doesn't",
+    "isn't",
+    "aren't",
+    "can't",
+    'cannot',
+  ];
+  let hasNegation = negationWords.some((neg) => text.includes(neg));
+
+  // If negation is present with happy keywords, reduce happy score
+  if (hasNegation && moodScores.happy > 0) {
+    moodScores.happy *= 0.5;
   }
 
   // Find highest scoring mood
   let highestScore = 0;
   let resultMood = 'inspirational'; // Default
+  let secondHighestMood = '';
+  let secondHighestScore = 0;
 
   Object.entries(moodScores).forEach(([mood, score]) => {
     if (score > highestScore) {
+      secondHighestScore = highestScore;
+      secondHighestMood = resultMood;
       highestScore = score;
       resultMood = mood;
+    } else if (score > secondHighestScore) {
+      secondHighestScore = score;
+      secondHighestMood = mood;
     }
   });
 
-  // If no strong signal, apply default logic
-  if (highestScore <= 0.5) {
-    if (text.length > 100) {
+  // If no strong signal (low score) or close competition, apply default logic
+  if (
+    highestScore <= 1 ||
+    (secondHighestScore > 0 && highestScore - secondHighestScore < 0.5)
+  ) {
+    if (text.length > 120) {
       return 'reflective'; // Longer quotes tend to be reflective
     }
-    if (text.includes('!')) {
+    if (exclamationCount > 0) {
       return 'motivational'; // Exclamation points suggest motivation
+    }
+    if (text.includes('love') || text.includes('heart')) {
+      return 'loving';
     }
     return 'inspirational'; // Default
   }
@@ -503,5 +692,68 @@ export const logoutUser = async (router) => {
   } catch (error) {
     console.error('Error logging out:', error);
   }
+};
+
+/**
+ * Calculates the Levenshtein distance between two strings
+ * @param {string} a - First string
+ * @param {string} b - Second string
+ * @returns {number} - The edit distance between the strings
+ */
+export const levenshteinDistance = (a, b) => {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const matrix = Array(a.length + 1)
+    .fill()
+    .map(() => Array(b.length + 1).fill(0));
+
+  for (let i = 0; i <= a.length; i++) {
+    matrix[i][0] = i;
+  }
+
+  for (let j = 0; j <= b.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+
+  return matrix[a.length][b.length];
+};
+
+/**
+ * Calculates the similarity between two quotes
+ * @param {string} quote1 - First quote
+ * @param {string} quote2 - Second quote
+ * @param {number} threshold - Similarity threshold (0-1, where 1 is exact match)
+ * @returns {boolean} - Whether the quotes are similar enough
+ */
+export const areQuotesSimilar = (quote1, quote2, threshold = 0.8) => {
+  // Normalize quotes: lowercase and remove extra spaces
+  const normalizedQuote1 = quote1.toLowerCase().trim().replace(/\s+/g, ' ');
+  const normalizedQuote2 = quote2.toLowerCase().trim().replace(/\s+/g, ' ');
+
+  // Check for exact match after normalization
+  if (normalizedQuote1 === normalizedQuote2) {
+    return true;
+  }
+
+  // Calculate Levenshtein distance
+  const distance = levenshteinDistance(normalizedQuote1, normalizedQuote2);
+
+  // Calculate similarity as a ratio
+  const maxLength = Math.max(normalizedQuote1.length, normalizedQuote2.length);
+  const similarity = maxLength > 0 ? 1 - distance / maxLength : 1;
+
+  return similarity >= threshold;
 };
 

@@ -21,7 +21,7 @@ import {
   increment,
   documentId,
 } from 'firebase/firestore';
-import quotes from 'assets/quotes.json';
+import quotes from 'assets/dev/quotes.json';
 import * as Localization from 'expo-localization';
 import {
   calculateTimeSlots,
@@ -40,6 +40,7 @@ export const uploadQuotes = async () => {
 
   let added = 0;
   let skipped = 0;
+  let similarSkipped = 0;
 
   try {
     // Fetch all existing quotes using fetchAllQuotes
@@ -56,8 +57,23 @@ export const uploadQuotes = async () => {
     const authorQuoteCounts = {};
 
     for (const quote of quotes) {
+      // Check for exact duplicates first (for efficiency)
       if (existingQuotes.has(quote.text)) {
         skipped++;
+        continue;
+      }
+
+      // Check for similar quotes (80% similarity)
+      let isSimilar = false;
+      for (const existingQuote of existingQuotes) {
+        if (areQuotesSimilar(quote.text, existingQuote, 0.8)) {
+          isSimilar = true;
+          break;
+        }
+      }
+
+      if (isSimilar) {
+        similarSkipped++;
         continue;
       }
 
@@ -68,6 +84,9 @@ export const uploadQuotes = async () => {
       // Generate a random value for the `random` field
       const randomValue = Math.random();
 
+      // Determine mood for the quote
+      const mood = determineMood(quote);
+
       // Prepare quote data
       const newQuote = {
         ...quote,
@@ -75,6 +94,7 @@ export const uploadQuotes = async () => {
         visibility: 'public', // Add visibility field
         createdAt: serverTimestamp(),
         random: randomValue, // Add random field for quotes
+        mood, // Add the mood attribute using determineMood helper
       };
 
       // Add quote to batch
@@ -152,12 +172,15 @@ export const uploadQuotes = async () => {
       console.log('Final author batch committed.');
     }
 
-    console.log(`✅ Added: ${added}, Skipped (duplicate): ${skipped}`);
+    console.log(
+      `✅ Added: ${added}, Skipped (exact duplicate): ${skipped}, Skipped (similar): ${similarSkipped}`
+    );
   } catch (error) {
     console.error('Error uploading quotes:', error);
   }
 };
 
+// You may need to modify fetchAllQuotes() to return actual quote texts instead of a Set:
 export const fetchAllQuotes = async () => {
   const quotesRef = collection(db, 'quotes');
   const pageSize = 500; // Number of documents to fetch per page
@@ -178,6 +201,7 @@ export const fetchAllQuotes = async () => {
 
       const snapshot = await getDocs(quotesQuery);
 
+      // Update this to store the actual quote text:
       snapshot.forEach((doc) => {
         existingQuotes.add(doc.data().text);
       });
@@ -1521,7 +1545,7 @@ export const addMoodToAllQuotes = async () => {
   try {
     console.log('Starting mood attribute update for all quotes...');
     const quotesRef = collection(db, 'quotes');
-    const pageSize = 200; // Process quotes in batches
+    const pageSize = 500; // Process quotes in batches
     let lastDoc = null;
     let totalUpdated = 0;
     let totalSkipped = 0;
