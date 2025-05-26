@@ -136,11 +136,16 @@ export default function Layout() {
     ? { COLORS }
     : { COLORS: LIGHT_COLORS };
 
+  // Stripe publishable keys - use different keys for development and production
+  const stripePublishableKey = __DEV__
+    ? 'pk_test_51RRhnICuI7euS6mCOyL8qUOd9I2BodVS1niHmfoGgTCv3F8hqktOOj0BP4LdTjRESW4Aj3VjVwjqj7wZn3m1U7gu00BxVrkPqX' // Development key
+    : 'pk_live_51RRhnCEHUIrG8o0XwW0IfkILfQh2B5jC7dosJtEeUrrfXRno1tXOs4LSjDHxNMLdcubBi9SnV57SGsUKgFrF8NW500WwPN1cJT'; // Production key
+
   return (
     <ErrorBoundary>
       <TabBarProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <StripeProvider publishableKey='pk_test_51RRhnICuI7euS6mCOyL8qUOd9I2BodVS1niHmfoGgTCv3F8hqktOOj0BP4LdTjRESW4Aj3VjVwjqj7wZn3m1U7gu00BxVrkPqX'>
+          <StripeProvider publishableKey={stripePublishableKey}>
             <AppThemeProvider>
               <OfflineBanner visible={!isOnline} />
               <StatusBar

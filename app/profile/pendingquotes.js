@@ -16,8 +16,24 @@ import {
 } from 'utils/firebase/firestore';
 import { router } from 'expo-router';
 import { showMessage } from 'react-native-flash-message';
+import useUserStore from 'stores/userStore'; // <-- Import your user store
+
+const ADMIN = 'anshsharma60@gmail.com';
 
 export default function PendingQuotes() {
+  const user = useUserStore((state) => state.user); // <-- Get current user
+
+  // If not admin, show nothing or a message
+  if (!user?.email || user.email !== ADMIN) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: 'gray', fontSize: 16 }}>
+          You do not have access to this page.
+        </Text>
+      </View>
+    );
+  }
+
   const [pendingQuotes, setPendingQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
 

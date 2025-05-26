@@ -1,4 +1,4 @@
-package com.epoch.quotify
+package com.soulpatcher.quotify
 
 import android.app.Application
 import android.content.res.Configuration

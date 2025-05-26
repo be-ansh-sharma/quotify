@@ -8,7 +8,7 @@ import useUserStore from 'stores/userStore';
 import { useAppTheme } from 'context/AppThemeContext';
 import { logoutUser } from 'utils/helpers';
 
-const ADMIN = 'us@yopmail.com';
+const ADMIN = 'anshsharma60@gmail.com';
 
 export default function Profile() {
   const router = useRouter();

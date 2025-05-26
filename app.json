@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.epoch.quotify",
+      "bundleIdentifier": "com.soulpatcher.quotify",
       "icon": "./assets/icon.png",
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-XXXXXXXXXX~YYYYYYYYYY"
       }
     },
     "android": {
-      "package": "com.epoch.quotify",
+      "package": "com.soulpatcher.quotify",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
@@ -44,7 +44,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "android_app_id": "ca-app-pub-2290547364208155~4370478475",
+          "android_app_id": "ca-app-pub-2290547364208155~1431424132",
           "user_tracking_description": "This identifier will be used to deliver personalized ads to you."
         }
       ]

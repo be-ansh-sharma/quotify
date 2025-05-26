@@ -7,15 +7,15 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:194086294893:android:8681cc082b3109610af664",
+        "mobilesdk_app_id": "1:194086294893:android:e5cfb8e93e8e43d90af664",
         "android_client_info": {
-          "package_name": "com.epoch.quotify"
+          "package_name": "com.soulpatcher.quotify"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBiLyIaVLOlKgiJnX27Hisar5ipXOr9YVs"
+          "current_key": "AIzaSyDEfU801p2hJGQ-GmwAtulD4JOvC0cDGrg"
         }
       ],
       "services": {

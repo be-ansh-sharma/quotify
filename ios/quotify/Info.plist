@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>quotify</string>
-          <string>com.epoch.quotify</string>
+          <string>com.soulpatcher.quotify</string>
         </array>
       </dict>
       <dict>

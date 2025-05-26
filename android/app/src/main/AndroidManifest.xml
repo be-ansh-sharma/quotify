@@ -31,7 +31,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="quotify"/>
-        <data android:scheme="com.epoch.quotify"/>
+        <data android:scheme="com.soulpatcher.quotify"/>
         <data android:scheme="exp+quotify"/>
       </intent-filter>
     </activity>

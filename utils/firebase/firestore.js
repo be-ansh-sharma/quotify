@@ -351,7 +351,6 @@ export const fetchQuotes = async (
 
       // For author pages, we only support limited sort types
       if (selectedSort === 'mostPopular' && false) {
-        // Disabled for now until index is created
         constraints.push(orderBy('totalReactions', 'desc'));
       } else {
         // Default to creation date
@@ -386,7 +385,7 @@ export const fetchQuotes = async (
     }
 
     // Fetch one more document than needed to determine if there are more
-    const fetchLimit = 21; // Fetch 21 instead of 20
+    const fetchLimit = 31; // Fetch 31 instead of 21
     constraints.push(limit(fetchLimit));
 
     // Create a single query with all constraints
@@ -394,18 +393,18 @@ export const fetchQuotes = async (
     const snapshot = await getDocs(quotesQuery);
 
     if (!snapshot.empty) {
-      // If we got more than 20 docs, we know there are more to fetch
-      const hasMoreQuotes = snapshot.docs.length > 20;
+      // If we got more than 30 docs, we know there are more to fetch
+      const hasMoreQuotes = snapshot.docs.length > 30;
 
-      // Only return the requested 20 docs to the client
-      const newQuotes = snapshot.docs.slice(0, 20).map((doc) => ({
+      // Only return the requested 30 docs to the client
+      const newQuotes = snapshot.docs.slice(0, 30).map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
       // Get the last doc of the ones we're returning (not the extra one)
       const lastVisibleDoc =
-        snapshot.docs[19] || snapshot.docs[snapshot.docs.length - 1];
+        snapshot.docs[29] || snapshot.docs[snapshot.docs.length - 1];
 
       console.log(
         `Found ${newQuotes.length} quotes${
@@ -1724,7 +1723,7 @@ export const fetchQuotesByMood = async (
   try {
     console.log(`Fetching quotes by mood: '${mood}', sort: '${selectedSort}'`);
     const quotesRef = collection(db, 'quotes');
-    const fetchLimit = 21; // Fetch 21 instead of 20
+    const fetchLimit = 31; // Fetch 31 instead of 21 (30 + 1 to check for more)
 
     // Build constraints - UNIFIED approach for ALL sort types
     let constraints = [where('visibility', 'in', ['public', null])];
@@ -1740,7 +1739,6 @@ export const fetchQuotesByMood = async (
         constraints.push(orderBy('createdAt', 'desc'));
         break;
       case 'oldest':
-        // Use EXACTLY the same approach as other sorts, just with ascending order
         constraints.push(orderBy('createdAt', 'asc'));
         break;
       case 'mostPopular':
@@ -1761,7 +1759,7 @@ export const fetchQuotesByMood = async (
       constraints.push(startAfter(lastDoc));
     }
 
-    // Add limit constraint
+    // Add limit constraint - increased to 31
     constraints.push(limit(fetchLimit));
 
     // Create the query with all constraints
@@ -1771,14 +1769,18 @@ export const fetchQuotesByMood = async (
     console.log(`Query returned ${snapshot.docs.length} documents`);
 
     if (!snapshot.empty) {
-      const hasMoreQuotes = snapshot.docs.length > 20;
-      const newQuotes = snapshot.docs.slice(0, 20).map((doc) => ({
+      // Check if we have more than 30 quotes
+      const hasMoreQuotes = snapshot.docs.length > 30;
+
+      // Return only 30 quotes
+      const newQuotes = snapshot.docs.slice(0, 30).map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
+      // Get the last visible doc (30th or last one)
       const lastVisibleDoc =
-        snapshot.docs[Math.min(19, snapshot.docs.length - 1)];
+        snapshot.docs[Math.min(29, snapshot.docs.length - 1)];
 
       return {
         newQuotes,

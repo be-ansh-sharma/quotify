@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
+import {
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+} from 'react-native';
 import { TextInput, Button, Switch } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from 'context/AppThemeContext';
@@ -142,157 +151,149 @@ export default function PostQuote() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={80}
+    >
       <Header title='Share Your Quote' backRoute='/home' />
 
-      {/* Pro Banner at the very top */}
-      {!user?.isPro && (
-        <View style={styles.topProBanner}>
-          <View style={styles.proBannerRow}>
-            <FontAwesome5
-              name='crown'
-              size={26}
-              color='#FFD700'
-              style={{ marginRight: 12 }}
-            />
-            <Text style={styles.proBannerTitle}>Unlock Quotify Pro</Text>
-          </View>
-          <Text style={styles.proBannerSubtitle}>
-            •{' '}
-            <Text style={{ fontWeight: 'bold' }}>Unlimited public quotes</Text>
-            {'\n'}•{' '}
-            <Text style={{ fontWeight: 'bold' }}>500 private quotes</Text>
-            {'\n'}
-            <Text style={{ fontWeight: 'bold' }}>• All premium features!</Text>
-          </Text>
-          <TouchableOpacity
-            style={styles.proBannerButton}
-            onPress={() => router.push('/profile/pro/')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.proBannerButtonText}>Learn More</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <View style={styles.content}>
-        <Text style={styles.subtitle}>
-          Inspire others. Your quote will be reviewed before publishing.
-        </Text>
-
-        <TextInput
-          label='Quote'
-          value={quoteText}
-          onChangeText={setQuoteText}
-          multiline
-          numberOfLines={4}
-          style={styles.input}
-          theme={{
-            colors: { text: COLORS.text, placeholder: COLORS.placeholder },
-          }}
-        />
-
-        <TextInput
-          label='Author'
-          value={author}
-          onChangeText={setAuthor}
-          style={styles.input}
-          theme={{
-            colors: { text: COLORS.text, placeholder: COLORS.placeholder },
-          }}
-        />
-
-        <TextInput
-          label='Tags (e.g., motivation, life)'
-          value={tags}
-          onChangeText={setTags}
-          style={styles.input}
-          theme={{
-            colors: { text: COLORS.text, placeholder: COLORS.placeholder },
-          }}
-        />
-
-        {/* Private/Public Toggle with Pro indicator */}
-        <View style={styles.toggleContainer}>
-          <View style={styles.toggleLabelContainer}>
-            <Text style={styles.toggleLabel}>Make Quote Private</Text>
-          </View>
-          <Switch
-            value={isPrivate}
-            onValueChange={(value) => setIsPrivate(value)}
-            color={COLORS.primary}
-          />
-        </View>
-
-        {/* Private Quote Limit Info */}
-        {isPrivate && (
-          <Text style={styles.note}>
-            You can save up to {PRIVATE_QUOTE_LIMIT} private quotes.
-          </Text>
-        )}
-
-        {/* Pro Upgrade Banner for free users */}
-        {isPrivate && !user?.isPro && privateQuoteCount >= 5 && (
-          <View style={styles.proPromotionCard}>
-            <View style={styles.proPromotionHeader}>
-              <FontAwesome5 name='crown' size={20} color='#FFD700' />
-              <Text style={styles.proPromotionTitle}>Need More Space?</Text>
-            </View>
-            <Text style={styles.proPromotionText}>
-              Pro members can save up to 500 private quotes! Upgrade now to
-              increase your limit and support the app.
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 40 }} // Remove flexGrow: 1
+        keyboardShouldPersistTaps='handled'
+      >
+        {/* Pro Banner - move it INSIDE the ScrollView but OUTSIDE the container */}
+        {!user?.isPro && (
+          <View style={styles.topProBanner}>
+            <Text style={styles.proBannerTitle}>
+              <FontAwesome5 name='crown' size={16} color='#FFD700' /> Unlock
+              Quotify Pro for unlimited public & 500 private quotes!
             </Text>
-            <Button
-              mode='contained'
-              onPress={() => router.push('/profile/pro/')} // Fixed path to Pro page
-              style={styles.upgradeButton}
+            <TouchableOpacity
+              style={styles.proBannerButton}
+              onPress={() => router.push('/profile/pro/')}
+              activeOpacity={0.85}
             >
-              Upgrade to Pro
-            </Button>
+              <Text style={styles.proBannerButtonText}>Learn More</Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* Warning for Public Quotes */}
-        {!isPrivate && (
-          <Text style={styles.note}>
-            ✨ No spam or profanity. All submissions are reviewed by admins.
+        {/* Container with form fields */}
+        <View style={styles.content}>
+          <Text style={styles.subtitle}>
+            Inspire others. Your quote will be reviewed before publishing.
           </Text>
-        )}
 
-        <Button
-          mode='contained'
-          onPress={handlePostQuote}
-          loading={loading}
-          disabled={loading}
-          style={styles.button}
-        >
-          Submit Quote
-        </Button>
+          <TextInput
+            label='Quote'
+            value={quoteText}
+            onChangeText={setQuoteText}
+            multiline
+            numberOfLines={4}
+            style={styles.input}
+            theme={{
+              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+            }}
+          />
 
-        <Button
-          mode='text'
-          onPress={() => router.back()}
-          style={styles.cancelButton}
-          textColor={COLORS.placeholder}
-        >
-          Cancel
-        </Button>
-      </View>
-    </View>
+          <TextInput
+            label='Author'
+            value={author}
+            onChangeText={setAuthor}
+            style={styles.input}
+            theme={{
+              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+            }}
+          />
+
+          <TextInput
+            label='Tags (e.g., motivation, life)'
+            value={tags}
+            onChangeText={setTags}
+            style={styles.input}
+            theme={{
+              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+            }}
+          />
+
+          {/* Private/Public Toggle with Pro indicator */}
+          <View style={styles.toggleContainer}>
+            <View style={styles.toggleLabelContainer}>
+              <Text style={styles.toggleLabel}>Make Quote Private</Text>
+            </View>
+            <Switch
+              value={isPrivate}
+              onValueChange={(value) => setIsPrivate(value)}
+              color={COLORS.primary}
+            />
+          </View>
+
+          {/* Private Quote Limit Info */}
+          {isPrivate && (
+            <Text style={styles.note}>
+              You can save up to {PRIVATE_QUOTE_LIMIT} private quotes.
+            </Text>
+          )}
+
+          {/* Pro Upgrade Banner for free users */}
+          {isPrivate && !user?.isPro && privateQuoteCount >= 5 && (
+            <View style={styles.proPromotionCard}>
+              <View style={styles.proPromotionHeader}>
+                <FontAwesome5 name='crown' size={20} color='#FFD700' />
+                <Text style={styles.proPromotionTitle}>Need More Space?</Text>
+              </View>
+              <Text style={styles.proPromotionText}>
+                Pro members can save up to 500 private quotes! Upgrade now to
+                increase your limit and support the app.
+              </Text>
+              <Button
+                mode='contained'
+                onPress={() => router.push('/profile/pro/')} // Fixed path to Pro page
+                style={styles.upgradeButton}
+              >
+                Upgrade to Pro
+              </Button>
+            </View>
+          )}
+
+          {/* Warning for Public Quotes */}
+          {!isPrivate && (
+            <Text style={styles.note}>
+              ✨ No spam or profanity. All submissions are reviewed by admins.
+            </Text>
+          )}
+
+          <Button
+            mode='contained'
+            onPress={handlePostQuote}
+            loading={loading}
+            disabled={loading}
+            style={styles.button}
+          >
+            Submit Quote
+          </Button>
+
+          <Button
+            mode='text'
+            onPress={() => router.back()}
+            style={styles.cancelButton}
+            textColor={COLORS.placeholder}
+          >
+            Cancel
+          </Button>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 // Convert static styles to a function that takes COLORS
 const getStyles = (COLORS) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.background,
-    },
     content: {
-      flex: 1,
       padding: 20,
-      justifyContent: 'center',
+      backgroundColor: COLORS.background,
     },
     subtitle: {
       fontSize: 14,
@@ -457,10 +458,12 @@ const getStyles = (COLORS) =>
       marginBottom: 8,
     },
     proBannerTitle: {
-      fontSize: 20,
+      fontSize: 14,
       fontWeight: 'bold',
       color: COLORS.onPrimary,
       textAlign: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     proBannerSubtitle: {
       fontSize: 15,

@@ -69,6 +69,7 @@ export default function Settings() {
           <List.Section>
             <List.Item
               title='Theme'
+              description='Choose light, dark, or system theme'
               titleStyle={styles.listItemTitle}
               left={(props) => (
                 <List.Icon
@@ -119,6 +120,7 @@ export default function Settings() {
 
             <List.Item
               title='Manage Notifications'
+              description='Control your notification preferences'
               titleStyle={styles.listItemTitle}
               left={(props) => (
                 <List.Icon {...props} icon='bell' color={COLORS.primary} />
@@ -129,6 +131,7 @@ export default function Settings() {
             <Divider style={styles.divider} />
             <List.Item
               title='Contact Support'
+              description='Email us for help or feedback'
               titleStyle={styles.listItemTitle}
               left={(props) => (
                 <List.Icon
@@ -143,6 +146,7 @@ export default function Settings() {
             <Divider style={styles.divider} />
             <List.Item
               title='Privacy Policy'
+              description='Read our privacy policy'
               titleStyle={styles.listItemTitle}
               left={(props) => (
                 <List.Icon
@@ -157,6 +161,7 @@ export default function Settings() {
             <Divider style={styles.divider} />
             <List.Item
               title='Terms of Service'
+              description='Read our terms of service'
               titleStyle={styles.listItemTitle}
               left={(props) => (
                 <List.Icon
@@ -172,6 +177,7 @@ export default function Settings() {
             {user?.uid ? (
               <List.Item
                 title='Logout'
+                description='Sign out of your account'
                 left={(props) => (
                   <List.Icon {...props} icon='logout' color={COLORS.error} />
                 )}
@@ -180,6 +186,7 @@ export default function Settings() {
             ) : (
               <List.Item
                 title='Login'
+                description='Sign in to your account'
                 left={(props) => (
                   <List.Icon {...props} icon='key' color={COLORS.primary} />
                 )}
