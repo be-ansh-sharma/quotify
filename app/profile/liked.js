@@ -14,6 +14,7 @@ import { useAppTheme } from 'context/AppThemeContext';
 import { fetchQuotesByIds } from 'utils/firebase/firestore';
 import Tile from 'components/quotes/tile/Tile';
 import Skelton from 'components/skelton/Skelton';
+import QuoteTileAd from 'components/ads/QuoteTileAd'; // Add this import
 
 const PAGE_SIZE = 10;
 
@@ -198,8 +199,11 @@ export default function LikedQuotes() {
             index === self.findIndex((q) => q.id === quote.id)
         )}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View style={styles.tileContainer}>
+            {index > 0 && index % 7 === 0 && !user?.isPro && (
+              <QuoteTileAd user={user} />
+            )}
             <Tile quote={item} user={user} />
           </View>
         )}

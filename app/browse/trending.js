@@ -10,11 +10,14 @@ import { useAppTheme } from 'context/AppThemeContext';
 import { fetchTrendingQuotes } from 'utils/firebase/firestore';
 import QuoteTile from 'components/quotes/tile/Tile';
 import Header from 'components/header/Header';
+import QuoteTileAd from 'components/ads/QuoteTileAd'; // Add this import
+import useUserStore from 'stores/userStore';
 
 export default function TrendingQuotes() {
   const { COLORS } = useAppTheme();
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const user = useUserStore((state) => state.user);
 
   // Generate styles with current theme colors
   const styles = getStyles(COLORS);
@@ -51,7 +54,12 @@ export default function TrendingQuotes() {
         <FlatList
           data={quotes}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <QuoteTile quote={item} />}
+          renderItem={({ item, index }) => (
+            <>
+              {index > 0 && index % 7 === 0 && !user?.isPro && <QuoteTileAd />}
+              <QuoteTile quote={item} />
+            </>
+          )}
           contentContainerStyle={styles.listContent}
         />
       )}

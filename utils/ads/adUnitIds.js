@@ -8,25 +8,25 @@ const AdUnitIds = {
   // Banner ads
   banner: {
     test: TestIds.BANNER,
-    production: 'ca-app-pub-2290547364208155/XXXXXXXX', // Replace with your banner ID
+    production: TestIds.BANNER, // Replace with your banner ID
   },
 
   // Interstitial ads
   interstitial: {
     test: TestIds.INTERSTITIAL,
-    production: 'ca-app-pub-2290547364208155/XXXXXXXX', // Replace with your interstitial ID
+    production: TestIds.INTERSTITIAL, // Replace with your interstitial ID
   },
 
   // App open ads
   appOpen: {
     test: TestIds.APP_OPEN,
-    production: 'ca-app-pub-2290547364208155/XXXXXXXX', // Replace with your app open ID
+    production: TestIds.APP_OPEN, // Replace with your app open ID
   },
 
   // Rewarded ads
   rewarded: {
     test: TestIds.REWARDED,
-    production: 'ca-app-pub-2290547364208155/XXXXXXXX', // Replace with your ID
+    production: TestIds.REWARDED, // Replace with your ID
   },
 };
 

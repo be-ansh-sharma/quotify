@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { List, Divider, Surface, RadioButton } from 'react-native-paper';
 import Header from 'components/header/Header';
@@ -8,17 +8,28 @@ import { useAppTheme } from 'context/AppThemeContext';
 export default function ThemeSettings() {
   const theme = useUserStore((state) => state.theme);
   const setTheme = useUserStore((state) => state.setTheme);
-
-  const handleThemeChange = (newTheme) => {
-    setTheme(newTheme);
-  };
+  // Add a forceUpdate state
+  const [, forceUpdate] = useState(0);
 
   const { COLORS } = useAppTheme();
 
-  const styles = getStyles(COLORS);
+  // Create styles dynamically so they update when COLORS changes
+  const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+
+  // Force update after theme change
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme);
+    // Add slight delay to ensure theme is applied first
+    setTimeout(() => forceUpdate((prev) => prev + 1), 10);
+  };
+
+  // Also force update when COLORS change
+  useEffect(() => {
+    forceUpdate((prev) => prev + 1);
+  }, [COLORS]);
 
   return (
-    <View style={styles.safeArea}>
+    <View style={[styles.safeArea, { backgroundColor: COLORS.background }]}>
       <Header title='Theme Settings' backRoute='/settings' />
 
       <View style={styles.container}>

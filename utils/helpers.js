@@ -757,3 +757,29 @@ export const areQuotesSimilar = (quote1, quote2, threshold = 0.8) => {
   return similarity >= threshold;
 };
 
+// Add this function to your file
+export const formatReactionCount = (count) => {
+  // For smaller numbers, use specific thresholds
+  if (count < 100) return count.toString();
+  if (count < 200) return '100+';
+  if (count < 500) return '200+';
+  if (count < 1000) return '500+';
+
+  // For thousands with decimal precision
+  if (count < 10000) {
+    const thousands = (count / 1000).toFixed(1);
+    // Remove .0 if it's a whole number
+    return thousands.endsWith('.0')
+      ? `${thousands.slice(0, -2)}k`
+      : `${thousands}k`;
+  }
+
+  // For larger thousands, round to nearest thousand
+  if (count < 1000000) {
+    return `${Math.round(count / 1000)}k`;
+  }
+
+  // For millions with decimal precision
+  return `${Math.round(count / 1000000)}M`;
+};
+

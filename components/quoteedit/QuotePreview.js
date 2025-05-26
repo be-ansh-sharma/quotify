@@ -110,7 +110,7 @@ const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
       width: '100%',
-      height: undefined, // Height will be determined by aspectRatio
+      aspectRatio: 1.5, // or 2 for a wider, less tall preview
       position: 'relative',
       overflow: 'hidden',
     },

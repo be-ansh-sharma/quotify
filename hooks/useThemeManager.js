@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import useUserStore from 'stores/userStore';
@@ -9,6 +9,7 @@ export function useThemeManager() {
   const systemIsDark = useUserStore((state) => state.systemIsDark);
   const colorScheme = useColorScheme();
   const setSystemTheme = useUserStore((state) => state.setSystemTheme);
+  const [themeVersion, setThemeVersion] = useState(0);
 
   // Set system theme detection immediately
   useEffect(() => {
@@ -26,6 +27,7 @@ export function useThemeManager() {
   // Apply theme on change
   useEffect(() => {
     setAppTheme(isDarkMode ? 'dark' : 'light');
+    setThemeVersion((prev) => prev + 1);
   }, [isDarkMode]);
 
   // Update navigation bar
@@ -38,6 +40,6 @@ export function useThemeManager() {
     updateNavBar();
   }, [isDarkMode]);
 
-  return { isDarkMode };
+  return { isDarkMode, themeVersion };
 }
 

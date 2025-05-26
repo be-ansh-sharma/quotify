@@ -218,7 +218,7 @@ const getStyles = (COLORS) =>
       backgroundColor: COLORS.background,
     },
     previewContainer: {
-      height: SCREEN_HEIGHT * 0.6,
+      height: SCREEN_HEIGHT * 0.5, // 30% of screen height
       width: '100%',
       padding: 0,
       borderBottomWidth: 1,

@@ -217,7 +217,9 @@ export default function QuotesFAB() {
         >
           <View style={styles.modalHeaderPaper}>
             <PaperText variant='titleMedium' style={styles.modalTitlePaper}>
-              {activeQuote
+              {activeQuote === 'daily'
+                ? 'Quote of the Day'
+                : activeQuote
                 ? activeQuote.charAt(0).toUpperCase() + activeQuote.slice(1)
                 : 'Quote'}
             </PaperText>

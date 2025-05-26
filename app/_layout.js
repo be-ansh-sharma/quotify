@@ -44,7 +44,7 @@ export default function Layout() {
   const isPremium = useUserStore((state) => state?.user?.isPro);
 
   // Use custom hooks to manage different concerns
-  const { isDarkMode } = useThemeManager();
+  const { isDarkMode, themeVersion } = useThemeManager(); // Get themeVersion
   const { isOnline } = useNetworkStatus();
   const {
     user,
@@ -149,7 +149,8 @@ export default function Layout() {
                 }
                 barStyle={statusBarStyle}
               />
-              <PaperProvider theme={paperTheme}>
+              {/* Add key={themeVersion} to force re-render on theme change */}
+              <PaperProvider theme={paperTheme} key={`theme-${themeVersion}`}>
                 <ThemeProvider value={navigationTheme}>
                   <Slot />
                   {(!isStoresHydrated || authLoading || !isInitialRouteSet) && (

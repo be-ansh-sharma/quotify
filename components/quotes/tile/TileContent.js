@@ -3,6 +3,11 @@ import { Text, StyleSheet } from 'react-native';
 // Change this import
 import { useAppTheme } from 'context/AppThemeContext';
 
+function toSentenceCase(text) {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
 function TileContent({ quote }) {
   // Get COLORS from theme context
   const { COLORS } = useAppTheme();
@@ -10,7 +15,10 @@ function TileContent({ quote }) {
   // Generate styles with current COLORS
   const styles = getStyles(COLORS);
 
-  return <Text style={styles.text}>{quote.text}</Text>;
+  // Format the quote text to sentence case
+  const formattedText = toSentenceCase(quote.text);
+
+  return <Text style={styles.text}>{formattedText}</Text>;
 }
 
 // Convert static styles to a function that takes COLORS

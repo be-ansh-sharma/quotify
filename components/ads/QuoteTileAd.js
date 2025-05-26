@@ -54,11 +54,8 @@ const QuoteTileAd = () => {
   const { COLORS } = useAppTheme();
   const styles = getTileStyles(COLORS);
 
-  // Hard-code the test ad unit ID directly to avoid potential import issues
-
   return (
     <View style={styles.container}>
-      {/* Custom Ad Badge */}
       <View style={styles.adBadge}>
         <Text style={styles.adBadgeText}>AD</Text>
       </View>

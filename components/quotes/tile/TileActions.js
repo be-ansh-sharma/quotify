@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAppTheme } from 'context/AppThemeContext';
+import { formatReactionCount } from 'utils/helpers';
 
 // Create a constant for reaction emoji mapping
 const reactionEmojis = {
@@ -102,7 +103,9 @@ function TileActions({
                   </View>
                 ))}
             </View>
-            <Text style={styles.totalReactionCount}>{totalReactions}</Text>
+            <Text style={styles.totalReactionCount}>
+              {formatReactionCount(totalReactions)}
+            </Text>
           </>
         ) : (
           // Add a placeholder to maintain height when no reactions

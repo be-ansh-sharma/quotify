@@ -22,7 +22,7 @@ export default function TagScreen() {
   return (
     <View style={styles.container}>
       {/* Use the reusable Header component */}
-      <Header title={`#${tag}`} backRoute='/browse' />
+      <Header title={`#${tag}`} backRoute='/tags' />
 
       <Quotes user={user} tag={tag} selectedSort='newest' />
     </View>

@@ -120,8 +120,6 @@ export default Quotes = ({
       let hasMoreQuotes = true;
       let updatedChunks = processedChunks;
 
-      console.log(`📚 Last followedAuthors: ${followedAuthors}`);
-
       if (followedAuthors && user?.followedAuthors?.length > 0) {
         const result = await fetchQuotesByAuthors(
           user.followedAuthors,
@@ -261,9 +259,14 @@ export default Quotes = ({
   };
 
   const renderItem = ({ item, index }) => {
-    // Show an ad every 5 quotes
-    if (index > 0 && index % 7 === 0) {
-      return <QuoteTileAd adUnitID='your-ad-unit-id' />;
+    // Show an ad every 7 quotes for non-pro users, but do NOT skip the quote
+    if (index > 0 && index % 7 === 0 && !user?.isPro) {
+      return (
+        <>
+          <QuoteTileAd user={user} />
+          <Tile quote={item} user={user} />
+        </>
+      );
     }
 
     return <Tile quote={item} user={user} />;
