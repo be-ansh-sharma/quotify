@@ -3,14 +3,11 @@ import { AppState } from 'react-native';
 import GoogleMobileAds from 'react-native-google-mobile-ads';
 import useUserStore from 'stores/userStore';
 import AdManager from 'utils/ads/AdManager';
-import { clearAllQuotesCache } from 'utils/quotesCache';
 
 export function useAdManager(isPremium) {
   const appState = useRef(AppState.currentState);
   const initialized = useRef(false);
-  const lastCacheClear = useRef(0);
   const user = useUserStore((state) => state.user);
-  const CACHE_CLEAR_INTERVAL = 3600000; // Clear cache at most once per hour (3600000ms)
   const shortBackgroundDuration = useRef(0);
 
   // Initialize Mobile Ads SDK
@@ -52,7 +49,7 @@ export function useAdManager(isPremium) {
     [isPremium]
   );
 
-  // Handle app state changes for App Open ads & cache clearing
+  // Handle app state changes for App Open ads
   useEffect(() => {
     const subscription = AppState.addEventListener(
       'change',
@@ -63,22 +60,7 @@ export function useAdManager(isPremium) {
           appState.current.match(/inactive|background/) &&
           nextAppState === 'active'
         ) {
-          // Calculate time spent in background
-          const timeInBackground = now - shortBackgroundDuration.current;
           console.log('App has come to the foreground!');
-
-          if (
-            now - lastCacheClear.current > CACHE_CLEAR_INTERVAL ||
-            timeInBackground > 300000
-          ) {
-            console.log('Clearing quotes cache (periodic or long background)');
-            await clearAllQuotesCache();
-            lastCacheClear.current = now;
-          } else {
-            console.log(
-              'Skipping cache clear - app was likely just showing an ad'
-            );
-          }
 
           // Only show app open ad if we're not in cooldown
           if (!isPremium && user?.uid && AdManager.canShowAd()) {
@@ -115,19 +97,6 @@ export function useAdManager(isPremium) {
       subscription.remove();
     };
   }, [isPremium, user?.uid]);
-
-  // Initialize cache clear timestamp on mount
-  useEffect(() => {
-    const now = Date.now();
-    if (now - lastCacheClear.current > CACHE_CLEAR_INTERVAL) {
-      // Cache is stale, clear it
-      clearAllQuotesCache();
-      lastCacheClear.current = now;
-      console.log('Clearing quotes cache on cold start');
-    } else {
-      lastCacheClear.current = now;
-    }
-  }, []);
 
   // Clean up when isPremium changes
   useEffect(() => {

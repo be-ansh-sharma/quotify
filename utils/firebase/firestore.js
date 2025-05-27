@@ -1091,6 +1091,7 @@ export const storeFCMToken = async (userId, fcmToken, userData = null) => {
       dndEnabled: true,
       dndStartTime: '22:00',
       dndEndTime: '07:00',
+      scheduledQuoteEnabled: true,
     };
 
     const timeZone = Localization.timezone;
@@ -1192,6 +1193,7 @@ export const saveUserPreferences = async (
       dndEnabled: preferences.dndEnabled ?? true,
       dndStartTime: preferences.dndStartTime || '22:00',
       dndEndTime: preferences.dndEndTime || '07:00',
+      scheduledQuoteEnabled: preferences.scheduledQuoteEnabled ?? true,
     };
 
     const userDocRef = doc(db, 'users', userId);

@@ -74,8 +74,21 @@ export default Quotes = ({
     }_${followedAuthors ? 'followed' : 'all'}`;
   };
 
+  const cacheOperationInProgress = useRef({});
+
   const loadQuotes = async () => {
     if (loading || !hasMore) return;
+
+    const cacheKey = getCacheKey();
+
+    // Prevent duplicate operations on the same cache key
+    if (cacheOperationInProgress.current[cacheKey]) {
+      console.log(`🔒 Cache operation already in progress for ${cacheKey}`);
+      return;
+    }
+
+    // Set the lock
+    cacheOperationInProgress.current[cacheKey] = true;
     setLoading(true);
 
     try {
@@ -191,9 +204,6 @@ export default Quotes = ({
             processedChunks: updatedChunks,
             timestamp: Date.now(),
           });
-          console.log(
-            `💾 Saved ${fetchedQuotes.length} quotes to cache with key: ${cacheKey}`
-          );
         } else {
           console.log(`⚠️ No quotes fetched, skipping cache`);
         }
@@ -216,6 +226,8 @@ export default Quotes = ({
     } catch (error) {
       console.error('❌ Error fetching quotes:', error);
     } finally {
+      // Release the lock when done
+      cacheOperationInProgress.current[cacheKey] = false;
       setLoading(false);
     }
   };

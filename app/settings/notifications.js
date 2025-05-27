@@ -7,9 +7,10 @@ import dayjs from 'dayjs';
 import { useAppTheme } from 'context/AppThemeContext';
 import { useRouter } from 'expo-router';
 import useUserStore from 'stores/userStore';
-import Header from 'components/header/Header'; // Import the reusable Header component
-import { saveUserPreferences } from 'utils/firebase/firestore'; // Import the Firestore utility function
+import Header from 'components/header/Header';
+import { saveUserPreferences } from 'utils/firebase/firestore';
 import { showMessage } from 'react-native-flash-message';
+import { deepEqual } from 'utils/helpers'; // Add this import at the top
 
 // --- Static Data ---
 const TAGS = [
@@ -46,6 +47,10 @@ export default function NotificationSettings() {
   const [loading, setLoading] = useState(false);
 
   // --- State Variables ---
+  const [scheduledQuoteEnabled, setScheduledQuoteEnabled] = useState(
+    user?.preferences?.scheduledQuoteEnabled ?? true
+  );
+
   const [selectedTags, setSelectedTags] = useState(
     user?.preferences?.tags || []
   );
@@ -127,12 +132,22 @@ export default function NotificationSettings() {
     setLoading(true);
 
     try {
-      const currentUser = useUserStore.getState().user;
+      const user = useUserStore.getState().user;
 
-      if (!currentUser?.uid) {
+      if (!user?.uid) {
         throw new Error(
           'You must be logged in to save notification preferences.'
         );
+      }
+
+      // Validate that at least one tag is selected when scheduled quotes are enabled
+      if (scheduledQuoteEnabled && selectedTags.length === 0) {
+        showMessage({
+          message: 'Please select at least one tag for your scheduled quotes.',
+          type: 'warning',
+        });
+        setLoading(false);
+        return;
       }
 
       // Format times with proper validation
@@ -148,8 +163,9 @@ export default function NotificationSettings() {
         ? dndEndTime.format('HH:mm')
         : '07:00';
 
-      // Build sanitized preferences object (no null values)
+      // Build sanitized preferences object
       const preferences = {
+        scheduledQuoteEnabled,
         tags: selectedTags.length > 0 ? selectedTags : ['motivational'],
         frequency: frequency || 'daily',
         time: frequency === 'daily' ? formattedNotificationTime : '09:00',
@@ -160,8 +176,14 @@ export default function NotificationSettings() {
         randomQuoteEnabled,
       };
 
+      // Use deepEqual to check for changes
+      if (deepEqual(preferences, user?.preferences || {})) {
+        setLoading(false);
+        return;
+      }
+
       // Validate DND time range if enabled and using daily notifications
-      if (frequency === 'daily' && dndEnabled) {
+      if (scheduledQuoteEnabled && frequency === 'daily' && dndEnabled) {
         if (
           notificationTime?.isValid?.() &&
           dndStartTime?.isValid?.() &&
@@ -193,20 +215,20 @@ export default function NotificationSettings() {
       }
 
       // Get current timezone with fallbacks
-      const timezone = currentUser?.timeZone || Localization.timezone || 'UTC';
+      const timezone = user?.timeZone || Localization.timezone || 'UTC';
 
       // Save to Firestore
       await saveUserPreferences(
-        currentUser.uid,
+        user.uid,
         preferences,
-        currentUser?.preferences || {},
+        user?.preferences || {},
         timezone
       );
 
       // Update local state
       setUser({
-        ...currentUser,
-        preferences: { ...currentUser?.preferences, ...preferences },
+        ...user,
+        preferences: { ...user?.preferences, ...preferences },
       });
 
       showMessage({
@@ -231,166 +253,202 @@ export default function NotificationSettings() {
   // --- Render ---
   return (
     <View style={styles.safeArea}>
-      {/* Replace custom header with reusable Header component */}
       <Header title='Manage Notifications' backRoute='/settings' />
 
-      {/* Settings List */}
       <FlatList
         data={[]}
         ListHeaderComponent={
           <View style={styles.container}>
-            {/* Frequency Selection */}
+            {/* Scheduled Quote Enable/Disable Toggle */}
             <List.Section>
-              <List.Subheader>Notification Frequency</List.Subheader>
-              {['daily', 'Interval'].map((freq) => (
-                <List.Item
-                  key={freq}
-                  title={freq.charAt(0).toUpperCase() + freq.slice(1)}
-                  left={(props) => (
-                    <List.Icon
-                      {...props}
-                      icon={
-                        frequency === freq ? 'check-circle' : 'circle-outline'
-                      }
-                      color={frequency === freq ? COLORS.primary : COLORS.text}
-                    />
-                  )}
-                  onPress={() => setFrequency(freq)}
-                  rippleColor={COLORS.primary + '30'}
-                />
-              ))}
+              <List.Subheader>Notification Settings</List.Subheader>
+              <List.Item
+                title='Enable Scheduled Quotes'
+                description='Receive daily or interval-based quote notifications'
+                left={(props) => (
+                  <List.Icon {...props} icon='bell-ring-outline' />
+                )}
+                right={() => (
+                  <Switch
+                    value={scheduledQuoteEnabled}
+                    onValueChange={setScheduledQuoteEnabled}
+                    color={COLORS.primary}
+                  />
+                )}
+                onPress={() => setScheduledQuoteEnabled(!scheduledQuoteEnabled)}
+                rippleColor={COLORS.primary + '30'}
+              />
             </List.Section>
 
-            {/* Interval Selection */}
-            {frequency === 'Interval' && (
-              <List.Section>
-                <List.Subheader>Notify Every</List.Subheader>
-                {[1, 2, 3, 4, 5, 6].map((hr) => (
+            {/* Show all other settings only if scheduled quotes are enabled */}
+            {scheduledQuoteEnabled && (
+              <>
+                {/* Frequency Selection */}
+                <List.Section>
+                  <List.Subheader>Notification Frequency</List.Subheader>
+                  {['daily', 'Interval'].map((freq) => (
+                    <List.Item
+                      key={freq}
+                      title={freq.charAt(0).toUpperCase() + freq.slice(1)}
+                      left={(props) => (
+                        <List.Icon
+                          {...props}
+                          icon={
+                            frequency === freq
+                              ? 'check-circle'
+                              : 'circle-outline'
+                          }
+                          color={
+                            frequency === freq ? COLORS.primary : COLORS.text
+                          }
+                        />
+                      )}
+                      onPress={() => setFrequency(freq)}
+                      rippleColor={COLORS.primary + '30'}
+                    />
+                  ))}
+                </List.Section>
+
+                {/* Interval Selection */}
+                {frequency === 'Interval' && (
+                  <List.Section>
+                    <List.Subheader>Notify Every</List.Subheader>
+                    {[1, 2, 3, 4, 5, 6].map((hr) => (
+                      <List.Item
+                        key={hr}
+                        title={`Every ${hr} hour${hr > 1 ? 's' : ''}`}
+                        left={(props) => (
+                          <List.Icon
+                            {...props}
+                            icon={
+                              interval === hr
+                                ? 'check-circle'
+                                : 'circle-outline'
+                            }
+                            color={
+                              interval === hr ? COLORS.primary : COLORS.text
+                            }
+                          />
+                        )}
+                        onPress={() => setInterval(hr)}
+                        rippleColor={COLORS.primary + '30'}
+                      />
+                    ))}
+                  </List.Section>
+                )}
+
+                {/* Notification Time */}
+                {frequency === 'daily' && (
+                  <List.Section>
+                    <List.Subheader>Notification Time</List.Subheader>
+                    <List.Item
+                      title={`Time: ${displayTime(notificationTime)}`}
+                      description='Select the time for daily notifications'
+                      left={(props) => (
+                        <List.Icon {...props} icon='clock-outline' />
+                      )}
+                      onPress={() => openTimePicker('notification')}
+                      rippleColor={COLORS.primary + '30'}
+                    />
+                  </List.Section>
+                )}
+
+                {/* Quiet Hours */}
+                <List.Section>
+                  <List.Subheader>Quiet Hours (Do Not Disturb)</List.Subheader>
                   <List.Item
-                    key={hr}
-                    title={`Every ${hr} hour${hr > 1 ? 's' : ''}`}
+                    title='Enable Quiet Hours'
                     left={(props) => (
-                      <List.Icon
-                        {...props}
-                        icon={
-                          interval === hr ? 'check-circle' : 'circle-outline'
-                        }
-                        color={interval === hr ? COLORS.primary : COLORS.text}
+                      <List.Icon {...props} icon='moon-waning-crescent' />
+                    )}
+                    right={() => (
+                      <Switch
+                        value={dndEnabled}
+                        onValueChange={setDndEnabled}
+                        color={COLORS.primary}
                       />
                     )}
-                    onPress={() => setInterval(hr)}
+                    onPress={() => setDndEnabled(!dndEnabled)}
                     rippleColor={COLORS.primary + '30'}
                   />
-                ))}
-              </List.Section>
-            )}
-
-            {/* Notification Time */}
-            {frequency === 'daily' && (
-              <List.Section>
-                <List.Subheader>Notification Time</List.Subheader>
-                <List.Item
-                  title={`Time: ${displayTime(notificationTime)}`}
-                  description='Select the time for daily notifications'
-                  left={(props) => (
-                    <List.Icon {...props} icon='clock-outline' />
+                  {dndEnabled && (
+                    <>
+                      <List.Item
+                        title={`Start Time: ${displayTime(dndStartTime)}`}
+                        description='Notifications paused after this time'
+                        left={(props) => (
+                          <List.Icon {...props} icon='clock-start' />
+                        )}
+                        onPress={() => openTimePicker('dndStart')}
+                        style={styles.nestedListItem}
+                        rippleColor={COLORS.primary + '30'}
+                      />
+                      <List.Item
+                        title={`End Time: ${displayTime(dndEndTime)}`}
+                        description='Notifications resume after this time'
+                        left={(props) => (
+                          <List.Icon {...props} icon='clock-end' />
+                        )}
+                        onPress={() => openTimePicker('dndEnd')}
+                        style={styles.nestedListItem}
+                        rippleColor={COLORS.primary + '30'}
+                      />
+                    </>
                   )}
-                  onPress={() => openTimePicker('notification')}
-                  rippleColor={COLORS.primary + '30'}
-                />
-              </List.Section>
+                </List.Section>
+
+                {/* Tags */}
+                <List.Section>
+                  <List.Subheader>Notification Content</List.Subheader>
+                  <View style={styles.tagContainer}>
+                    {TAGS.map((tag) => (
+                      <Chip
+                        key={tag}
+                        style={[
+                          styles.tagChip,
+                          selectedTags.includes(tag) && {
+                            backgroundColor: COLORS.primary,
+                          },
+                        ]}
+                        textStyle={[
+                          styles.tagText,
+                          selectedTags.includes(tag) && {
+                            color: COLORS.onPrimary,
+                          },
+                        ]}
+                        selected={selectedTags.includes(tag)}
+                        onPress={() => toggleTag(tag)}
+                      >
+                        {capitalize(tag)}
+                      </Chip>
+                    ))}
+                  </View>
+                </List.Section>
+
+                {/* Random Quotes - MOVED INSIDE conditional block */}
+                <List.Section>
+                  <List.Subheader>Random Daily Quotes</List.Subheader>
+                  <List.Item
+                    title='Enable Random Quotes'
+                    description='Receive a random quote daily'
+                    left={(props) => (
+                      <List.Icon {...props} icon='format-quote-close' />
+                    )}
+                    right={() => (
+                      <Switch
+                        value={randomQuoteEnabled}
+                        onValueChange={setRandomQuoteEnabled}
+                        color={COLORS.primary}
+                      />
+                    )}
+                    onPress={() => setRandomQuoteEnabled(!randomQuoteEnabled)}
+                    rippleColor={COLORS.primary + '30'}
+                  />
+                </List.Section>
+              </>
             )}
 
-            {/* Quiet Hours */}
-            <List.Section>
-              <List.Subheader>Quiet Hours (Do Not Disturb)</List.Subheader>
-              <List.Item
-                title='Enable Quiet Hours'
-                left={(props) => (
-                  <List.Icon {...props} icon='moon-waning-crescent' />
-                )}
-                right={() => (
-                  <Switch
-                    value={dndEnabled}
-                    onValueChange={setDndEnabled}
-                    color={COLORS.primary}
-                  />
-                )}
-                onPress={() => setDndEnabled(!dndEnabled)}
-                rippleColor={COLORS.primary + '30'}
-              />
-              {dndEnabled && (
-                <>
-                  <List.Item
-                    title={`Start Time: ${displayTime(dndStartTime)}`}
-                    description='Notifications paused after this time'
-                    left={(props) => (
-                      <List.Icon {...props} icon='clock-start' />
-                    )}
-                    onPress={() => openTimePicker('dndStart')}
-                    style={styles.nestedListItem}
-                    rippleColor={COLORS.primary + '30'}
-                  />
-                  <List.Item
-                    title={`End Time: ${displayTime(dndEndTime)}`}
-                    description='Notifications resume after this time'
-                    left={(props) => <List.Icon {...props} icon='clock-end' />}
-                    onPress={() => openTimePicker('dndEnd')}
-                    style={styles.nestedListItem}
-                    rippleColor={COLORS.primary + '30'}
-                  />
-                </>
-              )}
-            </List.Section>
-
-            {/* Random Quotes */}
-            <List.Section>
-              <List.Subheader>Random Daily Quotes</List.Subheader>
-              <List.Item
-                title='Enable Random Quotes'
-                description='Receive a random quote daily'
-                left={(props) => (
-                  <List.Icon {...props} icon='format-quote-close' />
-                )}
-                right={() => (
-                  <Switch
-                    value={randomQuoteEnabled}
-                    onValueChange={setRandomQuoteEnabled}
-                    color={COLORS.primary}
-                  />
-                )}
-                onPress={() => setRandomQuoteEnabled(!randomQuoteEnabled)}
-                rippleColor={COLORS.primary + '30'}
-              />
-            </List.Section>
-
-            {/* Tags */}
-            <List.Section>
-              <List.Subheader>Notification Content</List.Subheader>
-              <View style={styles.tagContainer}>
-                {TAGS.map((tag) => (
-                  <Chip
-                    key={tag}
-                    style={[
-                      styles.tagChip,
-                      selectedTags.includes(tag) && {
-                        backgroundColor: COLORS.primary,
-                      },
-                    ]}
-                    textStyle={[
-                      styles.tagText,
-                      selectedTags.includes(tag) && { color: COLORS.onPrimary },
-                    ]}
-                    selected={selectedTags.includes(tag)}
-                    onPress={() => toggleTag(tag)}
-                  >
-                    {capitalize(tag)}
-                  </Chip>
-                ))}
-              </View>
-            </List.Section>
-
-            {/* Save Button */}
+            {/* Save Button - Keep this OUTSIDE the conditional */}
             <Button
               mode='contained'
               onPress={savePreferences}
@@ -426,7 +484,7 @@ export default function NotificationSettings() {
               ? dndStartTime?.minute()
               : dndEndTime?.minute() ?? 0
           }
-          use24HourClock={false} // Change to true for 24-hour format
+          use24HourClock={false}
           locale='en'
         />
       </Portal>

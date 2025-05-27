@@ -34,6 +34,7 @@ import { useAdManager } from 'hooks/useAdManager';
 import { useNetworkStatus } from 'hooks/useNetworkStatus';
 import { useAuthNavigation } from 'hooks/useAuthNavigation';
 import { useNotifications } from 'hooks/useNotifications';
+import { useCacheManager } from 'hooks/useCacheManager'; // Add this import
 import useUserStore from 'stores/userStore';
 
 export default function Layout() {
@@ -42,6 +43,9 @@ export default function Layout() {
   const [isLayoutMounted, setIsLayoutMounted] = useState(false);
   const appState = useRef(AppState.currentState);
   const isPremium = useUserStore((state) => state?.user?.isPro);
+
+  // Add the cache manager hook
+  useCacheManager();
 
   // Use custom hooks to manage different concerns
   const { isDarkMode, themeVersion } = useThemeManager(); // Get themeVersion
