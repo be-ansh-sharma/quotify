@@ -33,13 +33,57 @@ export default function useQuoteInteractions({
 
   const bookmarklist = user?.bookmarklist || {};
 
+  // This handles nested structures like "us@yopmail": {"com": []}
   const isBookmarked = useMemo(() => {
-    return Object.values(bookmarklist).some((list) => list.includes(quote.id));
+    if (!bookmarklist || typeof bookmarklist !== 'object') return false;
+
+    // Check direct arrays
+    const directArrays = Object.values(bookmarklist).filter(Array.isArray);
+    if (directArrays.some((list) => list.includes(quote.id))) return true;
+
+    // Check nested objects that might contain arrays
+    const nestedObjects = Object.values(bookmarklist).filter(
+      (val) => typeof val === 'object' && val !== null && !Array.isArray(val)
+    );
+
+    for (const obj of nestedObjects) {
+      if (
+        Object.values(obj).some(
+          (list) => Array.isArray(list) && list.includes(quote.id)
+        )
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   }, [bookmarklist, quote.id]);
 
+  // Complete the isBookmarked function:
   const listCount = useMemo(() => {
-    return Object.values(bookmarklist).filter((list) => list.includes(quote.id))
-      .length;
+    if (!bookmarklist || typeof bookmarklist !== 'object') return 0;
+
+    let count = 0;
+
+    // Count direct arrays containing the quote
+    Object.values(bookmarklist).forEach((list) => {
+      if (Array.isArray(list) && list.includes(quote.id)) {
+        count++;
+      }
+    });
+
+    // Count in nested objects
+    Object.values(bookmarklist).forEach((val) => {
+      if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+        Object.values(val).forEach((nestedList) => {
+          if (Array.isArray(nestedList) && nestedList.includes(quote.id)) {
+            count++;
+          }
+        });
+      }
+    });
+
+    return count;
   }, [bookmarklist, quote.id]);
 
   const toggleReactionTray = useCallback(() => {

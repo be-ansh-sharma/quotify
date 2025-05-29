@@ -199,13 +199,12 @@ export const deepEqual = (obj1, obj2) => {
 
 export const getInitials = (name) => {
   if (!name) return '';
-  return name
-    .split(' ')
+  const parts = name.split(' ').filter(Boolean).slice(0, 2); // Only take the first two words
+  return parts
     .map((part) => part[0])
     .join('')
     .toUpperCase();
 };
-
 export const navigateToAuthor = (author, currentPath, router) => {
   const targetPath = `/authors/${encodeURIComponent(author)}`;
   currentPath === targetPath

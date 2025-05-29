@@ -34,6 +34,8 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
 
   const { COLORS } = useAppTheme(); // Get theme colors
 
+  console.log('bookmarklist:', bookmarklist);
+
   const isPro = !!user?.isPro;
   const MAX_LISTS = isPro ? PREMIUM_MAX_LISTS : FREE_MAX_LISTS;
 
@@ -42,7 +44,9 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
     openBottomSheet: () => {
       setTempSelection(
         Object.keys(bookmarklist).reduce((acc, listName) => {
-          acc[listName] = bookmarklist[listName]?.includes(quote.id) || false;
+          // Fix: Check if the value is an array before calling includes()
+          const list = bookmarklist[listName];
+          acc[listName] = Array.isArray(list) && list.includes(quote.id);
           return acc;
         }, {})
       );
@@ -64,14 +68,17 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
       const updatedBookmarklist = { ...bookmarklist };
 
       for (const [listName, isSelected] of Object.entries(tempSelection)) {
-        const isQuoteInList = bookmarklist[listName]?.includes(quote.id);
+        // Fix: Make sure we're checking arrays properly
+        const list = bookmarklist[listName];
+        const isQuoteInList = Array.isArray(list) && list.includes(quote.id);
 
         if (isSelected && !isQuoteInList) {
           await addQuoteToList(user.uid, listName, quote.id);
-          updatedBookmarklist[listName] = [
-            ...(updatedBookmarklist[listName] || []),
-            quote.id,
-          ];
+          // Initialize as empty array if it doesn't exist or isn't an array
+          if (!Array.isArray(updatedBookmarklist[listName])) {
+            updatedBookmarklist[listName] = [];
+          }
+          updatedBookmarklist[listName].push(quote.id);
         } else if (!isSelected && isQuoteInList) {
           await removeQuoteFromList(user.uid, listName, quote.id);
           updatedBookmarklist[listName] = updatedBookmarklist[listName].filter(
@@ -87,12 +94,14 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
 
       showMessage({
         message: 'Changes saved successfully.',
+        type: 'success',
       });
       bottomSheetRef.current?.close();
     } catch (error) {
       console.error('Error saving changes:', error);
       showMessage({
         message: 'Failed to save changes.',
+        type: 'danger',
       });
     } finally {
       setLoading(false);
@@ -362,5 +371,14 @@ const getStyles = (COLORS) =>
     },
   });
 
-export default ListManager;
+// Only re-render if quote or user bookmarklist changed
+const areEqual = (prevProps, nextProps) => {
+  return (
+    prevProps.quote.id === nextProps.quote.id &&
+    JSON.stringify(prevProps.user.bookmarklist) ===
+      JSON.stringify(nextProps.user.bookmarklist)
+  );
+};
+
+export default React.memo(ListManager, areEqual);
 
