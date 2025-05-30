@@ -38,6 +38,9 @@ const Login = () => {
   const [resetError, setResetError] = useState(null);
   const [resetSuccess, setResetSuccess] = useState(null);
 
+  // New state for password visibility
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
   const [signInWithEmailAndPassword, user, loading, error] =
     useSignInWithEmailAndPassword(auth);
 
@@ -119,9 +122,8 @@ const Login = () => {
       valid = false;
     } else setEmailError(null);
 
-    if (!password || password.length < 6) {
-      console.log('inside password error');
-      setPasswordError('Password must be at least 6 characters');
+    if (!password) {
+      setPasswordError('Please enter your password');
       valid = false;
     } else setPasswordError(null);
 
@@ -141,17 +143,32 @@ const Login = () => {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail)) {
+      setResetError('Please enter a valid email address');
+      return;
+    }
+
     try {
       await sendPasswordResetEmail(auth, resetEmail);
       setResetSuccess('Password reset email sent!');
       setResetError(null);
+      // Close the dialog after a delay
+      setTimeout(() => {
+        closeDialog();
+      }, 3000);
     } catch (err) {
-      setResetError('Failed to send reset email. Try again.');
+      console.error('Reset password error:', err);
+      if (err.code === 'auth/user-not-found') {
+        setResetError('No account found with this email.');
+      } else {
+        setResetError('Failed to send reset email. Try again.');
+      }
     }
   };
 
   const openDialog = () => {
-    setResetEmail('');
+    setResetEmail(email); // Pre-fill with the email they were trying to use
     setResetError(null);
     setResetSuccess(null);
     setIsDialogVisible(true);
@@ -213,10 +230,17 @@ const Login = () => {
           label='Password'
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secureTextEntry={!passwordVisible}
           error={!!passwordError}
           style={styles.input}
           theme={{ colors: { primary: COLORS.primary } }}
+          right={
+            <TextInput.Icon
+              icon={passwordVisible ? 'eye-off' : 'eye'}
+              onPress={() => setPasswordVisible(!passwordVisible)}
+              color={COLORS.text}
+            />
+          }
         />
         <HelperText
           type='error'
@@ -238,6 +262,7 @@ const Login = () => {
           style={styles.button}
           loading={loading}
           disabled={loading}
+          contentStyle={{ paddingVertical: 6 }}
           labelStyle={styles.buttonText}
         >
           {loading ? 'Logging In...' : 'Login'}
@@ -251,6 +276,18 @@ const Login = () => {
         >
           Forgot Password?
         </Button>
+
+        <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>Don't have an account?</Text>
+          <Button
+            mode='text'
+            onPress={() => router.push('/auth/register')}
+            style={styles.registerButton}
+            labelStyle={styles.registerButtonText}
+          >
+            Register
+          </Button>
+        </View>
       </View>
 
       {/* Reset Password Dialog */}
@@ -283,7 +320,11 @@ const Login = () => {
             <Button onPress={closeDialog} color={COLORS.primary}>
               Cancel
             </Button>
-            <Button onPress={handleResetPassword} color={COLORS.primary}>
+            <Button
+              onPress={handleResetPassword}
+              color={COLORS.primary}
+              disabled={!resetEmail}
+            >
               Send
             </Button>
           </Dialog.Actions>
@@ -315,12 +356,13 @@ const getStyles = (COLORS) =>
       elevation: 5,
     },
     input: {
-      marginBottom: 15,
+      marginBottom: 8,
       backgroundColor: COLORS.surface,
     },
     button: {
       marginTop: 10,
       backgroundColor: COLORS.primary,
+      borderRadius: 8,
     },
     buttonText: {
       color: COLORS.onPrimary,
@@ -376,6 +418,23 @@ const getStyles = (COLORS) =>
     dialogTitle: {
       color: COLORS.text,
       fontWeight: 'bold',
+    },
+    registerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 16,
+    },
+    registerText: {
+      color: COLORS.text,
+      fontSize: 14,
+    },
+    registerButton: {
+      marginLeft: 4,
+    },
+    registerButtonText: {
+      color: COLORS.primary,
+      fontWeight: '600',
     },
   });
 

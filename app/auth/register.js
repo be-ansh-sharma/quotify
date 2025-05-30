@@ -8,7 +8,14 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { TextInput, Button, HelperText, Title, Text } from 'react-native-paper';
+import {
+  TextInput,
+  Button,
+  HelperText,
+  Title,
+  Text,
+  List,
+} from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
@@ -24,6 +31,8 @@ export default function Register() {
   const [emailError, setEmailError] = useState(null);
   const [passwordError, setPasswordError] = useState(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState(null);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
   const router = useRouter();
   const setUser = useUserStore((state) => state.setUser);
@@ -53,6 +62,12 @@ export default function Register() {
     ]).start();
   }, []);
 
+  // Password validation
+  const hasUpperCase = (str) => /[A-Z]/.test(str);
+  const hasLowerCase = (str) => /[a-z]/.test(str);
+  const hasNumber = (str) => /\d/.test(str);
+  const hasMinLength = (str) => str.length >= 6;
+
   const validate = () => {
     let valid = true;
 
@@ -67,9 +82,21 @@ export default function Register() {
       valid = false;
     }
 
-    if (!password || password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+    if (!password) {
+      setPasswordError('Password is required');
       valid = false;
+    } else {
+      // Check password requirements
+      const errors = [];
+      if (!hasMinLength(password)) errors.push('At least 6 characters');
+      if (!hasUpperCase(password)) errors.push('At least 1 uppercase letter');
+      if (!hasLowerCase(password)) errors.push('At least 1 lowercase letter');
+      if (!hasNumber(password)) errors.push('At least 1 number');
+
+      if (errors.length > 0) {
+        setPasswordError('Password must contain: ' + errors.join(', '));
+        valid = false;
+      }
     }
 
     if (confirmPassword !== password) {
@@ -117,10 +144,19 @@ export default function Register() {
           setEmailError('Invalid email address.');
           break;
         case 'auth/weak-password':
-          setPasswordError('Password too weak.');
+          setPasswordError(
+            'Password is too weak. Please include uppercase, lowercase letters and numbers.'
+          );
+          break;
+        case 'auth/missing-password':
+          setPasswordError('Please enter a password.');
+          break;
+        case 'auth/admin-restricted-operation':
+          setEmailError('Registration is temporarily disabled.');
           break;
         default:
           console.error('Unexpected error:', error.message);
+          setPasswordError(error.message);
       }
     }
   }, [error]);
@@ -180,21 +216,100 @@ export default function Register() {
           label='Password'
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secureTextEntry={!passwordVisible}
           error={!!passwordError}
           style={styles.input}
           theme={{ colors: { primary: COLORS.primary } }}
+          right={
+            <TextInput.Icon
+              icon={passwordVisible ? 'eye-off' : 'eye'}
+              onPress={() => setPasswordVisible(!passwordVisible)}
+              color={COLORS.text}
+            />
+          }
         />
         {passwordError && <HelperText type='error'>{passwordError}</HelperText>}
+
+        {/* Password requirements */}
+        <View style={styles.requirementsContainer}>
+          <Text style={styles.requirementsTitle}>Password must contain:</Text>
+          <View style={styles.requirement}>
+            <MaterialIcons
+              name={hasMinLength(password) ? 'check-circle' : 'circle'}
+              size={16}
+              color={hasMinLength(password) ? COLORS.primary : COLORS.text}
+            />
+            <Text
+              style={[
+                styles.requirementText,
+                hasMinLength(password) && styles.requirementMet,
+              ]}
+            >
+              At least 6 characters
+            </Text>
+          </View>
+          <View style={styles.requirement}>
+            <MaterialIcons
+              name={hasUpperCase(password) ? 'check-circle' : 'circle'}
+              size={16}
+              color={hasUpperCase(password) ? COLORS.primary : COLORS.text}
+            />
+            <Text
+              style={[
+                styles.requirementText,
+                hasUpperCase(password) && styles.requirementMet,
+              ]}
+            >
+              At least 1 uppercase letter (A-Z)
+            </Text>
+          </View>
+          <View style={styles.requirement}>
+            <MaterialIcons
+              name={hasLowerCase(password) ? 'check-circle' : 'circle'}
+              size={16}
+              color={hasLowerCase(password) ? COLORS.primary : COLORS.text}
+            />
+            <Text
+              style={[
+                styles.requirementText,
+                hasLowerCase(password) && styles.requirementMet,
+              ]}
+            >
+              At least 1 lowercase letter (a-z)
+            </Text>
+          </View>
+          <View style={styles.requirement}>
+            <MaterialIcons
+              name={hasNumber(password) ? 'check-circle' : 'circle'}
+              size={16}
+              color={hasNumber(password) ? COLORS.primary : COLORS.text}
+            />
+            <Text
+              style={[
+                styles.requirementText,
+                hasNumber(password) && styles.requirementMet,
+              ]}
+            >
+              At least 1 number (0-9)
+            </Text>
+          </View>
+        </View>
 
         <TextInput
           label='Confirm Password'
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          secureTextEntry
+          secureTextEntry={!confirmPasswordVisible}
           error={!!confirmPasswordError}
           style={styles.input}
           theme={{ colors: { primary: COLORS.primary } }}
+          right={
+            <TextInput.Icon
+              icon={confirmPasswordVisible ? 'eye-off' : 'eye'}
+              onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+              color={COLORS.text}
+            />
+          }
         />
         {confirmPasswordError && (
           <HelperText type='error'>{confirmPasswordError}</HelperText>
@@ -285,6 +400,34 @@ const getStyles = (COLORS) =>
       shadowRadius: 3,
       elevation: 3,
       zIndex: 10,
+    },
+
+    // New styles for password requirements
+    requirementsContainer: {
+      marginTop: 8,
+      marginBottom: 16,
+      backgroundColor: COLORS.background,
+      borderRadius: 4,
+      padding: 12,
+    },
+    requirementsTitle: {
+      fontSize: 14,
+      fontWeight: '500',
+      marginBottom: 8,
+      color: COLORS.text,
+    },
+    requirement: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 4,
+    },
+    requirementText: {
+      fontSize: 13,
+      marginLeft: 8,
+      color: COLORS.text,
+    },
+    requirementMet: {
+      color: COLORS.success,
     },
   });
 

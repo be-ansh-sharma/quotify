@@ -1,42 +1,95 @@
-// utils/services/notificationService.js
-import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+import notifee, { EventType, AndroidImportance } from '@notifee/react-native';
+import messaging from '@react-native-firebase/messaging';
 import { storeFCMToken } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
-import { setupTokenRefreshListener } from './notifications/notifications';
+import {
+  getFCMToken,
+  setupTokenRefreshListener,
+} from './notifications/notifications';
 
+/**
+ * Set up notification handlers for foreground and background
+ * @returns {Object} Subscription cleanup functions
+ */
 export const setupNotificationHandlers = () => {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
+  // Create a channel for Android notifications
+  const createChannel = async () => {
+    if (Platform.OS === 'android') {
+      await notifee.createChannel({
+        id: 'default',
+        name: 'Default Channel',
+        importance: AndroidImportance.HIGH,
+        vibration: true,
+        sound: 'default',
+      });
+    }
+  };
 
-  const foregroundSubscription = Notifications.addNotificationReceivedListener(
-    (notification) => {
-      console.log('Notification received in foreground:', notification);
+  createChannel();
+
+  // Handle foreground messages using Firebase Messaging
+  const foregroundSubscription = messaging().onMessage(
+    async (remoteMessage) => {
+      console.log('Notification received in foreground:', remoteMessage);
+
+      // Only display notification when app is in foreground
+      // We don't need to handle background notifications here since that's done by
+      // the background handler in index.js
+      await notifee.displayNotification({
+        title: remoteMessage.notification?.title || 'Quotify',
+        body: remoteMessage.notification?.body,
+        data: remoteMessage.data,
+        android: {
+          channelId: 'default',
+          pressAction: {
+            id: 'default',
+          },
+        },
+        ios: {
+          foregroundPresentationOptions: {
+            alert: true,
+            badge: true,
+            sound: true,
+          },
+        },
+      });
     }
   );
 
-  const responseSubscription =
-    Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log('Notification response received:', response);
-      const data = response.notification.request.content.data;
-      return data?.quoteId ? data : null;
-    });
+  // Handle notification press events using Notifee
+  const responseSubscription = notifee.onForegroundEvent(({ type, detail }) => {
+    if (type === EventType.PRESS) {
+      console.log('User pressed notification:', detail.notification);
+      return detail.notification?.data;
+    }
+  });
+
+  console.log('Notification handlers setup with native Firebase SDK');
 
   return { foregroundSubscription, responseSubscription };
 };
 
+/**
+ * Get the initial notification that launched the app
+ * @returns {Promise<Object|null>} Notification data
+ */
 export const getInitialNotification = async () => {
   try {
-    const initialNotification =
-      await Notifications.getLastNotificationResponseAsync();
-    if (initialNotification?.notification?.request?.content?.data) {
-      const data = initialNotification.notification.request.content.data;
-      return data?.quoteId ? data : null;
+    // Check if the app was opened from a Firebase notification
+    const remoteMessage = await messaging().getInitialNotification();
+    if (remoteMessage) {
+      console.log('App opened from Firebase notification:', remoteMessage);
+      return remoteMessage.data;
     }
+
+    // Also check if the app was opened from a Notifee notification
+    const initialNotification = await notifee.getInitialNotification();
+    if (initialNotification) {
+      console.log('App opened from Notifee notification:', initialNotification);
+      return initialNotification.notification.data;
+    }
+
     return null;
   } catch (err) {
     console.error('Error checking initial notification:', err);
@@ -44,32 +97,17 @@ export const getInitialNotification = async () => {
   }
 };
 
-export const getFCMToken = async () => {
-  try {
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      const { status: newStatus } =
-        await Notifications.requestPermissionsAsync();
-      if (newStatus !== 'granted') {
-        console.log('Notification permissions not granted');
-        return null;
-      }
-    }
-
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: '72429fcf-5b83-4cb5-b250-ffd6370f59bd',
-    });
-    return tokenData.data;
-  } catch (error) {
-    console.error('Error getting FCM token:', error);
-    return null;
-  }
-};
-
+/**
+ * Set up notifications for a user
+ * @param {Object} userProfile User profile data
+ * @returns {Promise<Object|null>} User preferences
+ */
 export const setupUserNotifications = async (userProfile) => {
   try {
-    setupTokenRefreshListener(userProfile.uid, false);
+    // Set up token refresh listener
+    const unsubscribe = setupTokenRefreshListener(userProfile.uid);
 
+    // Get and store FCM token
     const fcmToken = await getFCMToken();
     if (!fcmToken) return null;
 
@@ -78,6 +116,7 @@ export const setupUserNotifications = async (userProfile) => {
       return userProfile.preferences;
     }
 
+    // Store the token in firestore
     const defaultPreferences = await storeFCMToken(
       userProfile.uid,
       fcmToken,
@@ -91,10 +130,12 @@ export const setupUserNotifications = async (userProfile) => {
       preferences: userProfile.preferences || defaultPreferences,
     });
 
-    return userProfile.preferences;
+    console.log('User notifications setup with native Firebase SDK');
+
+    return userProfile.preferences || defaultPreferences;
   } catch (error) {
     console.error('Error setting up user notifications:', error);
-    return null;
+    return userProfile.preferences;
   }
 };
 

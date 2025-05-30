@@ -22,6 +22,7 @@ const DARK_COLORS_VALUES = {
   error: '#B00020',
   border: '#2A2A2A',
   card: '#1E1E1E',
+  success: '#0099ff', // Added success color
 };
 
 const LIGHT_COLORS_VALUES = {

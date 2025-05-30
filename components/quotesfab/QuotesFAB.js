@@ -255,7 +255,6 @@ const getStyles = (COLORS) =>
   StyleSheet.create({
     backdrop: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.5)',
       zIndex: 998,
     },
     fabContainer: {

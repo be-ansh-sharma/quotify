@@ -152,14 +152,15 @@ export default function PostQuote() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: COLORS.background }} // Add background color here
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={80}
     >
       <Header title='Share Your Quote' backRoute='/home' />
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 40 }} // Remove flexGrow: 1
+        style={{ backgroundColor: COLORS.background }} // Add this line
+        contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps='handled'
       >
         {/* Pro Banner - move it INSIDE the ScrollView but OUTSIDE the container */}
@@ -193,7 +194,12 @@ export default function PostQuote() {
             numberOfLines={4}
             style={styles.input}
             theme={{
-              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+              colors: {
+                primary: COLORS.primary,
+                background: COLORS.surface,
+                text: COLORS.text,
+                placeholder: COLORS.placeholder,
+              },
             }}
           />
 
@@ -203,7 +209,12 @@ export default function PostQuote() {
             onChangeText={setAuthor}
             style={styles.input}
             theme={{
-              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+              colors: {
+                primary: COLORS.primary,
+                background: COLORS.surface,
+                text: COLORS.text,
+                placeholder: COLORS.placeholder,
+              },
             }}
           />
 
@@ -213,7 +224,12 @@ export default function PostQuote() {
             onChangeText={setTags}
             style={styles.input}
             theme={{
-              colors: { text: COLORS.text, placeholder: COLORS.placeholder },
+              colors: {
+                primary: COLORS.primary,
+                background: COLORS.surface,
+                text: COLORS.text,
+                placeholder: COLORS.placeholder,
+              },
             }}
           />
 
@@ -293,7 +309,7 @@ const getStyles = (COLORS) =>
   StyleSheet.create({
     content: {
       padding: 20,
-      backgroundColor: COLORS.background,
+      backgroundColor: COLORS.background, // This is already correct
     },
     subtitle: {
       fontSize: 14,
@@ -303,13 +319,17 @@ const getStyles = (COLORS) =>
     },
     input: {
       marginBottom: 16,
-      backgroundColor: 'transparent',
+      backgroundColor: 'transparent', // Change this to match surface color
+      // Add these properties for TextInput:
+      color: COLORS.text,
+      borderColor: COLORS.border,
     },
     toggleContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: 16,
+      backgroundColor: COLORS.background, // Add this
     },
     toggleLabelContainer: {
       flexDirection: 'row',
@@ -373,9 +393,9 @@ const getStyles = (COLORS) =>
       marginTop: 16,
       padding: 14,
       borderRadius: 12,
-      backgroundColor: COLORS.surface,
+      backgroundColor: COLORS.surface, // This should be surface, not background
       alignItems: 'flex-start',
-      shadowColor: '#000',
+      shadowColor: COLORS.shadow, // Change from '#000' to COLORS.shadow
       shadowOpacity: 0.04,
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
@@ -435,7 +455,7 @@ const getStyles = (COLORS) =>
     },
     proPromotionText: {
       fontSize: 14,
-      color: COLORS.background,
+      color: COLORS.onPrimary, // Change from COLORS.background to COLORS.onPrimary
       textAlign: 'center',
       marginBottom: 16,
     },

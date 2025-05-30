@@ -1,8 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage'; // Import Firebase Storage
+import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Import Firebase messaging correctly
+import messaging from '@react-native-firebase/messaging';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBjxxP0Lyg_A-uyodP8SoYUA3FhQpJ05C8',
@@ -26,7 +30,8 @@ const auth = initializeAuth(app, {
 const db = getFirestore(app);
 
 // Storage
-const storage = getStorage(app); // Initialize Firebase Storage
+const storage = getStorage(app);
 
-export { auth, db, storage };
+// Export Firebase app and services
+export { app, auth, db, storage, messaging };
 

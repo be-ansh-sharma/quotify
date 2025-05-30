@@ -32,9 +32,7 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
   const bookmarklist = user.bookmarklist || {};
   const setUser = useUserStore((state) => state.setUser);
 
-  const { COLORS } = useAppTheme(); // Get theme colors
-
-  console.log('bookmarklist:', bookmarklist);
+  const { COLORS } = useAppTheme();
 
   const isPro = !!user?.isPro;
   const MAX_LISTS = isPro ? PREMIUM_MAX_LISTS : FREE_MAX_LISTS;
