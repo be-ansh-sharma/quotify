@@ -77,6 +77,12 @@ export const saveQuotesToCache = async (cacheKey, data) => {
       return false;
     }
 
+    // Ensure timestamp is included
+    const dataToCache = {
+      ...(typeof data === 'object' ? data : { quotes: data }),
+      timestamp: Date.now(), // Always add/update the timestamp
+    };
+
     // First check if we already have identical data in the cache
     const existingData = await AsyncStorage.getItem(cacheKey);
 
@@ -89,7 +95,9 @@ export const saveQuotesToCache = async (cacheKey, data) => {
           ? parsedExisting
           : parsedExisting.quotes || [];
 
-        const newQuotes = Array.isArray(data) ? data : data.quotes || [];
+        const newQuotes = Array.isArray(dataToCache)
+          ? dataToCache
+          : dataToCache.quotes || [];
 
         // Compare quote IDs (more efficient than full object comparison)
         const existingIds = existingQuotes
@@ -102,6 +110,12 @@ export const saveQuotesToCache = async (cacheKey, data) => {
           .join(',');
 
         if (existingIds === newIds) {
+          // Update timestamp even if quotes are the same
+          if (parsedExisting.timestamp !== dataToCache.timestamp) {
+            await AsyncStorage.setItem(cacheKey, JSON.stringify(dataToCache));
+            console.log(`🔄 Updated timestamp for cached quotes: ${cacheKey}`);
+            return true;
+          }
           console.log(
             `✅ Cache already contains same quotes for key: ${cacheKey}. Skipping save.`
           );
@@ -115,39 +129,38 @@ export const saveQuotesToCache = async (cacheKey, data) => {
       }
     }
 
-    // Handle both array and object formats
-    if (Array.isArray(data)) {
-      if (data.length === 0) {
+    // Save the data with timestamp
+    if (Array.isArray(dataToCache)) {
+      if (dataToCache.length === 0) {
         console.log(`No quotes to cache for key: ${cacheKey}`);
         return false;
       }
 
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
-      console.log(
-        `💾 Saved ${data.length} quotes to cache with key: ${cacheKey}`
+      // Convert array format to object format with timestamp
+      await AsyncStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          quotes: dataToCache,
+          timestamp: Date.now(),
+        })
       );
-      return true;
-    } else if (
-      typeof data === 'object' &&
-      data.quotes &&
-      Array.isArray(data.quotes)
-    ) {
-      if (data.quotes.length === 0) {
+    } else {
+      if (!dataToCache.quotes || dataToCache.quotes.length === 0) {
         console.log(`No quotes in data object to cache for key: ${cacheKey}`);
         return false;
       }
 
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
-      console.log(
-        `💾 Saved ${data.quotes.length} quotes to cache with key: ${cacheKey}`
-      );
-      return true;
-    } else {
-      console.warn(
-        `Attempted to cache invalid data format for key: ${cacheKey}`
-      );
-      return false;
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(dataToCache));
     }
+
+    console.log(
+      `💾 Saved ${
+        Array.isArray(dataToCache)
+          ? dataToCache.length
+          : dataToCache.quotes.length
+      } quotes to cache with key: ${cacheKey}`
+    );
+    return true;
   } catch (error) {
     console.error(`Error saving quotes to cache for key ${cacheKey}:`, error);
     return false;

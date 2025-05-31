@@ -61,7 +61,8 @@ export const setupNotificationHandlers = () => {
   const responseSubscription = notifee.onForegroundEvent(({ type, detail }) => {
     if (type === EventType.PRESS) {
       console.log('User pressed notification:', detail.notification);
-      return detail.notification?.data;
+      // Return a simple flag instead of specific data
+      return { pressed: true };
     }
   });
 
@@ -80,14 +81,16 @@ export const getInitialNotification = async () => {
     const remoteMessage = await messaging().getInitialNotification();
     if (remoteMessage) {
       console.log('App opened from Firebase notification:', remoteMessage);
-      return remoteMessage.data;
+      // Return simplified data without quoteId
+      return { pressed: true };
     }
 
     // Also check if the app was opened from a Notifee notification
     const initialNotification = await notifee.getInitialNotification();
     if (initialNotification) {
       console.log('App opened from Notifee notification:', initialNotification);
-      return initialNotification.notification.data;
+      // Return simplified data without quoteId
+      return { pressed: true };
     }
 
     return null;

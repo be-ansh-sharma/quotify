@@ -6,17 +6,17 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
-import { FontAwesome } from '@expo/vector-icons';
+import { useAppTheme } from 'context/AppThemeContext';
 import { getRandomQuote } from 'utils/firebase/firestore';
+import QuoteFABActions from './QuoteFABActions';
 
 export default function RandomQuote() {
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
   const fetchNewQuote = async () => {
     setLoading(true);
@@ -64,10 +64,8 @@ export default function RandomQuote() {
       <Text style={styles.quoteText}>"{quote.text}"</Text>
       <Text style={styles.authorText}>— {quote.author}</Text>
 
-      <TouchableOpacity style={styles.refreshButton} onPress={fetchNewQuote}>
-        <FontAwesome name='refresh' size={18} color={COLORS.primary} />
-        <Text style={styles.refreshText}>New Random Quote</Text>
-      </TouchableOpacity>
+      {/* Use the shared action component, passing the refresh function */}
+      <QuoteFABActions quote={quote} refreshQuote={fetchNewQuote} />
     </View>
   );
 }

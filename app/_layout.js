@@ -1,7 +1,7 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import { Slot, usePathname } from 'expo-router';
-import { StatusBar, AppState, useColorScheme } from 'react-native';
+import { StatusBar, AppState } from 'react-native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { ThemeProvider } from '@react-navigation/native';
 import { TabBarProvider } from 'context/TabBarContext';

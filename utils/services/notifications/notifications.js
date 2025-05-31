@@ -38,7 +38,6 @@ export const getFCMToken = async () => {
     }
 
     const token = await messaging().getToken();
-    console.log('FCM Token:', token);
 
     // Store token locally
     await AsyncStorage.setItem('fcm_token', token);

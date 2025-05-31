@@ -40,16 +40,10 @@ const ListManager = React.forwardRef(({ user, quote }, ref) => {
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     openBottomSheet: () => {
-      setTempSelection(
-        Object.keys(bookmarklist).reduce((acc, listName) => {
-          // Fix: Check if the value is an array before calling includes()
-          const list = bookmarklist[listName];
-          acc[listName] = Array.isArray(list) && list.includes(quote.id);
-          return acc;
-        }, {})
-      );
-
-      bottomSheetRef.current?.expand(); // Use our custom method
+      bottomSheetRef.current?.expand();
+    },
+    closeBottomSheet: () => {
+      bottomSheetRef.current?.close();
     },
   }));
 

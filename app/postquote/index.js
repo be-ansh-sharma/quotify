@@ -32,6 +32,11 @@ export default function PostQuote() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(false);
   const [privateQuoteCount, setPrivateQuoteCount] = useState(0);
+  const [errors, setErrors] = useState({
+    quote: null,
+    author: null,
+    tags: null,
+  });
 
   // Define limits based on Pro status
   const PRIVATE_QUOTE_LIMIT = user?.isPro ? 500 : 10;
@@ -42,12 +47,152 @@ export default function PostQuote() {
   // Generate styles with current COLORS
   const styles = getStyles(COLORS);
 
+  const validateTags = (tagString) => {
+    // Split by commas and process each tag
+    const tagArray = tagString.split(',').map((tag) => tag.trim());
+
+    // Check each tag
+    const invalidTags = tagArray.filter((tag) => {
+      // Skip empty tags
+      if (!tag) return false;
+
+      // Only allow letters and hyphens in each tag
+      return !/^[a-zA-Z\-\s]+$/.test(tag);
+    });
+
+    if (invalidTags.length > 0) {
+      return {
+        valid: false,
+        message: `Invalid tags: ${invalidTags.join(
+          ', '
+        )}. Tags can only contain letters, spaces and hyphens.`,
+      };
+    }
+
+    return { valid: true };
+  };
+
+  const validateAuthor = (authorName) => {
+    // Check if author name contains numbers or invalid special characters
+    if (/[0-9]/.test(authorName)) {
+      return {
+        valid: false,
+        message: "Author name shouldn't contain numbers.",
+      };
+    }
+
+    // Only allow letters, spaces, and certain punctuation in names
+    if (!/^[a-zA-Z\s.\-']+$/.test(authorName)) {
+      return {
+        valid: false,
+        message:
+          'Author name contains invalid characters. Only letters, spaces, hyphens, apostrophes, and periods are allowed.',
+      };
+    }
+
+    return { valid: true };
+  };
+
+  const validateQuoteText = (text) => {
+    // Check minimum length
+    if (text.length < 10) {
+      return {
+        valid: false,
+        message: 'Quote is too short. Please enter at least 10 characters.',
+      };
+    }
+
+    // Check maximum length
+    if (text.length > 300) {
+      return {
+        valid: false,
+        message: 'Quote is too long. Please keep it under 300 characters.',
+      };
+    }
+
+    // Check for excessive repeated characters
+    if (/(.)\1{4,}/.test(text)) {
+      return {
+        valid: false,
+        message: 'Quote contains excessive repeated characters.',
+      };
+    }
+
+    // NEW: Check that the quote has enough letters (not just special characters)
+    const letterCount = (text.match(/[a-zA-Z]/g) || []).length;
+    if (letterCount < 10) {
+      return {
+        valid: false,
+        message: 'Quote should contain at least 10 letters.',
+      };
+    }
+
+    // NEW: Check for excessive special characters
+    if (/[^a-zA-Z0-9\s.,!?;:'"()\-–—]{5,}/.test(text)) {
+      return {
+        valid: false,
+        message: 'Quote contains too many consecutive special characters.',
+      };
+    }
+
+    // NEW: Check letter ratio (at least 30% of characters should be letters)
+    const letterRatio = letterCount / text.length;
+    if (letterRatio < 0.3) {
+      return {
+        valid: false,
+        message:
+          'Quote should be primarily text rather than special characters.',
+      };
+    }
+
+    return { valid: true };
+  };
+
   const handlePostQuote = async () => {
-    if (!quoteText.trim() || !author.trim()) {
+    // Trim all inputs first
+    const trimmedQuote = quoteText.trim();
+    const trimmedAuthor = author.trim();
+    const trimmedTags = tags.trim();
+
+    // Basic validation
+    if (!trimmedQuote || !trimmedAuthor) {
       showMessage({
         message: 'Please fill in both the quote and the author.',
+        type: 'warning',
       });
       return;
+    }
+
+    // Validate quote text
+    const quoteValidation = validateQuoteText(trimmedQuote);
+    if (!quoteValidation.valid) {
+      showMessage({
+        message: quoteValidation.message,
+        type: 'warning',
+      });
+      return;
+    }
+
+    // Validate author
+    const authorValidation = validateAuthor(trimmedAuthor);
+    if (!authorValidation.valid) {
+      showMessage({
+        message: authorValidation.message,
+        type: 'warning',
+      });
+      return;
+    }
+
+    // Validate tags
+    if (trimmedTags) {
+      const tagsValidation = validateTags(trimmedTags);
+      if (!tagsValidation.valid) {
+        showMessage({
+          message: tagsValidation.message,
+          type: 'warning',
+        });
+        return;
+      }
     }
 
     setLoading(true);
@@ -82,14 +227,19 @@ export default function PostQuote() {
         }
       }
 
+      // Process tags properly
+      const processedTags = trimmedTags
+        ? trimmedTags
+            .split(',')
+            .map((tag) => tag.trim().toLowerCase()) // Normalize tags to lowercase
+            .filter(Boolean)
+        : [];
+
       const quoteData = {
-        text: quoteText.trim(),
-        author: author.trim(),
+        text: trimmedQuote,
+        author: trimmedAuthor,
         shares: 0,
-        tags: tags
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean),
+        tags: processedTags,
         createdAt: new Date().toISOString(),
         userId: user?.uid || null,
         userQuote: true,
@@ -150,6 +300,45 @@ export default function PostQuote() {
     }
   };
 
+  const handleQuoteChange = (text) => {
+    setQuoteText(text);
+    // Only validate if there's some text (don't show errors while typing)
+    if (text.length > 5) {
+      const validation = validateQuoteText(text.trim());
+      if (!validation.valid) {
+        setErrors((prev) => ({ ...prev, quote: validation.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, quote: null }));
+      }
+    }
+  };
+
+  const handleAuthorChange = (text) => {
+    setAuthor(text);
+    // Only validate if there's some text (don't show errors while typing)
+    if (text.length > 5) {
+      const validation = validateAuthor(text.trim());
+      if (!validation.valid) {
+        setErrors((prev) => ({ ...prev, author: validation.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, author: null }));
+      }
+    }
+  };
+
+  const handleTagsChange = (text) => {
+    setTags(text);
+    // Only validate if there's some text (don't show errors while typing)
+    if (text.length > 5) {
+      const validation = validateTags(text.trim());
+      if (!validation.valid) {
+        setErrors((prev) => ({ ...prev, tags: validation.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, tags: null }));
+      }
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: COLORS.background }} // Add background color here
@@ -189,24 +378,27 @@ export default function PostQuote() {
           <TextInput
             label='Quote'
             value={quoteText}
-            onChangeText={setQuoteText}
+            onChangeText={handleQuoteChange}
             multiline
             numberOfLines={4}
             style={styles.input}
+            error={!!errors.quote}
             theme={{
               colors: {
                 primary: COLORS.primary,
                 background: COLORS.surface,
                 text: COLORS.text,
                 placeholder: COLORS.placeholder,
+                error: COLORS.error,
               },
             }}
           />
+          {errors.quote && <Text style={styles.errorText}>{errors.quote}</Text>}
 
           <TextInput
             label='Author'
             value={author}
-            onChangeText={setAuthor}
+            onChangeText={handleAuthorChange}
             style={styles.input}
             theme={{
               colors: {
@@ -221,7 +413,7 @@ export default function PostQuote() {
           <TextInput
             label='Tags (e.g., motivation, life)'
             value={tags}
-            onChangeText={setTags}
+            onChangeText={handleTagsChange}
             style={styles.input}
             theme={{
               colors: {
@@ -541,6 +733,13 @@ const getStyles = (COLORS) =>
       color: COLORS.primary,
       fontWeight: 'bold',
       textAlign: 'center',
+    },
+    errorText: {
+      color: COLORS.error,
+      fontSize: 12,
+      marginTop: -12,
+      marginBottom: 12,
+      marginLeft: 8,
     },
   });
 

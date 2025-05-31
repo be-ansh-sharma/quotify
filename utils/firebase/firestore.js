@@ -1948,3 +1948,71 @@ export const removeFCMToken = async (userId) => {
   }
 };
 
+// Search for tags that match query
+// Search for tags using the existing 'name' field
+export async function searchTags(term) {
+  try {
+    if (!term || term.trim() === '') {
+      return [];
+    }
+
+    // Convert to lowercase for case-insensitive comparison
+    const searchQuery = term.toLowerCase();
+
+    // Create a query that only fetches tags that start with the search term
+    const tagsRef = collection(db, 'tags');
+    const tagsQuery = query(
+      tagsRef,
+      // Use range query to find tags that start with the search term
+      where('name', '>=', searchQuery),
+      where('name', '<=', searchQuery + '\uf8ff'), // '\uf8ff' is a high Unicode char
+      orderBy('name'),
+      limit(10) // Get only what we need
+    );
+
+    const snapshot = await getDocs(tagsQuery);
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error searching tags:', error);
+    throw error;
+  }
+}
+
+// Search for authors that match query
+// Update the existing searchAuthors function to use name_lower field
+export async function searchAuthors(term) {
+  try {
+    if (!term || term.trim() === '') {
+      return [];
+    }
+
+    // Convert to lowercase for case-insensitive search
+    const searchQuery = term.toLowerCase();
+
+    // Create a query using the name_lower field
+    const authorsRef = collection(db, 'authors');
+    const authorsQuery = query(
+      authorsRef,
+      // Use name_lower instead of name for case-insensitive search
+      where('name_lower', '>=', searchQuery),
+      where('name_lower', '<=', searchQuery + '\uf8ff'),
+      orderBy('name_lower'),
+      limit(10)
+    );
+
+    const snapshot = await getDocs(authorsQuery);
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error searching authors:', error);
+    throw error;
+  }
+}
+

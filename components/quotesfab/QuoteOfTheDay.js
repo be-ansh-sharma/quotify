@@ -1,25 +1,16 @@
-import React, { useEffect, useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Share,
-} from 'react-native';
-import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useAppTheme } from 'context/AppThemeContext';
 import { FontAwesome } from '@expo/vector-icons';
 import { getQuoteOfTheDay } from 'utils/firebase/firestore';
-import ShareSheet from 'components/bottomsheet/ShareSheet';
-import { router } from 'expo-router';
+import QuoteFABActions from './QuoteFABActions'; // Import the shared actions component
 
 export default function QuoteOfTheDay() {
   const [quoteOfTheDay, setQuoteOfTheDay] = useState(null);
   const [loading, setLoading] = useState(true);
-  const shareSheetRef = useRef(null);
 
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -35,30 +26,6 @@ export default function QuoteOfTheDay() {
 
     fetchQuote();
   }, []);
-
-  // Share as text
-  const handleShareAsText = async () => {
-    if (!quoteOfTheDay) return;
-    try {
-      await Share.share({
-        message: `"${quoteOfTheDay.text}"\n\n— ${
-          quoteOfTheDay.author || 'Unknown'
-        }\n\nShared via Quotify`,
-      });
-      shareSheetRef.current?.closeBottomSheet();
-    } catch (error) {
-      console.error('Error sharing as text:', error);
-    }
-  };
-
-  // Share as photo (placeholder, implement with ViewShot if needed)
-  const handleShareAsPhoto = async () => {
-    shareSheetRef.current?.closeBottomSheet();
-    router.push({
-      pathname: '/quotes/quoteshare',
-      params: { quote: quoteOfTheDay.text, author: quoteOfTheDay.author },
-    });
-  };
 
   if (loading) {
     return (
@@ -89,20 +56,8 @@ export default function QuoteOfTheDay() {
         <Text style={styles.authorText}>— {quoteOfTheDay.author}</Text>
       </View>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => shareSheetRef.current?.openBottomSheet()}
-        >
-          <FontAwesome name='share' size={18} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-
-      <ShareSheet
-        ref={shareSheetRef}
-        onShareAsText={handleShareAsText}
-        onShareAsPhoto={handleShareAsPhoto}
-      />
+      {/* Replace the custom footer with QuoteFABActions */}
+      <QuoteFABActions quote={quoteOfTheDay} />
     </View>
   );
 }
@@ -157,17 +112,6 @@ const getStyles = (COLORS) =>
       fontStyle: 'italic',
       color: COLORS.textSecondary || '#666',
       marginBottom: 8,
-    },
-    footer: {
-      flexDirection: 'row',
-      paddingHorizontal: 16,
-      paddingBottom: 16,
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-    },
-    actionButton: {
-      padding: 8,
-      marginLeft: 16,
     },
     loadingContainer: {
       padding: 40,

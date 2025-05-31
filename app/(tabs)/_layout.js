@@ -3,8 +3,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { COLORS, LIGHT_COLORS } from 'styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import AnimatedTabBar from 'components/animatedtabbar/AnimatedTabBar';
-import { useTabBar } from 'context/TabBarContext';
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import useUserStore from 'stores/userStore';
 import NavigationMiddleware from 'components/navigation/NavigationMiddleware';
 

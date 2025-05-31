@@ -79,6 +79,22 @@ export function useNotifications(isLayoutMounted, isInitialRouteSet) {
     }
   }, [notificationData, isLayoutMounted, isInitialRouteSet, router]);
 
+  // Handle navigation when notification is pressed
+  useEffect(() => {
+    if (notificationData?.pressed && isLayoutMounted && isInitialRouteSet) {
+      // Navigate to home page instead of specific quote
+      console.log('Navigating to home page from notification');
+
+      // Delay navigation slightly to ensure app is ready
+      const timer = setTimeout(() => {
+        router.navigate('/(tabs)/home');
+        setNotificationData(null);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [notificationData, isLayoutMounted, isInitialRouteSet, router]);
+
   return { notificationData };
 }
 

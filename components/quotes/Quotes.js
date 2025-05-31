@@ -97,33 +97,55 @@ export default Quotes = ({
         const cacheKey = getCacheKey();
         const cachedData = await getQuotesFromCache(cacheKey);
 
-        // Add timestamp check - only use cache if less than 1 hour old
-        const isCacheValid =
-          cachedData &&
-          cachedData.timestamp &&
-          Date.now() - cachedData.timestamp < 60 * 60 * 1000;
+        // Improved validation check with better logging
+        if (cachedData && cachedData.quotes && cachedData.quotes.length > 0) {
+          // Check if there's a timestamp and it's recent
+          const hasTimestamp = Boolean(cachedData.timestamp);
+          const isTimestampValid =
+            hasTimestamp && Date.now() - cachedData.timestamp < 60 * 60 * 1000;
 
-        if (
-          cachedData &&
-          cachedData.quotes &&
-          cachedData.quotes.length > 0 &&
-          isCacheValid
-        ) {
-          console.log(`📦 Using cached quotes for ${cacheKey}`);
-          setQuotes(cachedData.quotes || []);
-          setLastDoc(cachedData.lastDoc || null);
-          setHasMore(cachedData.hasMore !== false);
-          setProcessedChunks(cachedData.processedChunks || 0);
-          setLoading(false);
+          if (!hasTimestamp) {
+            console.log(
+              `📦 Found cache but missing timestamp, will add timestamp when saving`
+            );
+          } else if (!isTimestampValid) {
+            console.log(
+              `📦 Cache found but expired (${Math.round(
+                (Date.now() - cachedData.timestamp) / 3600000
+              )}h old)`
+            );
+          }
 
-          return; // Exit early, we're using cache
-        }
+          // Use the cache if it has quotes and either has no timestamp (legacy cache)
+          // or has a valid recent timestamp
+          if (!hasTimestamp || isTimestampValid) {
+            console.log(
+              `📦 Using ${cachedData.quotes.length} cached quotes for ${cacheKey}`
+            );
+            setQuotes(cachedData.quotes || []);
+            setLastDoc(cachedData.lastDoc || null);
+            setHasMore(cachedData.hasMore !== false);
+            setProcessedChunks(cachedData.processedChunks || 0);
+            setLoading(false);
 
-        // Log that we're falling back to Firebase because cache is empty
-        if (cachedData) {
-          console.log(
-            `⚠️ Cache exists but is empty for ${cacheKey}, fetching from Firebase`
-          );
+            // For legacy caches without timestamp, add timestamp when using
+            if (!hasTimestamp) {
+              await saveQuotesToCache(cacheKey, {
+                ...cachedData,
+                timestamp: Date.now(),
+              });
+            }
+
+            return; // Exit early, we're using cache
+          } else {
+            console.log(
+              `⏰ Cache expired for ${cacheKey}, fetching fresh data`
+            );
+          }
+        } else if (cachedData) {
+          console.log(`⚠️ Cache exists but contains no quotes for ${cacheKey}`);
+        } else {
+          console.log(`🔍 No cache found for ${cacheKey}`);
         }
       }
 

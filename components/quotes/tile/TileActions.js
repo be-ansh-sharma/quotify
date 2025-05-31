@@ -16,6 +16,7 @@ const reactionEmojis = {
 };
 
 function TileActions({
+  quote,
   selectedReaction,
   reactions,
   isBookmarked,
@@ -25,6 +26,7 @@ function TileActions({
   onSharePress,
   handleSelectReaction,
   toggleReactionTray,
+  isReactionTrayOpen, // Make sure this prop is added and passed
 }) {
   const { COLORS } = useAppTheme();
   const styles = getStyles(COLORS);
@@ -44,74 +46,93 @@ function TileActions({
   );
 
   return (
-    <View style={styles.actions}>
-      <View style={styles.leftActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleReactionPress}
-          onLongPress={onReactionLongPress}
-        >
-          <View style={styles.reactionIconWrapper}>
-            <Text style={styles.reactionIcon}>
+    <View style={styles.container}>
+      <View style={styles.actions}>
+        <View style={styles.leftActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleReactionPress}
+            onLongPress={onReactionLongPress}
+          >
+            <View style={styles.reactionIconWrapper}>
               {selectedReaction ? (
-                reactionEmojis[selectedReaction]
+                <Text style={styles.reactionIcon}>
+                  {reactionEmojis[selectedReaction]}
+                </Text>
               ) : (
                 <FontAwesome name='heart-o' size={20} color={COLORS.icon} />
               )}
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={onBookmarkPress}>
-          <View>
-            <FontAwesome
-              name={isBookmarked ? 'bookmark' : 'bookmark-o'}
-              size={20}
-              color={isBookmarked ? COLORS.primary : COLORS.icon}
-            />
-            {listCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{listCount}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.shareButton} onPress={onSharePress}>
-          <FontAwesome name='share-alt' size={20} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.rightActions}>
-        {totalReactions > 0 ? (
-          <>
-            <View style={styles.reactionStack}>
-              {Object.entries(reactions)
-                .filter(([_, count]) => count > 0)
-                .slice(0, 5)
-                .map(([type, _], index) => (
-                  <View
-                    key={type}
-                    style={[
-                      styles.stackedEmoji,
-                      { right: index * 12, zIndex: 10 - index },
-                    ]}
-                  >
-                    <Text style={styles.reactionEmoji}>
-                      {reactionEmojis[type] || '❓'}
-                    </Text>
-                  </View>
-                ))}
             </View>
-            <Text style={styles.totalReactionCount}>
-              {formatReactionCount(totalReactions)}
-            </Text>
-          </>
-        ) : (
-          // Add a placeholder to maintain height when no reactions
-          <View style={styles.emptyReactions} />
-        )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={onBookmarkPress}
+          >
+            <View>
+              <FontAwesome
+                name={isBookmarked ? 'bookmark' : 'bookmark-o'}
+                size={20}
+                color={isBookmarked ? COLORS.primary : COLORS.icon}
+              />
+              {listCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{listCount}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.shareButton} onPress={onSharePress}>
+            <FontAwesome name='share-alt' size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.rightActions}>
+          {totalReactions > 0 ? (
+            <>
+              <View style={styles.reactionStack}>
+                {Object.entries(reactions)
+                  .filter(([_, count]) => count > 0)
+                  .slice(0, 5)
+                  .map(([type, _], index) => (
+                    <View
+                      key={type}
+                      style={[
+                        styles.stackedEmoji,
+                        { right: index * 12, zIndex: 10 - index },
+                      ]}
+                    >
+                      <Text style={styles.reactionEmoji}>
+                        {reactionEmojis[type] || '❓'}
+                      </Text>
+                    </View>
+                  ))}
+              </View>
+              <Text style={styles.totalReactionCount}>
+                {formatReactionCount(totalReactions)}
+              </Text>
+            </>
+          ) : (
+            // Add a placeholder to maintain height when no reactions
+            <View style={styles.emptyReactions} />
+          )}
+        </View>
       </View>
+      {/* ADD THIS CODE TO RENDER THE REACTION TRAY */}
+      {isReactionTrayOpen && (
+        <View style={styles.reactionTray}>
+          {Object.entries(reactionEmojis).map(([key, emoji]) => (
+            <TouchableOpacity
+              key={key}
+              onPress={() => handleSelectReaction(key)}
+              style={styles.reactionButton}
+            >
+              <Text style={styles.emojiText}>{emoji}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -204,6 +225,46 @@ const getStyles = (COLORS) =>
     emptyReactions: {
       width: 64, // Match the width of populated reaction stack + count
       height: 24,
+    },
+    reactionTray: {
+      position: 'absolute',
+      flexDirection: 'row',
+      justifyContent: 'space-evenly', // Changed from space-around
+      alignItems: 'center',
+      padding: 12,
+      backgroundColor: COLORS.surface,
+      borderRadius: 30,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 10000, // Extreme elevation for Android
+      bottom: 50, // Position above the action buttons
+      left: 0,
+      right: 0,
+      width: '100%', // Add explicit width
+      alignSelf: 'center', // Center the tray
+      marginHorizontal: 0, // Remove horizontal margin
+      zIndex: 100000, // Super high z-index
+      borderWidth: 1,
+      borderColor: COLORS.border || '#E0E0E0',
+    },
+    container: {
+      position: 'relative',
+      zIndex: 99999, // Very high z-index for the container
+    },
+    reactionButton: {
+      minWidth: 40, // Ensure minimum button width
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 4, // Add horizontal padding
+    },
+    emojiText: {
+      fontSize: 24,
     },
   });
 

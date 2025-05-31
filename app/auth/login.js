@@ -55,7 +55,6 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('User logged in:', user);
       setUser({ email: user.user.email });
       setHasCheckedProfileOnce(false);
       router.navigate('/(tabs)/home');

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useAppTheme } from 'context/AppThemeContext'; // Import theme hook
+import { useAppTheme } from 'context/AppThemeContext';
 import { getTopQuote } from 'utils/firebase/firestore';
+import QuoteFABActions from './QuoteFABActions';
 
 export default function TopQuote() {
   const [topQuote, setTopQuote] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const { COLORS } = useAppTheme(); // Get theme colors dynamically
-  const styles = getStyles(COLORS); // Generate styles dynamically
+  const { COLORS } = useAppTheme();
+  const styles = getStyles(COLORS);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -39,13 +40,14 @@ export default function TopQuote() {
     <View style={styles.container}>
       <Text style={styles.quoteText}>"{topQuote.text}"</Text>
       <Text style={styles.authorText}>— {topQuote.author}</Text>
-      <Text style={styles.reactionsText}>
-        ♥ {topQuote.totalReactions || 0} reactions
-      </Text>
+
+      {/* Remove the custom reactions text and use QuoteFABActions instead */}
+      <QuoteFABActions quote={topQuote} />
     </View>
   );
 }
 
+// Update getStyles to remove the reactionsText style if not needed anymore
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
@@ -65,11 +67,6 @@ const getStyles = (COLORS) =>
       fontStyle: 'italic',
       color: COLORS.placeholder,
       marginBottom: 4,
-    },
-    reactionsText: {
-      fontSize: 14,
-      color: COLORS.primary,
-      marginTop: 4,
     },
     loadingContainer: {
       padding: 24,

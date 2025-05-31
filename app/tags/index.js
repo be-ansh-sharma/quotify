@@ -8,12 +8,14 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { fetchTags } from 'utils/firebase/firestore';
+import { fetchTags, searchTags } from 'utils/firebase/firestore';
 import { useAppTheme } from 'context/AppThemeContext';
 import Header from 'components/header/Header';
 import TileDecoration from 'components/decoration/TileDecoration';
+import { FontAwesome } from '@expo/vector-icons';
 
 // Calculate tile size based on screen width
 const { width: screenWidth } = Dimensions.get('window');
@@ -26,18 +28,51 @@ export default function Tags() {
   const [lastDoc, setLastDoc] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
+  // Add initialLoadRef to track first load
+  const initialLoadRef = useRef(false);
+
+  // Generate styles with current theme colors
   const styles = getStyles(COLORS);
 
-  // Fetch tags from the database
-  const loadTags = async () => {
-    if (loading || !hasMore) return;
+  // Fetch tags from the database with isReset parameter
+  const loadTags = async (isReset = false) => {
+    if (loading || (!hasMore && !isReset) || searchQuery.trim()) return;
 
     setLoading(true);
     try {
-      const { newTags, lastVisibleDoc, hasMoreTags } = await fetchTags(lastDoc);
+      // If this is a reset but we already have tags data, just use what we have
+      if (isReset && tags.length > 0 && initialLoadRef.current) {
+        console.log('Using cached tags data');
+        setLoading(false);
+        return;
+      }
 
-      setTags((prevTags) => [...prevTags, ...newTags]);
+      const { newTags, lastVisibleDoc, hasMoreTags } = await fetchTags(
+        isReset ? null : lastDoc
+      );
+
+      // Mark that we've loaded data
+      initialLoadRef.current = true;
+
+      // Filter out any duplicate tags
+      setTags((prevTags) => {
+        // If this is a reset, don't append to existing tags
+        if (isReset) return newTags;
+
+        // Create a map of existing tags by ID for quick lookup
+        const existingTagsMap = new Map(prevTags.map((tag) => [tag.id, true]));
+
+        // Only add tags that don't already exist
+        const uniqueNewTags = newTags.filter(
+          (tag) => !existingTagsMap.has(tag.id)
+        );
+
+        return [...prevTags, ...uniqueNewTags];
+      });
+
       setLastDoc(lastVisibleDoc);
       setHasMore(hasMoreTags);
     } catch (error) {
@@ -47,11 +82,78 @@ export default function Tags() {
     }
   };
 
+  // Perform search
+  const performSearch = async () => {
+    if (!searchQuery.trim()) {
+      clearSearch();
+      return;
+    }
+
+    setIsSearching(true);
+    setLoading(true);
+
+    try {
+      const results = await searchTags(searchQuery);
+
+      // Create a Map to filter duplicates by ID
+      const uniqueTagsMap = new Map();
+      results.forEach((tag) => {
+        // Only add if we don't already have this ID or name
+        const key = tag.id || tag.name;
+        if (!uniqueTagsMap.has(key)) {
+          uniqueTagsMap.set(key, tag);
+        }
+      });
+
+      // Convert Map back to array
+      const uniqueTags = Array.from(uniqueTagsMap.values());
+
+      setTags(uniqueTags);
+      setHasMore(false); // No pagination for search results
+    } catch (error) {
+      console.error('Error searching tags:', error);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
+    }
+  };
+
+  // Handle search with debounce
   useEffect(() => {
-    loadTags();
+    // Skip the initial render effect for empty search query
+    if (searchQuery === '' && !initialLoadRef.current) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (searchQuery.trim()) {
+        performSearch();
+      } else if (searchQuery === '') {
+        clearSearch();
+      }
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Initial load - only runs once
+  useEffect(() => {
+    loadTags(true); // Load tags with reset flag when component mounts
   }, []);
 
-  // Separate tile component to handle animations properly
+  // Clear search and reset to browse mode - don't reload if we have data
+  const clearSearch = () => {
+    setSearchQuery('');
+
+    // Don't clear data and reload if we already have tags
+    if (tags.length === 0) {
+      setLastDoc(null);
+      setHasMore(true);
+      loadTags(true); // Pass true to indicate this is a reset
+    }
+  };
+
+  // Update the TagTile component to better center content
   const TagTile = React.memo(({ item, index }) => {
     // Use item id or index as seed for consistent icons per tag
     const iconSeed = parseInt(item.id, 36) || index * 100;
@@ -64,7 +166,6 @@ export default function Tags() {
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 0.95,
-          friction: 3,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
@@ -79,7 +180,8 @@ export default function Tags() {
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
-          friction: 3,
+          friction: 4,
+          tension: 40,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
@@ -91,41 +193,32 @@ export default function Tags() {
     };
 
     return (
-      <TouchableOpacity
-        style={styles.tile}
-        activeOpacity={0.8}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={() => router.push(`/tags/${encodeURIComponent(item.name)}`)}
+      <Animated.View
+        style={[
+          { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
+          { margin: 4 },
+        ]}
       >
-        {/* Background decorations */}
-        <TileDecoration
-          size={tileSize - 16} // Subtract padding
-          seed={iconSeed}
-          iconCount={5} // Number of decorative icons
-          opacity={0.1} // Make icons subtle
-          style={styles.decorations}
-        />
-
-        {/* Main content */}
-        <Animated.View
-          style={[
-            styles.tileContent,
-            {
-              transform: [{ scale: scaleAnim }],
-              opacity: opacityAnim,
-            },
-          ]}
+        <TouchableOpacity
+          style={styles.tile}
+          activeOpacity={0.8}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onPress={() => router.push(`/tags/${encodeURIComponent(item.name)}`)}
         >
-          <Text style={styles.tileText}>#{item.name}</Text>
-        </Animated.View>
-      </TouchableOpacity>
+          {/* TileDecoration as background */}
+          <TileDecoration seed={iconSeed} />
+
+          {/* Centered content wrapper */}
+          <View style={styles.tileContent}>
+            <Text style={styles.tileText} numberOfLines={2}>
+              {item.name}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     );
   });
-
-  const renderTile = ({ item, index }) => {
-    return <TagTile item={item} index={index} />;
-  };
 
   const renderFooter = () => {
     if (!loading) return null;
@@ -136,20 +229,76 @@ export default function Tags() {
     );
   };
 
+  // Empty results message
+  const renderEmptyList = () => {
+    if (loading) return null;
+
+    return (
+      <View style={styles.emptyContainer}>
+        {searchQuery ? (
+          <>
+            <Text style={styles.emptyText}>
+              No tags found for "{searchQuery}"
+            </Text>
+            <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
+              <Text style={styles.clearButtonText}>Clear search</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <Text style={styles.emptyText}>No tags available</Text>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Header title='Tags' backRoute='/browse' />
 
+      {/* Search bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputWrapper}>
+          <FontAwesome
+            name='search'
+            size={16}
+            color={COLORS.textSecondary}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder='Search tags...'
+            placeholderTextColor={COLORS.onBackground}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={clearSearch}>
+              <FontAwesome
+                name='times-circle'
+                size={16}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+
       <FlatList
         data={tags}
-        keyExtractor={(item) => item.id}
-        renderItem={renderTile}
+        keyExtractor={(item, index) =>
+          item.id ? `${item.id}_${index}` : `tag_${index}`
+        }
+        renderItem={({ item, index }) => <TagTile item={item} index={index} />}
         numColumns={2}
         columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.grid}
-        onEndReached={loadTags}
+        contentContainerStyle={[
+          styles.grid,
+          tags.length === 0 && styles.emptyGrid,
+        ]}
+        onEndReached={searchQuery ? null : loadTags}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmptyList}
       />
     </View>
   );
@@ -162,51 +311,95 @@ const getStyles = (COLORS) =>
       flex: 1,
       backgroundColor: COLORS.background,
     },
+    searchContainer: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    searchInputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 20,
+      paddingHorizontal: 16,
+      height: 42,
+      borderWidth: 1,
+      backgroundColor: COLORS.surface,
+      borderColor: COLORS.border,
+    },
+    searchIcon: {
+      marginRight: 8,
+      color: COLORS.onBackground,
+    },
+    searchInput: {
+      flex: 1,
+      height: 40,
+      fontSize: 16,
+      color: COLORS.onBackground,
+    },
     grid: {
       justifyContent: 'center',
       paddingHorizontal: 12,
       paddingBottom: 20,
     },
+    emptyGrid: {
+      flexGrow: 1,
+    },
     row: {
-      justifyContent: 'space-between',
-      marginTop: 16,
+      flexWrap: 'wrap',
+      justifyContent: 'space-around',
     },
     tile: {
-      flex: 1,
-      marginHorizontal: 8,
-      aspectRatio: 1, // Make tiles square
-      backgroundColor: COLORS.surface,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderRadius: 12,
-      padding: 8,
-      shadowColor: COLORS.shadow,
-      shadowOpacity: 0.1,
-      shadowRadius: 5,
-      shadowOffset: { width: 0, height: 1 },
-      position: 'relative',
+      width: tileSize,
+      height: tileSize,
+      borderRadius: 16,
+      padding: 16,
+      justifyContent: 'space-between',
       overflow: 'hidden',
-    },
-    decorations: {
-      position: 'absolute',
-      top: 8,
-      left: 8,
+      position: 'relative',
+      backgroundColor: COLORS.surface,
+      shadowColor: COLORS.shadow || '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: COLORS.border || 'transparent',
     },
     tileContent: {
+      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 2,
     },
     tileText: {
-      fontSize: 16,
-      fontWeight: 'bold',
+      fontSize: 18,
+      fontWeight: '600',
+      zIndex: 1,
       color: COLORS.text,
-      textAlign: 'center',
-      padding: 8,
     },
     footer: {
-      marginVertical: 20,
+      paddingVertical: 20,
       alignItems: 'center',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    emptyText: {
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 16,
+      color: COLORS.textSecondary,
+    },
+    clearButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: COLORS.primary,
+    },
+    clearButtonText: {
+      fontWeight: '600',
+      color: COLORS.white,
     },
   });
 
