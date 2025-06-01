@@ -495,13 +495,47 @@ export const unbookmarkQuote = async (userId, quoteId) => {
   }
 };
 
-export const fetchAuthors = async (lastDoc = null) => {
+export const fetchAuthors = async (lastDoc = null, cacheSize = 0) => {
   try {
     const authorsRef = collection(db, 'authors');
-    let authorsQuery = query(authorsRef, orderBy('name', 'asc'), limit(30)); // Fetch 10 authors at a time
+    let authorsQuery;
 
-    if (lastDoc) {
-      authorsQuery = query(authorsQuery, startAfter(lastDoc)); // Start after the last document for pagination
+    if (cacheSize > 0 && !lastDoc) {
+      // When we have cached data, we need to find where to start
+      // First, get the document that would be at position cacheSize
+      const skipQuery = query(
+        authorsRef,
+        orderBy('name', 'asc'),
+        limit(cacheSize + 1) // Get one extra to use as startAfter
+      );
+
+      const skipSnapshot = await getDocs(skipQuery);
+
+      if (skipSnapshot.docs.length > cacheSize) {
+        // Use the last cached doc as startAfter point
+        const startAfterDoc = skipSnapshot.docs[cacheSize - 1];
+
+        authorsQuery = query(
+          authorsRef,
+          orderBy('name', 'asc'),
+          startAfter(startAfterDoc),
+          limit(30)
+        );
+      } else {
+        // We have all the authors already
+        return { newAuthors: [], lastVisibleDoc: null, hasMoreAuthors: false };
+      }
+    } else if (lastDoc) {
+      // Normal pagination using lastDoc
+      authorsQuery = query(
+        authorsRef,
+        orderBy('name', 'asc'),
+        startAfter(lastDoc),
+        limit(30)
+      );
+    } else {
+      // First page
+      authorsQuery = query(authorsRef, orderBy('name', 'asc'), limit(30));
     }
 
     const snapshot = await getDocs(authorsQuery);
@@ -511,8 +545,12 @@ export const fetchAuthors = async (lastDoc = null) => {
       ...doc.data(),
     }));
 
-    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1] || null;
     const hasMoreAuthors = snapshot.docs.length === 30;
+
+    console.log(
+      `fetchAuthors: fetched ${newAuthors.length}, hasMore: ${hasMoreAuthors}`
+    );
 
     return { newAuthors, lastVisibleDoc, hasMoreAuthors };
   } catch (error) {
@@ -521,13 +559,47 @@ export const fetchAuthors = async (lastDoc = null) => {
   }
 };
 
-export const fetchTags = async (lastDoc = null) => {
+export const fetchTags = async (lastDoc = null, cacheSize = 0) => {
   try {
-    const tagsRef = collection(db, 'tags'); // Replace 'tags' with your Firestore collection name
-    let tagsQuery = query(tagsRef, orderBy('name', 'asc'), limit(30)); // Fetch 10 tags at a time
+    const tagsRef = collection(db, 'tags');
+    let tagsQuery;
 
-    if (lastDoc) {
-      tagsQuery = query(tagsQuery, startAfter(lastDoc)); // Start after the last document for pagination
+    if (cacheSize > 0 && !lastDoc) {
+      // When we have cached data, we need to find where to start
+      // First, get the document that would be at position cacheSize
+      const skipQuery = query(
+        tagsRef,
+        orderBy('name'),
+        limit(cacheSize + 1) // Get one extra to use as startAfter
+      );
+
+      const skipSnapshot = await getDocs(skipQuery);
+
+      if (skipSnapshot.docs.length > cacheSize) {
+        // Use the last cached doc as startAfter point
+        const startAfterDoc = skipSnapshot.docs[cacheSize - 1];
+
+        tagsQuery = query(
+          tagsRef,
+          orderBy('name'),
+          startAfter(startAfterDoc),
+          limit(20)
+        );
+      } else {
+        // We have all the tags already
+        return { newTags: [], lastVisibleDoc: null, hasMoreTags: false };
+      }
+    } else if (lastDoc) {
+      // Normal pagination using lastDoc
+      tagsQuery = query(
+        tagsRef,
+        orderBy('name'),
+        startAfter(lastDoc),
+        limit(20)
+      );
+    } else {
+      // First page
+      tagsQuery = query(tagsRef, orderBy('name'), limit(20));
     }
 
     const snapshot = await getDocs(tagsQuery);
@@ -537,8 +609,12 @@ export const fetchTags = async (lastDoc = null) => {
       ...doc.data(),
     }));
 
-    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1]; // Get the last document
-    const hasMoreTags = snapshot.docs.length === 30; // Check if there are more tags to load
+    const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+    const hasMoreTags = snapshot.docs.length === 20;
+
+    console.log(
+      `fetchTags: fetched ${newTags.length}, hasMore: ${hasMoreTags}`
+    );
 
     return { newTags, lastVisibleDoc, hasMoreTags };
   } catch (error) {
@@ -546,7 +622,6 @@ export const fetchTags = async (lastDoc = null) => {
     throw error;
   }
 };
-
 export const followAuthor = async (userId, author) => {
   try {
     const userDocRef = doc(db, 'users', userId);

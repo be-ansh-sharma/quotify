@@ -135,6 +135,7 @@ export const loadBackgroundImage = async ({
     const shouldUseCache =
       !forceReload && (await isImageCached(id, cacheMetadata, updatedAt));
 
+    console.log(`Should use cache for ${id}: ${shouldUseCache}`);
     if (shouldUseCache) {
       imageUrl = cachePath;
 

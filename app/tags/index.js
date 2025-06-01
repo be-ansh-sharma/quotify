@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchTags, searchTags } from 'utils/firebase/firestore';
+import { TagsCache } from 'utils/cache/tagsCache'; // Import the cache utility
 import { useAppTheme } from 'context/AppThemeContext';
 import Header from 'components/header/Header';
 import TileDecoration from 'components/decoration/TileDecoration';
@@ -30,55 +31,130 @@ export default function Tags() {
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Add initialLoadRef to track first load
+  // Add refs to track cache and initial load
   const initialLoadRef = useRef(false);
+  const cacheLoadedRef = useRef(false);
 
   // Generate styles with current theme colors
   const styles = getStyles(COLORS);
 
-  // Fetch tags from the database with isReset parameter
-  const loadTags = async (isReset = false) => {
-    if (loading || (!hasMore && !isReset) || searchQuery.trim()) return;
+  // Load tags from cache first, then remote if needed
+  const loadTagsWithCache = async () => {
+    try {
+      setLoading(true);
+
+      // Try to load from cache first
+      const cacheResult = await TagsCache.loadTags();
+
+      if (cacheResult && cacheResult.tags.length > 0) {
+        // We have valid cached data
+        setTags(cacheResult.tags);
+
+        // Reset pagination state - start fresh for next batch
+        setLastDoc(null);
+
+        cacheLoadedRef.current = true;
+        initialLoadRef.current = true;
+        setIsInitialLoad(false);
+
+        console.log(`Loaded ${cacheResult.tags.length} tags from cache`);
+
+        // Enable pagination from where cache left off
+        setHasMore(true);
+      } else {
+        console.log('No valid cache, loading from remote');
+        await loadTagsFromRemote(true);
+      }
+    } catch (error) {
+      console.error('Error loading tags with cache:', error);
+      await loadTagsFromRemote(true);
+    } finally {
+      setLoading(false);
+      setIsInitialLoad(false);
+    }
+  };
+
+  // Load tags from remote (Firestore)
+  const loadTagsFromRemote = async (isReset = false) => {
+    if (loading && !isReset) return;
+
+    if (!hasMore && !isReset) return;
+
+    if (isSearching && !isReset) return;
 
     setLoading(true);
     try {
-      // If this is a reset but we already have tags data, just use what we have
-      if (isReset && tags.length > 0 && initialLoadRef.current) {
-        console.log('Using cached tags data');
-        setLoading(false);
-        return;
-      }
-
-      const { newTags, lastVisibleDoc, hasMoreTags } = await fetchTags(
-        isReset ? null : lastDoc
-      );
-
-      // Mark that we've loaded data
-      initialLoadRef.current = true;
-
-      // Filter out any duplicate tags
-      setTags((prevTags) => {
-        // If this is a reset, don't append to existing tags
-        if (isReset) return newTags;
-
-        // Create a map of existing tags by ID for quick lookup
-        const existingTagsMap = new Map(prevTags.map((tag) => [tag.id, true]));
-
-        // Only add tags that don't already exist
-        const uniqueNewTags = newTags.filter(
-          (tag) => !existingTagsMap.has(tag.id)
+      // If we have cached data but no valid lastDoc, we need to skip cached items
+      if (cacheLoadedRef.current && !lastDoc && tags.length > 0 && !isReset) {
+        console.log('Loading more tags after cache...');
+        // Use offset to skip cached items
+        const { newTags, lastVisibleDoc, hasMoreTags } = await fetchTags(
+          null,
+          tags.length // cacheSize parameter
         );
 
-        return [...prevTags, ...uniqueNewTags];
-      });
+        // Filter out any tags we already have
+        const existingIds = new Set(tags.map((tag) => tag.id));
+        const uniqueNewTags = newTags.filter((tag) => !existingIds.has(tag.id));
 
-      setLastDoc(lastVisibleDoc);
-      setHasMore(hasMoreTags);
+        setTags((prevTags) => [...prevTags, ...uniqueNewTags]);
+        setLastDoc(lastVisibleDoc);
+        setHasMore(hasMoreTags);
+
+        console.log(
+          `Loaded ${uniqueNewTags.length} new tags after cache, hasMore: ${hasMoreTags}`
+        );
+      } else {
+        // Normal pagination or initial load
+        const { newTags, lastVisibleDoc, hasMoreTags } = await fetchTags(
+          isReset ? null : lastDoc
+        );
+
+        initialLoadRef.current = true;
+
+        setTags((prevTags) => {
+          // Filter out duplicates
+          const existingIds = new Set(prevTags.map((tag) => tag.id));
+          const uniqueNewTags = newTags.filter(
+            (tag) => !existingIds.has(tag.id)
+          );
+
+          const updatedTags = isReset
+            ? newTags
+            : [...prevTags, ...uniqueNewTags];
+
+          // Cache the data if this is the first page or we're resetting
+          if (isReset || !cacheLoadedRef.current) {
+            TagsCache.saveTags(updatedTags);
+          }
+
+          return updatedTags;
+        });
+
+        setLastDoc(lastVisibleDoc);
+        setHasMore(hasMoreTags);
+
+        console.log(
+          `Loaded ${newTags.length} tags from remote, hasMore: ${hasMoreTags}`
+        );
+      }
     } catch (error) {
-      console.error('Error fetching tags:', error);
+      console.error('Error fetching tags from remote:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Main load function that handles both cache and remote loading
+  const loadTags = async (isReset = false) => {
+    // For initial load, try cache first
+    if (isReset && isInitialLoad) {
+      await loadTagsWithCache();
+    } else {
+      // For pagination, always load from remote
+      await loadTagsFromRemote(isReset);
     }
   };
 
@@ -98,29 +174,40 @@ export default function Tags() {
       // Create a Map to filter duplicates by ID
       const uniqueTagsMap = new Map();
       results.forEach((tag) => {
-        // Only add if we don't already have this ID or name
         const key = tag.id || tag.name;
         if (!uniqueTagsMap.has(key)) {
           uniqueTagsMap.set(key, tag);
         }
       });
 
-      // Convert Map back to array
       const uniqueTags = Array.from(uniqueTagsMap.values());
 
       setTags(uniqueTags);
-      setHasMore(false); // No pagination for search results
+      setLastDoc(null);
+      setHasMore(false);
     } catch (error) {
       console.error('Error searching tags:', error);
     } finally {
       setLoading(false);
-      setIsSearching(false);
     }
+  };
+
+  // Clear search and reset to browse mode
+  const clearSearch = async () => {
+    setSearchQuery('');
+    setIsSearching(false);
+    setLastDoc(null);
+    setHasMore(true);
+
+    // When clearing search, try to load from cache again
+    setIsInitialLoad(true);
+    cacheLoadedRef.current = false;
+    initialLoadRef.current = false;
+    await loadTagsWithCache();
   };
 
   // Handle search with debounce
   useEffect(() => {
-    // Skip the initial render effect for empty search query
     if (searchQuery === '' && !initialLoadRef.current) {
       return;
     }
@@ -131,34 +218,25 @@ export default function Tags() {
       } else if (searchQuery === '') {
         clearSearch();
       }
-    }, 500); // Debounce for 500ms
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Initial load - only runs once
+  // Initial load - load with cache
   useEffect(() => {
-    loadTags(true); // Load tags with reset flag when component mounts
+    loadTags(true);
   }, []);
 
-  // Clear search and reset to browse mode - don't reload if we have data
-  const clearSearch = () => {
-    setSearchQuery('');
-
-    // Don't clear data and reload if we already have tags
-    if (tags.length === 0) {
-      setLastDoc(null);
-      setHasMore(true);
-      loadTags(true); // Pass true to indicate this is a reset
-    }
+  // Debug function to check cache info (remove in production)
+  const debugCacheInfo = async () => {
+    const info = await TagsCache.getCacheInfo();
+    console.log('Tags Cache Info:', info);
   };
 
-  // Update the TagTile component to better center content
+  // Update the TagTile component (unchanged)
   const TagTile = React.memo(({ item, index }) => {
-    // Use item id or index as seed for consistent icons per tag
     const iconSeed = parseInt(item.id, 36) || index * 100;
-
-    // Animation values
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const opacityAnim = useRef(new Animated.Value(1)).current;
 
@@ -206,10 +284,7 @@ export default function Tags() {
           onPressOut={handlePressOut}
           onPress={() => router.push(`/tags/${encodeURIComponent(item.name)}`)}
         >
-          {/* TileDecoration as background */}
           <TileDecoration seed={iconSeed} />
-
-          {/* Centered content wrapper */}
           <View style={styles.tileContent}>
             <Text style={styles.tileText} numberOfLines={2}>
               {item.name}
@@ -225,11 +300,13 @@ export default function Tags() {
     return (
       <View style={styles.footer}>
         <ActivityIndicator size='large' color={COLORS.primary} />
+        <Text style={styles.footerText}>
+          {isInitialLoad ? 'Loading tags...' : 'Loading more...'}
+        </Text>
       </View>
     );
   };
 
-  // Empty results message
   const renderEmptyList = () => {
     if (loading) return null;
 
@@ -254,6 +331,13 @@ export default function Tags() {
   return (
     <View style={styles.container}>
       <Header title='Tags' backRoute='/browse' />
+
+      {/* Add cache debug button in development */}
+      {__DEV__ && (
+        <TouchableOpacity onPress={debugCacheInfo} style={styles.debugButton}>
+          <Text>Debug Cache</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Search bar */}
       <View style={styles.searchContainer}>
@@ -295,8 +379,18 @@ export default function Tags() {
           styles.grid,
           tags.length === 0 && styles.emptyGrid,
         ]}
-        onEndReached={searchQuery ? null : loadTags}
-        onEndReachedThreshold={0.1}
+        onEndReached={() => {
+          if (
+            !isSearching &&
+            !searchQuery.trim() &&
+            !isInitialLoad &&
+            hasMore
+          ) {
+            console.log('Loading more tags...');
+            loadTags(false);
+          }
+        }}
+        onEndReachedThreshold={0.2}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmptyList}
       />
@@ -304,12 +398,22 @@ export default function Tags() {
   );
 }
 
-// Convert static styles to a function that takes COLORS
+// Convert static styles to a function that takes COLORS (add debug styles)
 const getStyles = (COLORS) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: COLORS.background,
+    },
+    // Debug button (remove in production)
+    debugButton: {
+      position: 'absolute',
+      top: 100,
+      right: 10,
+      zIndex: 1000,
+      backgroundColor: 'red',
+      padding: 10,
+      borderRadius: 5,
     },
     searchContainer: {
       paddingHorizontal: 16,
@@ -378,6 +482,11 @@ const getStyles = (COLORS) =>
     footer: {
       paddingVertical: 20,
       alignItems: 'center',
+    },
+    footerText: {
+      marginTop: 8,
+      fontSize: 14,
+      color: COLORS.textSecondary,
     },
     emptyContainer: {
       flex: 1,

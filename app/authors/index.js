@@ -10,11 +10,12 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { fetchAuthors, searchAuthors } from 'utils/firebase/firestore'; // Add searchAuthors import
+import { fetchAuthors, searchAuthors } from 'utils/firebase/firestore';
+import { AuthorsCache } from 'utils/cache/authorsCache'; // Import the cache utility
 import { useAppTheme } from 'context/AppThemeContext';
 import Header from 'components/header/Header';
 import TileDecoration from 'components/decoration/TileDecoration';
-import { FontAwesome } from '@expo/vector-icons'; // Add this import for search icon
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function Authors() {
   const router = useRouter();
@@ -22,8 +23,9 @@ export default function Authors() {
   const [lastDoc, setLastDoc] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
-  const [isSearching, setIsSearching] = useState(false); // Add searching state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // Track if this is the first load
 
   // Get COLORS from theme context
   const { COLORS } = useAppTheme();
@@ -33,53 +35,146 @@ export default function Authors() {
 
   // Add new ref to track initial load
   const initialLoadRef = useRef(false);
+  const cacheLoadedRef = useRef(false); // Track if we've loaded from cache
 
-  // Fetch authors from the database
-  const loadAuthors = async (isReset = false) => {
-    // Don't fetch if already loading or no more to load
-    if (loading || (!hasMore && !isReset) || searchQuery.trim()) return;
+  // Load authors from cache first, then remote if needed
+  const loadAuthorsWithCache = async () => {
+    try {
+      setLoading(true);
+
+      // Try to load from cache first
+      const cacheResult = await AuthorsCache.loadAuthors();
+
+      if (cacheResult && cacheResult.authors.length > 0) {
+        // We have valid cached data
+        setAuthors(cacheResult.authors);
+
+        // DON'T set the cached lastDoc - it's not a valid Firestore reference
+        // Instead, reset lastDoc to null so pagination starts fresh
+        setLastDoc(null);
+
+        cacheLoadedRef.current = true;
+        initialLoadRef.current = true;
+        setIsInitialLoad(false);
+
+        console.log('Loaded authors from cache, resetting pagination');
+
+        // Always enable hasMore for cached data to allow pagination
+        setHasMore(true);
+      } else {
+        // No cache or expired cache, load from remote
+        console.log('No valid cache, loading from remote');
+        await loadAuthorsFromRemote(true);
+      }
+    } catch (error) {
+      console.error('Error loading authors with cache:', error);
+      // Fallback to remote loading
+      await loadAuthorsFromRemote(true);
+    } finally {
+      setLoading(false);
+      setIsInitialLoad(false);
+    }
+  };
+
+  // Load authors from remote (Firestore)
+  const loadAuthorsFromRemote = async (isReset = false) => {
+    // Prevent multiple simultaneous requests
+    if (loading && !isReset) return;
+
+    // Don't load if no more data available (unless resetting)
+    if (!hasMore && !isReset) return;
+
+    // Don't load during search (unless resetting)
+    if (isSearching && !isReset) return;
 
     setLoading(true);
     try {
-      // If this is a reset (from clearSearch) but we've already loaded data,
-      // just reset the UI without fetching again
-      if (isReset && authors.length > 0 && initialLoadRef.current) {
-        console.log('Using cached authors data');
-        setLoading(false);
-        return;
-      }
+      // If we loaded from cache and this is the first remote call,
+      // we need to skip the cached items
+      let startAfterDoc = lastDoc;
 
-      const { newAuthors, lastVisibleDoc, hasMoreAuthors } = await fetchAuthors(
-        isReset ? null : lastDoc
-      );
+      // If we have cached data but no valid lastDoc, we need to find where to start
+      if (cacheLoadedRef.current && !lastDoc && authors.length > 0) {
+        console.log('Finding pagination start point after cache...');
+        // Get the last author from cache to determine where to start pagination
+        const lastCachedAuthor = authors[authors.length - 1];
 
-      // Mark that we've done our initial load
-      initialLoadRef.current = true;
+        // We'll need to create a query that starts after this author
+        // For now, let's use a different approach - skip the cached count
+        const { newAuthors, lastVisibleDoc, hasMoreAuthors } =
+          await fetchAuthors(
+            null,
+            authors.length // cacheSize parameter
+          );
 
-      // Filter out duplicates
-      setAuthors((prevAuthors) => {
-        // If this is a reset, don't append to existing authors
-        if (isReset) return newAuthors;
-
-        const existingAuthorsMap = new Map(
-          prevAuthors.map((author) => [author.id, true])
-        );
+        // Filter out any authors we already have
+        const existingIds = new Set(authors.map((author) => author.id));
         const uniqueNewAuthors = newAuthors.filter(
-          (author) => !existingAuthorsMap.has(author.id)
+          (author) => !existingIds.has(author.id)
         );
-        return [...prevAuthors, ...uniqueNewAuthors];
-      });
 
-      setLastDoc(lastVisibleDoc);
-      setHasMore(hasMoreAuthors);
+        setAuthors((prevAuthors) => [...prevAuthors, ...uniqueNewAuthors]);
+        setLastDoc(lastVisibleDoc);
+        setHasMore(hasMoreAuthors);
+
+        console.log(
+          `Loaded ${uniqueNewAuthors.length} new authors after cache, hasMore: ${hasMoreAuthors}`
+        );
+      } else {
+        // Normal pagination
+        const { newAuthors, lastVisibleDoc, hasMoreAuthors } =
+          await fetchAuthors(isReset ? null : lastDoc);
+
+        initialLoadRef.current = true;
+
+        setAuthors((prevAuthors) => {
+          // Filter out duplicates
+          const existingIds = new Set(prevAuthors.map((author) => author.id));
+          const uniqueNewAuthors = newAuthors.filter(
+            (author) => !existingIds.has(author.id)
+          );
+
+          const updatedAuthors = isReset
+            ? newAuthors
+            : [...prevAuthors, ...uniqueNewAuthors];
+
+          // Cache the data if this is the first page or we're resetting
+          if (isReset || !cacheLoadedRef.current) {
+            AuthorsCache.saveAuthors(updatedAuthors, lastVisibleDoc);
+          }
+
+          return updatedAuthors;
+        });
+
+        setLastDoc(lastVisibleDoc);
+        setHasMore(hasMoreAuthors);
+
+        console.log(
+          `Loaded ${newAuthors.length} authors from remote, hasMore: ${hasMoreAuthors}`
+        );
+      }
     } catch (error) {
-      console.error('Error fetching authors:', error);
+      console.error('Error fetching authors from remote:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Perform search operation
+  // Main load function that handles both cache and remote loading
+  const loadAuthors = async (isReset = false) => {
+    // Don't load if already loading, searching, or no more data (unless resetting)
+    if (loading || isSearching || (!hasMore && !isReset)) return;
+
+    // For initial load, try cache first
+    if (isReset && isInitialLoad) {
+      await loadAuthorsWithCache();
+    } else {
+      // For pagination or when cache is not available, load from remote
+      await loadAuthorsFromRemote(isReset);
+    }
+  };
+
+  // Perform search operation (unchanged)
   const performSearch = async () => {
     if (!searchQuery.trim()) {
       clearSearch();
@@ -92,7 +187,6 @@ export default function Authors() {
     try {
       const results = await searchAuthors(searchQuery);
 
-      // Create a Map to filter duplicates by ID
       const uniqueAuthorsMap = new Map();
       results.forEach((author) => {
         const key = author.id || author.name;
@@ -101,34 +195,34 @@ export default function Authors() {
         }
       });
 
-      // Convert Map back to array
       const uniqueAuthors = Array.from(uniqueAuthorsMap.values());
 
       setAuthors(uniqueAuthors);
-      setHasMore(false); // No pagination for search results
+      setLastDoc(null);
+      setHasMore(false);
     } catch (error) {
       console.error('Error searching authors:', error);
     } finally {
       setLoading(false);
-      setIsSearching(false);
     }
   };
 
   // Clear search and reset to browse mode
-  const clearSearch = () => {
+  const clearSearch = async () => {
     setSearchQuery('');
+    setIsSearching(false);
+    setLastDoc(null);
+    setHasMore(true);
 
-    // Don't clear data and reload if we already have authors
-    if (authors.length === 0) {
-      setLastDoc(null);
-      setHasMore(true);
-      loadAuthors(true); // Pass true to indicate this is a reset
-    }
+    // When clearing search, try to load from cache again
+    setIsInitialLoad(true);
+    cacheLoadedRef.current = false;
+    initialLoadRef.current = false; // Reset this flag too
+    await loadAuthorsWithCache();
   };
 
-  // Handle search with debounce
+  // Handle search with debounce (unchanged)
   useEffect(() => {
-    // Skip the initial render effect for empty search query
     if (searchQuery === '' && !initialLoadRef.current) {
       return;
     }
@@ -139,17 +233,23 @@ export default function Authors() {
       } else if (searchQuery === '') {
         clearSearch();
       }
-    }, 500); // Debounce for 500ms
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Initial load - only runs once
+  // Initial load - load with cache
   useEffect(() => {
-    loadAuthors(true); // Load authors with reset flag when the component mounts
+    loadAuthors(true);
   }, []);
 
-  // Empty results message
+  // Debug function to check cache info (remove in production)
+  const debugCacheInfo = async () => {
+    const info = await AuthorsCache.getCacheInfo();
+    console.log('Cache Info:', info);
+  };
+
+  // Empty results message (unchanged)
   const renderEmptyList = () => {
     if (loading) return null;
 
@@ -176,14 +276,24 @@ export default function Authors() {
     return (
       <View style={styles.footer}>
         <ActivityIndicator size='large' color={COLORS.primary} />
+        {/* Show different text for initial load vs pagination */}
+        <Text style={styles.footerText}>
+          {isInitialLoad ? 'Loading authors...' : 'Loading more...'}
+        </Text>
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Use the reusable Header component */}
       <Header title='Authors' backRoute='/browse' />
+
+      {/* Add cache debug button in development */}
+      {__DEV__ && (
+        <TouchableOpacity onPress={debugCacheInfo} style={styles.debugButton}>
+          <Text>Debug Cache</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Search bar */}
       <View style={styles.searchContainer}>
@@ -228,8 +338,19 @@ export default function Authors() {
           styles.grid,
           authors.length === 0 && styles.emptyGrid,
         ]}
-        onEndReached={searchQuery ? null : loadAuthors}
-        onEndReachedThreshold={0.1}
+        onEndReached={() => {
+          // Only load more if we're not searching and not on initial load
+          if (
+            !isSearching &&
+            !searchQuery.trim() &&
+            !isInitialLoad &&
+            hasMore
+          ) {
+            console.log('Loading more authors...');
+            loadAuthors(false); // This will call loadAuthorsFromRemote(false)
+          }
+        }}
+        onEndReachedThreshold={0.2}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmptyList}
       />
@@ -237,6 +358,7 @@ export default function Authors() {
   );
 }
 
+// AuthorTile component (unchanged)
 const AuthorTile = ({ item, router, styles }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -256,7 +378,6 @@ const AuthorTile = ({ item, router, styles }) => {
     }).start();
   };
 
-  // Create a more unique seed
   const seed = parseInt(item.id, 36) * 100 + item.name.length * 7;
 
   return (
@@ -274,11 +395,10 @@ const AuthorTile = ({ item, router, styles }) => {
           },
         ]}
       >
-        {/* Background decorations - significantly reduced icon count and larger area */}
         <TileDecoration
-          size={130} // Increase size to give more room
+          size={130}
           seed={seed}
-          iconCount={6} // Reduce to just 3 icons
+          iconCount={6}
           opacity={0.15}
           style={styles.decorations}
         />
@@ -294,6 +414,15 @@ const getStyles = (COLORS) =>
     container: {
       flex: 1,
       backgroundColor: COLORS.background,
+    },
+    // Debug button (remove in production)
+    debugButton: {
+      position: 'absolute',
+      top: 100,
+      right: 10,
+      zIndex: 1000,
+      backgroundColor: 'red',
+      padding: 10,
     },
     // Search related styles
     searchContainer: {
@@ -320,7 +449,7 @@ const getStyles = (COLORS) =>
       fontSize: 16,
       color: COLORS.text,
     },
-    // Existing grid styles
+    // Grid styles
     grid: {
       justifyContent: 'center',
       paddingHorizontal: 12,
@@ -333,7 +462,7 @@ const getStyles = (COLORS) =>
       flexWrap: 'wrap',
       justifyContent: 'space-around',
     },
-    // Existing tile styles
+    // Tile styles
     tile: {
       flex: 1,
       marginHorizontal: 8,
@@ -399,6 +528,11 @@ const getStyles = (COLORS) =>
     footer: {
       paddingVertical: 20,
       alignItems: 'center',
+    },
+    footerText: {
+      marginTop: 8,
+      fontSize: 14,
+      color: COLORS.textSecondary,
     },
   });
 
