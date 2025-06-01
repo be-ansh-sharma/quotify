@@ -1,8 +1,261 @@
 import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebaseconfig';
 
 const metadataPath = `${FileSystem.documentDirectory}backgrounds-metadata.json`;
+const CACHE_DIR = `${FileSystem.documentDirectory}backgrounds/`;
+const CACHE_METADATA_KEY = 'background_cache_metadata';
+
+// Ensure cache directory exists
+const ensureCacheDir = async () => {
+  const dirInfo = await FileSystem.getInfoAsync(CACHE_DIR);
+  if (!dirInfo.exists) {
+    await FileSystem.makeDirectoryAsync(CACHE_DIR, { intermediates: true });
+  }
+};
+
+/**
+ * Initialize cache system and return existing metadata
+ * @returns {Promise<Object>} Cache metadata object
+ */
+export const initializeCache = async () => {
+  try {
+    // Ensure cache directory exists
+    await ensureCacheDir();
+
+    // Try to read existing cache metadata
+    const metadataJson = await AsyncStorage.getItem(CACHE_METADATA_KEY);
+
+    if (metadataJson) {
+      const metadata = JSON.parse(metadataJson);
+      return metadata;
+    } else {
+      return {};
+    }
+  } catch (error) {
+    console.error('Error initializing cache:', error);
+    return {};
+  }
+};
+
+/**
+ * Fetches only the background manifest (no image downloads) and handles cache invalidation
+ * @param {Function} updateProgress - Progress callback function
+ * @param {Object} currentMetadata - Current cache metadata for invalidation check
+ * @returns {Promise<Object>} Manifest data and updated cache metadata
+ */
+export const fetchBackgroundManifest = async (
+  updateProgress,
+  currentMetadata = {}
+) => {
+  try {
+    updateProgress?.({
+      manifest: { loading: true, progress: 0 },
+      message: 'Loading backgrounds list...',
+    });
+
+    const manifestRef = ref(storage, 'bg/manifest.json');
+    const manifestUrl = await getDownloadURL(manifestRef);
+
+    updateProgress?.({
+      manifest: { loading: true, progress: 50 },
+      message: 'Downloading manifest...',
+    });
+
+    const response = await fetch(manifestUrl);
+    const manifestData = await response.json();
+
+    updateProgress?.({
+      manifest: { loading: true, progress: 75 },
+      message: 'Checking for updates...',
+    });
+
+    // Check for manifest updates and invalidate cache if needed
+    const updatedMetadata = await checkManifestAndInvalidateCache(
+      manifestData,
+      currentMetadata
+    );
+
+    updateProgress?.({
+      manifest: { loading: false, progress: 100 },
+      message: 'Manifest loaded successfully',
+    });
+
+    return {
+      manifestData,
+      updatedMetadata, // Return updated metadata after cache invalidation
+    };
+  } catch (error) {
+    console.error('Error fetching background manifest:', error);
+
+    updateProgress?.({
+      manifest: { loading: false, progress: 0 },
+      message: 'Failed to load manifest',
+    });
+
+    throw error;
+  }
+};
+
+/**
+ * Load a single background image with caching
+ * @param {Object} params - Parameters object
+ * @param {string} params.path - Firebase storage path
+ * @param {string} params.id - Background ID
+ * @param {string} params.updatedAt - Last updated timestamp
+ * @param {boolean} params.forceReload - Force download even if cached
+ * @param {Object} params.cacheMetadata - Current cache metadata
+ * @param {Function} params.updateProgress - Progress callback
+ * @returns {Promise<Object>} Result with imageUrl and updated metadata
+ */
+export const loadBackgroundImage = async ({
+  path,
+  id,
+  updatedAt,
+  forceReload = false,
+  cacheMetadata = {},
+  updateProgress,
+}) => {
+  // Ensure cacheMetadata is always an object
+  cacheMetadata = cacheMetadata || {};
+
+  updateProgress?.({
+    downloads: {
+      [id]: { progress: 0, status: 'starting' },
+    },
+    message: `Loading ${id}...`,
+  });
+
+  try {
+    let imageUrl;
+    const cachePath = `${CACHE_DIR}${id}`;
+
+    // Check if we should use cache
+    const shouldUseCache =
+      !forceReload && (await isImageCached(id, cacheMetadata, updatedAt));
+
+    if (shouldUseCache) {
+      imageUrl = cachePath;
+
+      // Update progress immediately for cached files
+      updateProgress?.({
+        completedFiles: 1,
+        downloads: {
+          [id]: { progress: 100, status: 'complete' },
+        },
+        message: `Loaded ${id} from cache`,
+      });
+
+      return {
+        imageUrl,
+        id,
+        cacheMetadata,
+      };
+    }
+
+    let downloadUrl;
+
+    if (path.startsWith('gs://')) {
+      // Extract path from the gs:// URL
+      const gsPathRegex = /^gs:\/\/([^\/]+)\/(.*)$/;
+      const match = path.match(gsPathRegex);
+
+      if (!match) {
+        throw new Error(`Invalid gs:// path format: ${path}`);
+      }
+
+      const filePath = match[2];
+      const storageRef = ref(storage, filePath);
+      downloadUrl = await getDownloadURL(storageRef);
+    } else {
+      // Direct URL
+      downloadUrl = path;
+    }
+
+    // Download with progress tracking
+    const downloadResumable = FileSystem.createDownloadResumable(
+      downloadUrl,
+      cachePath,
+      {},
+      (downloadProgress) => {
+        const progress =
+          downloadProgress.totalBytesWritten /
+          downloadProgress.totalBytesExpectedToWrite;
+
+        // Update progress state (but not too frequently)
+        if (progress === 1 || Math.random() < 0.1) {
+          updateProgress?.({
+            downloads: {
+              [id]: {
+                progress: Math.round(progress * 100),
+                status: 'downloading',
+              },
+            },
+            message: `Downloading ${id}: ${Math.round(progress * 100)}%`,
+          });
+        }
+      }
+    );
+
+    const { uri } = await downloadResumable.downloadAsync();
+
+    if (uri) {
+      imageUrl = uri;
+
+      // Create updated metadata with the new image
+      const newMetadata = {
+        ...(cacheMetadata || {}),
+        [id]: {
+          updatedAt: updatedAt || new Date().toISOString(),
+          cachedAt: new Date().toISOString(),
+          path: cachePath,
+        },
+      };
+
+      // Save updated cache metadata to AsyncStorage
+      try {
+        await AsyncStorage.setItem(
+          CACHE_METADATA_KEY,
+          JSON.stringify(newMetadata)
+        );
+      } catch (metadataError) {
+        console.error(`Error saving metadata for ${id}:`, metadataError);
+        // Don't fail the whole operation if metadata save fails
+      }
+
+      // Update progress with completion
+      updateProgress?.({
+        completedFiles: 1,
+        downloads: {
+          [id]: { progress: 100, status: 'complete' },
+        },
+        message: `Downloaded and cached ${id}`,
+      });
+
+      // Return updated cache metadata
+      return {
+        imageUrl,
+        id,
+        cacheMetadata: newMetadata,
+      };
+    }
+
+    throw new Error(`Failed to load image for ${id}`);
+  } catch (error) {
+    console.error(`Error loading background ${id}:`, error);
+
+    // Update progress with error
+    updateProgress?.({
+      downloads: {
+        [id]: { progress: 0, status: 'error', error: error.message },
+      },
+      message: `Error loading ${id}: ${error.message}`,
+    });
+
+    throw error;
+  }
+};
 
 /**
  * Downloads an image from a remote URL and saves it locally.
@@ -15,7 +268,6 @@ const downloadImage = async (imageName, imageUrl) => {
 
   try {
     const downloadResult = await FileSystem.downloadAsync(imageUrl, localPath);
-    console.log(`Image ${imageName} downloaded successfully.`);
     return downloadResult.uri;
   } catch (error) {
     console.error(`Error downloading image ${imageName}:`, error);
@@ -66,7 +318,6 @@ const readLocalMetadata = async () => {
 const writeLocalMetadata = async (metadata) => {
   try {
     await FileSystem.writeAsStringAsync(metadataPath, JSON.stringify(metadata));
-    console.log('Local metadata updated successfully.');
   } catch (error) {
     console.error('Error writing local metadata:', error);
   }
@@ -74,28 +325,24 @@ const writeLocalMetadata = async (metadata) => {
 
 /**
  * Fetches and caches background images from Firebase Storage.
- * Only downloads images that have been updated since the last check.
- * @param {boolean} isPremiumUser - Whether the user is a premium user.
+ * Downloads both free and premium images, regardless of user status.
+ * @param {boolean} isPremiumUser - Whether the user is a premium user (for return filtering only).
  * @returns {Promise<Array>} - A list of background objects with local URIs.
  */
 export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
   try {
     // Read local metadata
     const localMetadata = await readLocalMetadata();
-    console.log('Local metadata:', localMetadata);
 
     // Fetch remote manifest
     const manifest = await fetchManifest();
-    console.log('Remote manifest:', manifest);
 
     if (!manifest) {
-      console.error('Manifest is undefined');
       return [];
     }
 
     // Ensure backgrounds property exists
     if (!manifest.backgrounds) {
-      console.error('Manifest has no backgrounds property');
       return [];
     }
 
@@ -111,10 +358,6 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
         })
       );
     } else {
-      console.error(
-        'Backgrounds is neither array nor object:',
-        typeof manifest.backgrounds
-      );
       return [];
     }
 
@@ -125,23 +368,14 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
       : new Date(0);
     const needsUpdate = remoteLastUpdated > localLastChecked;
 
-    console.log(`Remote last updated: ${remoteLastUpdated}`);
-    console.log(`Local last checked: ${localLastChecked}`);
-    console.log(`Needs update: ${needsUpdate}`);
-
     // If no update is needed, try to use cached images
     if (!needsUpdate && localMetadata.backgrounds) {
-      console.log('No update needed, using cached images');
-
       const cachedBackgrounds = [];
 
       // Check each background from the manifest
       for (const bg of backgroundsArray) {
         const name = bg.name || '';
         const type = bg.type || 'free';
-
-        // Skip premium backgrounds for non-premium users
-        if (type === 'premium' && !isPremiumUser) continue;
 
         // Check if this background is cached
         if (
@@ -154,31 +388,23 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
           const fileInfo = await FileSystem.getInfoAsync(cachedUri);
 
           if (fileInfo.exists) {
-            console.log(`Using cached image for ${name}: ${cachedUri}`);
             cachedBackgrounds.push({
               id: name,
               uri: cachedUri,
               type,
             });
             continue; // Skip downloading this image
-          } else {
-            console.log(`Cached file not found for ${name}, will download`);
           }
         }
       }
 
       // If we have all the backgrounds we need from cache, return them
       if (cachedBackgrounds.length > 0) {
-        console.log(`Returning ${cachedBackgrounds.length} cached backgrounds`);
         return cachedBackgrounds;
       }
-
-      console.log('Some cached images missing, proceeding with download');
     }
 
     // If we get here, we need to download at least some images
-    console.log('Downloading backgrounds...');
-
     const downloadedBackgrounds = [];
     const newMetadata = {
       lastChecked: new Date().toISOString(),
@@ -192,12 +418,8 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
       const updatedAt = bg.updatedAt || new Date().toISOString();
 
       if (!path) {
-        console.warn(`Missing path for background ${name}`);
         continue;
       }
-
-      // Skip premium backgrounds for non-premium users
-      if (type === 'premium' && !isPremiumUser) continue;
 
       let localUri = null;
 
@@ -212,7 +434,6 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
         const fileInfo = await FileSystem.getInfoAsync(cachedUri);
 
         if (fileInfo.exists) {
-          console.log(`Using existing cached image for ${name}`);
           localUri = cachedUri;
         }
       }
@@ -220,7 +441,6 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
       // If not cached or cache is invalid, download the image
       if (!localUri) {
         try {
-          console.log(`Downloading image ${name}`);
           const storagePath = path.startsWith('gs://')
             ? path.replace(/^gs:\/\/[^\/]+\//, '')
             : path;
@@ -230,7 +450,6 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
           localUri = await downloadImage(name, downloadURL);
 
           if (!localUri) {
-            console.error(`Failed to download image ${name}`);
             continue;
           }
         } catch (error) {
@@ -239,14 +458,16 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
         }
       }
 
-      // Add to results
-      downloadedBackgrounds.push({
-        id: name,
-        uri: localUri,
-        type,
-      });
+      // Add to results - but only if it's a free background or the user has premium
+      if (type !== 'premium' || isPremiumUser) {
+        downloadedBackgrounds.push({
+          id: name,
+          uri: localUri,
+          type,
+        });
+      }
 
-      // Update metadata
+      // Always update metadata for all backgrounds (premium and free)
       newMetadata.backgrounds[name] = {
         uri: localUri,
         updatedAt,
@@ -257,13 +478,203 @@ export const fetchAndCacheBackgrounds = async (isPremiumUser) => {
     // Save updated metadata
     await writeLocalMetadata(newMetadata);
 
-    console.log(
-      `Successfully processed ${downloadedBackgrounds.length} backgrounds`
-    );
     return downloadedBackgrounds;
   } catch (error) {
     console.error('Error in fetchAndCacheBackgrounds:', error);
     return [];
+  }
+};
+
+/**
+ * Check if an image is cached
+ * @param {string} id - Background ID
+ * @param {Object} cacheMetadata - Current cache metadata
+ * @param {string} updatedAt - Expected update timestamp
+ * @returns {Promise<boolean>} Whether the image is properly cached
+ */
+export const isImageCached = async (id, cacheMetadata = {}, updatedAt) => {
+  try {
+    const cachePath = `${CACHE_DIR}${id}`;
+
+    // Check metadata
+    if (!cacheMetadata[id]) {
+      return false;
+    }
+
+    // Check timestamp if provided
+    if (updatedAt && cacheMetadata[id].updatedAt !== updatedAt) {
+      return false;
+    }
+
+    // Check file exists
+    const fileInfo = await FileSystem.getInfoAsync(cachePath);
+    if (!fileInfo.exists || fileInfo.size === 0) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error checking cache for ${id}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Clear all cached background images and metadata
+ * @returns {Promise<void>}
+ */
+export const clearAllCache = async () => {
+  try {
+    // Remove all files from cache directory
+    const dirInfo = await FileSystem.getInfoAsync(CACHE_DIR);
+    if (dirInfo.exists) {
+      const files = await FileSystem.readDirectoryAsync(CACHE_DIR);
+
+      for (const file of files) {
+        const filePath = `${CACHE_DIR}${file}`;
+        await FileSystem.deleteAsync(filePath, { idempotent: true });
+      }
+    }
+
+    // Clear metadata from AsyncStorage
+    await AsyncStorage.removeItem(CACHE_METADATA_KEY);
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+  }
+};
+
+/**
+ * Remove a specific cached image
+ * @param {string} id - Background ID to remove
+ * @param {Object} currentMetadata - Current cache metadata
+ * @returns {Promise<Object>} Updated metadata without the removed image
+ */
+export const removeCachedImage = async (id, currentMetadata = {}) => {
+  try {
+    const cachePath = `${CACHE_DIR}${id}`;
+
+    // Remove the file
+    const fileInfo = await FileSystem.getInfoAsync(cachePath);
+    if (fileInfo.exists) {
+      await FileSystem.deleteAsync(cachePath, { idempotent: true });
+    }
+
+    // Update metadata
+    const newMetadata = { ...currentMetadata };
+    delete newMetadata[id];
+
+    // Save updated metadata
+    await AsyncStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(newMetadata));
+
+    return newMetadata;
+  } catch (error) {
+    console.error(`Error removing cached image ${id}:`, error);
+    return currentMetadata;
+  }
+};
+
+/**
+ * Check if manifest has been updated and handle cache invalidation
+ * @param {Object} manifestData - The manifest data from remote
+ * @param {Object} currentMetadata - Current cache metadata
+ * @returns {Promise<Object>} Updated cache metadata after invalidation
+ */
+export const checkManifestAndInvalidateCache = async (
+  manifestData,
+  currentMetadata = {}
+) => {
+  try {
+    if (
+      !manifestData ||
+      !manifestData.backgrounds ||
+      !Array.isArray(manifestData.backgrounds)
+    ) {
+      return currentMetadata;
+    }
+
+    // Check if we have a stored manifest timestamp
+    const storedManifestData = await AsyncStorage.getItem('manifest_timestamp');
+    const lastManifestUpdate = storedManifestData
+      ? JSON.parse(storedManifestData)
+      : null;
+
+    const remoteLastUpdated = manifestData.lastUpdated;
+
+    // If manifest has been updated globally, clear all cache
+    if (
+      lastManifestUpdate &&
+      remoteLastUpdated &&
+      new Date(remoteLastUpdated) > new Date(lastManifestUpdate.lastUpdated)
+    ) {
+      await clearAllCache();
+
+      // Save new manifest timestamp
+      await AsyncStorage.setItem(
+        'manifest_timestamp',
+        JSON.stringify({
+          lastUpdated: remoteLastUpdated,
+          checkedAt: new Date().toISOString(),
+        })
+      );
+
+      return {}; // Return empty metadata since we cleared everything
+    }
+
+    // Check individual images for updates
+    let updatedMetadata = { ...currentMetadata };
+    let hasChanges = false;
+
+    for (const bg of manifestData.backgrounds) {
+      const id = bg.name;
+      const remoteUpdatedAt = bg.updatedAt;
+
+      if (currentMetadata[id]) {
+        const cachedUpdatedAt = currentMetadata[id].updatedAt;
+
+        // If this specific image has been updated, remove it from cache
+        if (
+          remoteUpdatedAt &&
+          cachedUpdatedAt &&
+          new Date(remoteUpdatedAt) > new Date(cachedUpdatedAt)
+        ) {
+          updatedMetadata = await removeCachedImage(id, updatedMetadata);
+          hasChanges = true;
+        }
+      }
+    }
+
+    // Save manifest timestamp if this is the first time or if we haven't stored it
+    if (!lastManifestUpdate && remoteLastUpdated) {
+      await AsyncStorage.setItem(
+        'manifest_timestamp',
+        JSON.stringify({
+          lastUpdated: remoteLastUpdated,
+          checkedAt: new Date().toISOString(),
+        })
+      );
+    }
+
+    return updatedMetadata;
+  } catch (error) {
+    console.error('Error checking manifest and invalidating cache:', error);
+    return currentMetadata;
+  }
+};
+
+/**
+ * Manual function to force clear cache and re-download everything
+ * Use this for testing or when user wants to refresh all backgrounds
+ * @returns {Promise<void>}
+ */
+export const forceClearCacheAndRedownload = async () => {
+  try {
+    // Clear all cached files and metadata
+    await clearAllCache();
+
+    // Also clear the manifest timestamp to force a full refresh
+    await AsyncStorage.removeItem('manifest_timestamp');
+  } catch (error) {
+    console.error('Error force-clearing cache:', error);
   }
 };
 

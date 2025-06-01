@@ -22,6 +22,7 @@ import { Platform } from 'react-native';
 import { useQuoteFormatting } from 'hooks/useQuoteFormatting';
 import { useShareQuote } from 'hooks/useShareQuote';
 import Header from 'components/header/Header';
+import Skelton from 'components/skelton/Skelton';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -65,8 +66,17 @@ export default function QuoteShare() {
   const isPremiumUser = !!storeDataRef.current?.user?.isPro;
 
   // Use the backgrounds hook with the stable isPremiumUser value
-  const { backgrounds, selectedBackground, setSelectedBackground, loading } =
-    useBackgrounds(isPremiumUser);
+  const {
+    backgroundsManifest,
+    manifestLoading,
+    manifestError,
+    loadedBackgrounds,
+    loadingStates,
+    selectedBackground,
+    setSelectedBackground,
+    loadBackgroundImage,
+    progress,
+  } = useBackgrounds(isPremiumUser);
 
   // Update typography functions
   const updateTypography = (key, value) => {
@@ -106,14 +116,33 @@ export default function QuoteShare() {
     );
   };
 
-  if (loading) {
+  if (manifestLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size='large' color={COLORS.primary} />
         <Text style={styles.loadingText}>Loading backgrounds...</Text>
+        <Skelton />
       </View>
     );
   }
+
+  // Show error state if manifest failed to load
+  if (manifestError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>Error: {manifestError}</Text>
+        <TouchableOpacity onPress={() => window.location.reload()}>
+          <Text style={styles.retryText}>Tap to retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Get the current background URI for the preview
+  const currentBackgroundUri =
+    selectedBackground && loadedBackgrounds
+      ? loadedBackgrounds[selectedBackground]
+      : null;
 
   return (
     <View style={styles.container}>
@@ -133,7 +162,7 @@ export default function QuoteShare() {
           <QuotePreview
             quote={quote}
             author={author}
-            backgroundUri={selectedBackground}
+            backgroundUri={currentBackgroundUri}
             typography={typography}
             onGesture={handleGesture}
           />
@@ -156,10 +185,13 @@ export default function QuoteShare() {
 
         {/* Background Selector */}
         <BackgroundSelector
-          backgrounds={backgrounds}
+          backgroundsManifest={backgroundsManifest}
+          loadedBackgrounds={loadedBackgrounds}
+          loadingStates={loadingStates}
           selectedBackground={selectedBackground}
           onSelectBackground={setSelectedBackground}
-          isPremiumUser={isPremiumUser}
+          isPremiumUser={isPremiumUser} // Use the local variable
+          loadBackgroundImage={loadBackgroundImage}
         />
 
         {/* Typography Controls */}
@@ -191,7 +223,7 @@ export default function QuoteShare() {
             <QuotePreview
               quote={quote}
               author={author}
-              backgroundUri={selectedBackground}
+              backgroundUri={currentBackgroundUri}
               typography={getExportTypography(typography)}
               onGesture={null}
               isExport={true}
@@ -279,6 +311,16 @@ const getStyles = (COLORS) =>
       fontSize: 20,
       fontWeight: 'bold',
       color: COLORS.text,
+    },
+    errorText: {
+      fontSize: 16,
+      color: 'red',
+      marginBottom: 10,
+    },
+    retryText: {
+      fontSize: 16,
+      color: COLORS.primary,
+      textDecorationLine: 'underline',
     },
   });
 

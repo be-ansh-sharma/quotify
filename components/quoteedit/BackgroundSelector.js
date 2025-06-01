@@ -1,202 +1,303 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useCallback, memo } from 'react';
 import {
   View,
   Text,
-  ImageBackground,
-  StyleSheet,
-  Dimensions,
-  Alert,
   FlatList,
   TouchableOpacity,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
-import { COLORS } from 'styles/theme';
 import { router } from 'expo-router';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Memoize individual background item to prevent unnecessary re-renders
+const BackgroundItem = memo(
+  ({
+    item,
+    isSelected,
+    isLoaded,
+    isLoading,
+    isPremium,
+    isLocked,
+    loadedBackgrounds,
+    onPress,
+  }) => {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        style={[styles.backgroundItem, isSelected && styles.selectedItem]}
+      >
+        {isLoaded ? (
+          // Image is loaded - show it
+          <>
+            <Image
+              source={{ uri: loadedBackgrounds[item.name] }}
+              style={styles.backgroundImage}
+            />
+            {isSelected && (
+              <View style={styles.selectedOverlay}>
+                <Text style={styles.selectedText}>✓</Text>
+              </View>
+            )}
+            {/* Removed the locked overlay with lock icon */}
+            {isPremium && (
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumText}>PRO</Text>
+              </View>
+            )}
+          </>
+        ) : isLoading ? (
+          // Currently loading
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size='small' color='#007AFF' />
+            <Text style={styles.loadingText}>Loading...</Text>
+            {isPremium && (
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumText}>PRO</Text>
+              </View>
+            )}
+          </View>
+        ) : (
+          // Not loaded yet - show placeholder
+          <View style={styles.placeholderContainer}>
+            <Text style={styles.placeholderText}>Loading...</Text>
+            {isPremium && (
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumText}>PRO</Text>
+              </View>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return (
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isLoaded === nextProps.isLoaded &&
+      prevProps.isLoading === nextProps.isLoading &&
+      prevProps.isLocked === nextProps.isLocked &&
+      prevProps.item.name === nextProps.item.name
+    );
+  }
+);
 
-function BackgroundSelector({
-  backgrounds,
-  selectedBackground,
-  onSelectBackground,
-  isPremiumUser,
-}) {
-  const flatListRef = useRef(null);
-  const selectedIndex = backgrounds.findIndex(
-    (bg) => bg.uri === selectedBackground
-  );
-  const [currentIndex, setCurrentIndex] = useState(
-    selectedIndex !== -1 ? selectedIndex : 0
-  );
-
-  // Scroll to selected item on mount
-  useEffect(() => {
-    if (selectedIndex > 0 && flatListRef.current) {
-      flatListRef.current.scrollToIndex({
-        index: selectedIndex,
-        animated: false,
-      });
-    }
-  }, []);
-
-  const handleBackgroundSelection = (background) => {
-    if (background.type === 'premium' && !isPremiumUser) {
+const BackgroundSelector = memo(
+  ({
+    backgroundsManifest = [],
+    loadedBackgrounds = {},
+    loadingStates = {},
+    selectedBackground,
+    onSelectBackground,
+    isPremiumUser = false,
+    loadBackgroundImage,
+  }) => {
+    // Create a memoized handler for premium dialog
+    const showPremiumDialog = useCallback(() => {
       Alert.alert(
         'Premium Feature',
-        'This is a premium background. Upgrade to access all backgrounds!',
+        'This background is only available to premium subscribers.',
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Upgrade',
-            onPress: () => router.push('/profile/pro/'),
-            style: 'default',
+            text: 'Upgrade to Premium',
+            onPress: () => router.push('/profile/pro'),
           },
         ]
       );
-      return;
-    }
-    onSelectBackground(background.uri);
-  };
+    }, []);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Select Background</Text>
-
-      <FlatList
-        ref={flatListRef}
-        data={backgrounds}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        decelerationRate='fast'
-        snapToInterval={SCREEN_WIDTH - 32}
-        snapToAlignment='center'
-        contentContainerStyle={styles.listContent}
-        initialScrollIndex={Math.max(0, selectedIndex)}
-        getItemLayout={(data, index) => ({
-          length: SCREEN_WIDTH - 32,
-          offset: (SCREEN_WIDTH - 32) * index,
-          index,
-        })}
-        onMomentumScrollEnd={(e) => {
-          const contentOffset = e.nativeEvent.contentOffset.x;
-          const index = Math.round(contentOffset / (SCREEN_WIDTH - 32));
-          if (index >= 0 && index < backgrounds.length) {
-            setCurrentIndex(index);
+    // Create a memoized press handler factory
+    const createPressHandler = useCallback(
+      (itemName, isLocked) => {
+        return () => {
+          if (isLocked) {
+            showPremiumDialog();
+            return;
           }
-        }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => handleBackgroundSelection(item)}
-            style={[
-              styles.backgroundItem,
-              selectedBackground === item.uri && styles.selectedBackground,
-            ]}
-          >
-            <ImageBackground
-              source={
-                typeof item.uri === 'string' ? { uri: item.uri } : item.uri
-              }
-              style={styles.backgroundPreview}
-              imageStyle={styles.previewImage}
-            >
-              {item.type === 'premium' && !isPremiumUser && (
-                <View style={styles.premiumBadge}>
-                  <FontAwesome name='star' size={12} color='#FFD700' />
-                  <Text style={styles.premiumText}>PRO</Text>
-                </View>
-              )}
-            </ImageBackground>
-          </TouchableOpacity>
-        )}
-        keyExtractor={(item, index) => `bg-${index}`}
-      />
+          onSelectBackground(itemName);
+        };
+      },
+      [onSelectBackground, showPremiumDialog]
+    );
 
-      {/* Pagination dots */}
-      <View style={styles.pagination}>
-        {backgrounds.map((_, index) => (
-          <View
-            key={`dot-${index}`}
-            style={[
-              styles.paginationDot,
-              index === currentIndex && styles.paginationDotActive,
-            ]}
+    // Memoize the renderItem function to prevent re-renders
+    const renderItem = useCallback(
+      ({ item }) => {
+        const isSelected = item.name === selectedBackground;
+        const isLoaded = !!loadedBackgrounds[item.name];
+        const isLoading = !!loadingStates[item.name];
+        const isPremium = item.type === 'premium';
+        const isLocked = isPremium && !isPremiumUser;
+
+        // Create the press handler outside of render
+        const handlePress = createPressHandler(item.name, isLocked);
+
+        return (
+          <BackgroundItem
+            item={item}
+            isSelected={isSelected}
+            isLoaded={isLoaded}
+            isLoading={isLoading}
+            isPremium={isPremium}
+            isLocked={isLocked}
+            loadedBackgrounds={loadedBackgrounds}
+            onPress={handlePress}
           />
-        ))}
+        );
+      },
+      [
+        selectedBackground,
+        loadedBackgrounds,
+        loadingStates,
+        isPremiumUser,
+        createPressHandler,
+      ]
+    );
+
+    // Memoize keyExtractor
+    const keyExtractor = useCallback((item) => item.name, []);
+
+    if (!backgroundsManifest || backgroundsManifest.length === 0) {
+      return (
+        <View style={styles.container}>
+          <Text style={styles.sectionTitle}>Backgrounds</Text>
+          <Text style={styles.emptyText}>No backgrounds available</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.container}>
+        <Text style={styles.sectionTitle}>Backgrounds</Text>
+
+        <FlatList
+          data={backgroundsManifest}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={5}
+          windowSize={10}
+          initialNumToRender={4}
+          updateCellsBatchingPeriod={50}
+          // Add these for better performance
+          getItemLayout={(data, index) => ({
+            length: 88, // item width + margin
+            offset: 88 * index,
+            index,
+          })}
+        />
       </View>
-    </View>
-  );
-}
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison for the entire component
+    return (
+      prevProps.backgroundsManifest.length ===
+        nextProps.backgroundsManifest.length &&
+      prevProps.selectedBackground === nextProps.selectedBackground &&
+      Object.keys(prevProps.loadedBackgrounds).length ===
+        Object.keys(nextProps.loadedBackgrounds).length &&
+      Object.keys(prevProps.loadingStates).length ===
+        Object.keys(nextProps.loadingStates).length &&
+      prevProps.isPremiumUser === nextProps.isPremiumUser
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
-    width: '100%',
+    marginVertical: 16,
   },
-  title: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
-    marginHorizontal: 16,
-    color: COLORS.text,
-  },
-  listContent: {
+    marginBottom: 12,
     paddingHorizontal: 16,
   },
+  listContent: {
+    paddingHorizontal: 12,
+  },
   backgroundItem: {
-    width: SCREEN_WIDTH * 0.4,
-    height: SCREEN_WIDTH * 0.25,
-    borderRadius: 10,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginHorizontal: 4,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  selectedItem: {
     borderWidth: 2,
-    borderColor: 'transparent',
-    marginRight: 16,
-    backgroundColor: COLORS.surface,
+    borderColor: '#007AFF',
   },
-  selectedBackground: {
-    borderColor: COLORS.primary,
-  },
-  backgroundPreview: {
+  backgroundImage: {
     width: '100%',
     height: '100%',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
+    resizeMode: 'cover',
   },
-  previewImage: {
-    borderRadius: 8,
-  },
-  premiumBadge: {
-    backgroundColor: COLORS.overlayDark || 'rgba(0, 0, 0, 0.6)',
-    flexDirection: 'row',
+  selectedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 122, 255, 0.3)',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
+  },
+  selectedText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  // Removed lockedOverlay and lockIcon styles
+  premiumBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#FFD700',
     paddingVertical: 2,
-    borderRadius: 4,
-    margin: 8,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   premiumText: {
-    color: COLORS.premiumGold || '#FFD700',
+    color: '#000',
     fontSize: 10,
     fontWeight: 'bold',
-    marginLeft: 2,
   },
-  pagination: {
-    flexDirection: 'row',
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    marginTop: 6,
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
   },
-  paginationDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 4,
-    backgroundColor: COLORS.border || '#DDD',
-    marginHorizontal: 3,
+  loadingText: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 4,
   },
-  paginationDotActive: {
-    backgroundColor: COLORS.primary,
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e0e0e0',
+  },
+  placeholderText: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+    padding: 16,
+    color: '#666',
   },
 });
 
-export default React.memo(BackgroundSelector);
+export default BackgroundSelector;
 

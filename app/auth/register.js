@@ -17,12 +17,18 @@ import {
   List,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
+import {
+  useCreateUserWithEmailAndPassword,
+  useUpdateProfile,
+} from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { createUser } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
+
+// Import the utility
+import { generateUniqueDisplayName } from 'utils/characterNames';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -45,6 +51,9 @@ export default function Register() {
 
   const [createUserWithEmailAndPassword, user, loading, error] =
     useCreateUserWithEmailAndPassword(auth);
+
+  // Add updateProfile hook
+  const [updateProfile, updating, updateError] = useUpdateProfile(auth);
 
   useEffect(() => {
     Animated.parallel([
@@ -111,6 +120,7 @@ export default function Register() {
     if (!validate()) return;
 
     try {
+      // Create the user with Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         email,
         password
@@ -118,14 +128,38 @@ export default function Register() {
 
       if (!userCredential) return;
 
+      // Generate a random display name for the user
+      const displayName = generateUniqueDisplayName();
+
+      // Update the auth profile with the display name
+      const success = await updateProfile({ displayName });
+
+      if (!success) {
+        console.error('Failed to update profile:', updateError);
+      }
+
+      // Create the user document in Firestore
       await createUser({
         uid: userCredential.user.uid,
         email: userCredential.user.email,
+        displayName: displayName, // Add the randomly generated name
+        createdAt: new Date(),
       });
+
+      console.log(
+        `User registered successfully with display name: ${displayName}`
+      );
     } catch (error) {
       console.error('Error creating user:', error);
     }
   };
+
+  // Handle update errors
+  useEffect(() => {
+    if (updateError) {
+      console.error('Error updating profile:', updateError);
+    }
+  }, [updateError]);
 
   useEffect(() => {
     if (user) {
@@ -161,10 +195,13 @@ export default function Register() {
     }
   }, [error]);
 
-  if (loading) {
+  // Check for both user creation and profile update loading states
+  if (loading || updating) {
     return (
       <View style={styles.loadingContainer}>
-        <Text variant='bodyMedium'>Creating account...</Text>
+        <Text variant='bodyMedium'>
+          {updating ? 'Setting up your profile...' : 'Creating account...'}
+        </Text>
       </View>
     );
   }

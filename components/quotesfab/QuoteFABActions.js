@@ -13,6 +13,17 @@ import {
   updateQuoteReactions,
 } from 'utils/firebase/firestore';
 
+// Define the DEFAULT_REACTIONS constant
+const DEFAULT_REACTIONS = {
+  mindblown: 0,
+  fire: 0,
+  love: 0,
+  uplifting: 0,
+  insight: 0,
+  heartEyes: 0,
+  sparkles: 0,
+};
+
 export default function QuoteFABActions({ quote, refreshQuote = null }) {
   const { COLORS } = useAppTheme();
   const shareSheetRef = useRef(null);
@@ -328,14 +339,7 @@ const styles = StyleSheet.create({
   // New: Custom wrapper to control TileActions presentation
   customTileActions: {
     width: '100%',
-    // Left-align the buttons
-    alignItems: 'flex-start',
-    // Override any centering from TileActions
-    justifyContent: 'flex-start',
-    // Provide space for the tray
-    //paddingBottom: 60,
-    // Make sure this wrapper is relative for proper positioning
-    position: 'relative',
+    justifyContent: 'space-between',
   },
   refreshButton: {
     flexDirection: 'row',

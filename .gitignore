@@ -40,3 +40,4 @@ android/app/my-release-key.keystore
 my-release-key.keystore
 android/gradle.properties
 android/gradle.properties
+android/gradle.properties

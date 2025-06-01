@@ -293,8 +293,7 @@ export const createUser = async (userData) => {
     const userDocRef = doc(db, 'users', userData.uid); // Use UID as the document ID
     await setDoc(userDocRef, {
       email: userData.email,
-      firstName: userData.firstName || '', // Optional fields
-      lastName: userData.lastName || '',
+      displayName: userData.displayName || '',
       createdAt: serverTimestamp(), // Use Firestore timestamp
       updatedAt: serverTimestamp(), // Use Firestore timestamp
       uid: userData.uid,

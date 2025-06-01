@@ -17,6 +17,22 @@ export default function Profile() {
   const { COLORS } = useAppTheme();
   const styles = getStyles(COLORS);
 
+  // Function to determine what name to display
+  const getDisplayName = () => {
+    // Second priority: displayName from Firebase Auth (stored in userStore)
+    if (user?.displayName) {
+      return user.displayName;
+    }
+
+    // Third priority: email (without domain)
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+
+    // Fallback
+    return 'Anonymous';
+  };
+
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -45,11 +61,7 @@ export default function Profile() {
         <List.Icon icon='account' color={COLORS.primary} size={48} />
         <View style={styles.userDetails}>
           <View style={styles.nameContainer}>
-            <Text style={styles.userName}>
-              {user?.firstName
-                ? `${user?.firstName} ${user?.lastName}`
-                : `Anonymous`}
-            </Text>
+            <Text style={styles.userName}>{getDisplayName()}</Text>
 
             {/* Pro Badge - Only shown for Pro users */}
             {user?.isPro && (
@@ -239,6 +251,19 @@ const getStyles = (COLORS) =>
     logoutText: {
       color: COLORS.error,
       fontWeight: '600',
+    },
+    // Add new style for the generated name indicator
+    generatedNameBadge: {
+      backgroundColor: 'rgba(0,0,0,0.05)',
+      paddingVertical: 2,
+      paddingHorizontal: 6,
+      borderRadius: 4,
+      marginTop: 4,
+    },
+    generatedNameText: {
+      fontSize: 10,
+      color: COLORS.textSecondary || COLORS.placeholder,
+      fontStyle: 'italic',
     },
   });
 

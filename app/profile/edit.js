@@ -34,8 +34,8 @@ export default function EditProfile() {
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
 
-  const [firstName, setFirstName] = useState(user?.firstName || '');
-  const [lastName, setLastName] = useState(user?.lastName || '');
+  // Replace firstName and lastName with a single displayName field
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -59,17 +59,27 @@ export default function EditProfile() {
   };
 
   const handleProfileUpdate = async () => {
+    if (!displayName.trim()) {
+      showMessage({
+        message: 'Display name cannot be empty',
+        type: 'warning',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const updatedProfile = { firstName, lastName };
-
+      // Update profile in Firestore
+      const updatedProfile = { displayName };
       await updateUserProfile(user.uid, updatedProfile);
 
+      // Update profile in Firebase Auth
       const currentUser = auth.currentUser;
       await updateProfile(currentUser, {
-        displayName: `${firstName} ${lastName}`,
+        displayName: displayName.trim(),
       });
 
+      // Update local state
       setUser({ ...user, ...updatedProfile });
 
       showMessage({
@@ -88,7 +98,7 @@ export default function EditProfile() {
     }
   };
 
-  // Updated password handler using the hook
+  // Password handlers remain unchanged
   const handlePasswordUpdate = async () => {
     if (!validatePassword()) return;
 
@@ -103,10 +113,9 @@ export default function EditProfile() {
     } catch (error) {
       console.error('Error updating password:', error);
 
-      // Check if this is a re-authentication required error
       if (error.code === 'auth/requires-recent-login') {
-        setError(null); // Clear any previous errors
-        setShowReauthDialog(true); // Show the dialog
+        setError(null);
+        setShowReauthDialog(true);
       } else {
         showMessage({
           message: 'Failed to update password. Please try again.',
@@ -116,7 +125,6 @@ export default function EditProfile() {
     }
   };
 
-  // Add a reauthentication handler
   const handleReauthenticate = async () => {
     try {
       const credential = EmailAuthProvider.credential(
@@ -127,7 +135,6 @@ export default function EditProfile() {
       await reauthenticateWithCredential(auth.currentUser, credential);
       setShowReauthDialog(false);
 
-      // Retry password update after successful reauthentication
       const success = await updatePassword(password);
       if (success) {
         showMessage({
@@ -143,6 +150,20 @@ export default function EditProfile() {
     }
   };
 
+  // Get initials for avatar from display name
+  const getInitials = () => {
+    if (!displayName) return '?';
+    const words = displayName.trim().split(' ');
+
+    if (words.length === 1) {
+      // If only one word, take first two letters or just first if it's one letter
+      return words[0].substring(0, 2).toUpperCase();
+    }
+
+    // Otherwise take first letter of first and last word
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  };
+
   return (
     <View style={styles.container}>
       <Header title='Edit Profile' backRoute='/profile' />
@@ -156,7 +177,7 @@ export default function EditProfile() {
           <View style={styles.avatarContainer}>
             <Avatar.Text
               size={80}
-              label={`${firstName.charAt(0)}${lastName.charAt(0)}`}
+              label={getInitials()}
               style={styles.avatar}
               color={COLORS.onPrimary}
               backgroundColor={COLORS.primary}
@@ -176,39 +197,27 @@ export default function EditProfile() {
                 style={styles.inputIcon}
               />
               <TextInput
-                label='First Name'
-                value={firstName}
-                onChangeText={setFirstName}
+                label='Display Name'
+                value={displayName}
+                onChangeText={setDisplayName}
                 style={styles.input}
                 mode='outlined'
                 outlineColor={COLORS.outline}
                 activeOutlineColor={COLORS.primary}
+                placeholder='Enter your display name'
+                maxLength={30} // Reasonable character limit
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <MaterialCommunityIcons
-                name='account'
-                size={24}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                label='Last Name'
-                value={lastName}
-                onChangeText={setLastName}
-                style={styles.input}
-                mode='outlined'
-                outlineColor={COLORS.outline}
-                activeOutlineColor={COLORS.primary}
-              />
-            </View>
+            <Text style={styles.infoText}>
+              This name will be displayed to other users in the app
+            </Text>
 
             <Button
               mode='contained'
               onPress={handleProfileUpdate}
               loading={loading}
-              disabled={loading}
+              disabled={loading || !displayName.trim()}
               style={styles.button}
               labelStyle={styles.buttonText}
               icon='content-save'
@@ -217,7 +226,7 @@ export default function EditProfile() {
             </Button>
           </Surface>
 
-          {/* Password Section */}
+          {/* Password Section - unchanged */}
           <Surface style={styles.card}>
             <Text style={styles.sectionTitle}>Security</Text>
 
@@ -270,8 +279,8 @@ export default function EditProfile() {
             <Button
               mode='contained'
               onPress={handlePasswordUpdate}
-              loading={updating} // Use updating from the hook
-              disabled={updating} // Use updating from the hook
+              loading={updating}
+              disabled={updating || !password || !confirmPassword}
               style={styles.button}
               labelStyle={styles.buttonText}
               icon='lock-reset'
@@ -290,7 +299,7 @@ export default function EditProfile() {
             Cancel
           </Button>
 
-          {/* Reauthentication Dialog */}
+          {/* Reauthentication Dialog - unchanged */}
           {showReauthDialog && (
             <Surface style={[styles.card, styles.dialogCard]}>
               <Text style={styles.dialogTitle}>
@@ -453,6 +462,15 @@ const getStyles = (COLORS) =>
     dialogButton: {
       flex: 1,
       marginHorizontal: 8,
+    },
+    // Add this new style for the info text
+    infoText: {
+      fontSize: 12,
+      color: COLORS.textSecondary || COLORS.placeholder,
+      fontStyle: 'italic',
+      marginTop: -8,
+      marginBottom: 16,
+      marginLeft: 36, // Align with input field
     },
   });
 
