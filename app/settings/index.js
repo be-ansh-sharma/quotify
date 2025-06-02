@@ -178,23 +178,35 @@ export default function Settings() {
               <List.Item
                 title='Logout'
                 description='Sign out of your account'
+                titleStyle={styles.logoutText}
                 left={(props) => (
                   <List.Icon {...props} icon='logout' color={COLORS.error} />
                 )}
                 onPress={handleLogout}
+                rippleColor={`${COLORS.error}20`}
               />
             ) : (
               <List.Item
                 title='Login'
                 description='Sign in to your account'
+                titleStyle={styles.listItemTitle}
                 left={(props) => (
                   <List.Icon {...props} icon='key' color={COLORS.primary} />
                 )}
                 onPress={() => router.push('/auth/entry')}
+                rippleColor={`${COLORS.primary}20`}
               />
             )}
           </List.Section>
         </Surface>
+
+        {/* Made with love footer */}
+        <View style={styles.footerContainer}>
+          <Text style={styles.footerText}>
+            Made with <Text style={styles.heartEmoji}>❤️</Text> by{' '}
+            <Text style={styles.companyName}>Soulpatcher</Text>
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -226,6 +238,29 @@ const getStyles = (COLORS) =>
     listItemTitle: {
       color: COLORS.text,
       fontSize: 16,
+    },
+    footerContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      marginTop: 16,
+    },
+    footerText: {
+      fontSize: 14,
+      color: COLORS.secondaryText,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    heartEmoji: {
+      fontSize: 16,
+      color: '#E91E63', // Pink heart color
+    },
+    companyName: {
+      fontSize: 14,
+      color: COLORS.primary,
+      fontWeight: '600',
+      letterSpacing: 0.5,
     },
     logoutText: {
       color: COLORS.error,

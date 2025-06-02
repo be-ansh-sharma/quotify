@@ -8,574 +8,312 @@ import {
 import { getAdUnitId } from './adUnitIds';
 
 /**
- * Global singleton ad manager that safely handles ad lifecycle
+ * Simplified Ad Manager - One ad at a time, strict cooldowns
  */
 class AdManager {
   constructor() {
-    // Flag to track initialization
+    // Basic state
+    this.isUserLoggedIn = false;
     this.initialized = false;
 
-    // Interstitial ad state
+    // Simple ad state
     this.interstitialAd = null;
-    this.interstitialLoaded = false;
-    this.interstitialListeners = [];
-    this.lastAdShowTime = 0;
-    this.navigationCounter = 0;
-
-    // App open ad state
     this.appOpenAd = null;
+    this.interstitialLoaded = false;
     this.appOpenLoaded = false;
-    this.appOpenListeners = [];
-
-    // Constants
-    this.AD_SHOW_INTERVAL = 2.5 * 60 * 1000;
-    this.NAV_THRESHOLD = 5;
-
-    // Add authentication tracking
-    this.isUserLoggedIn = false;
-
-    // Add throttling properties
-    this.lastInterstitialLoadTime = 0;
-    this.lastAppOpenLoadTime = 0;
-    this.MIN_LOAD_INTERVAL = 30 * 1000; // 30 seconds between load attempts
     this.isLoadingInterstitial = false;
     this.isLoadingAppOpen = false;
 
-    // Add global ad timing coordination with separate tracking
-    this.lastAnyAdShownTime = 0;
-    this.MIN_AD_SEQUENCE_INTERVAL = 90000; // Increase to 5 minutes
-    this.adDisplayInProgress = false; // Add this flag to block concurrent ads
+    // SIMPLE: One global cooldown for ALL ads
+    this.GLOBAL_AD_COOLDOWN = 3 * 60 * 1000; // 3 minutes between ANY ads
+    this.lastAdTime = 0;
 
-    // Track different ad types separately
-    this.lastAppOpenAdShownTime = 0;
-    this.lastInterstitialAdShownTime = 0;
+    // Navigation tracking
+    this.navigationCount = 0;
+    this.NAV_THRESHOLD = 4; // Show ad every 4 navigations
+
+    // Session limits
+    this.sessionAdsShown = 0;
+    this.MAX_SESSION_ADS = 6;
+    this.sessionStart = Date.now();
+
+    // CRITICAL: Global lock to prevent any overlapping
+    this.adInProgress = false;
   }
 
   /**
-   * Initialize the ad manager - can be called multiple times safely
-   */
-  initialize(forceInit = false) {
-    // Don't initialize if user is not logged in
-    if (!this.isUserLoggedIn && !forceInit) {
-      console.log('AdManager: Not initializing - user not logged in');
-      return false;
-    }
-
-    console.log('AdManager: Initializing');
-    this.initialized = true;
-
-    // Use coordinated loading instead of loading both ad types immediately
-    this.coordinateAdLoading();
-
-    return true;
-  }
-
-  /**
-   * Safely remove all listeners from an ad object
-   */
-  safeRemoveListeners(listeners) {
-    if (!listeners || !Array.isArray(listeners)) return;
-
-    listeners.forEach((listener) => {
-      try {
-        if (listener && typeof listener === 'function') {
-          listener();
-        }
-      } catch (e) {
-        console.log('AdManager: Error removing listener:', e);
-      }
-    });
-  }
-
-  /**
-   * Track when any ad is shown - improved implementation
-   * @param {string} adType - The type of ad that was shown
-   */
-  trackAdShown(adType = 'generic') {
-    const now = Date.now();
-    this.lastAnyAdShownTime = now;
-    this.lastAdShowTime = now;
-
-    // Track by specific ad type
-    if (adType === 'app_open') {
-      this.lastAppOpenAdShownTime = now;
-    } else if (adType === 'interstitial') {
-      this.lastInterstitialAdShownTime = now;
-    }
-
-    console.log(
-      `AdManager: ${adType} ad shown, cooldown period started (${
-        this.MIN_AD_SEQUENCE_INTERVAL / 1000
-      }s)`
-    );
-  }
-
-  /**
-   * Check if enough time has passed since last ad of any type
-   */
-  canShowAd() {
-    // If any ad is currently in progress, block other ads
-    if (this.adDisplayInProgress) {
-      console.log('AdManager: Ad display in progress, blocking other ads');
-      return false;
-    }
-
-    const now = Date.now();
-    const timeSinceAnyAd = now - this.lastAnyAdShownTime;
-    const canShow = timeSinceAnyAd >= this.MIN_AD_SEQUENCE_INTERVAL;
-
-    if (!canShow) {
-      console.log(
-        `AdManager: Ad cooldown active for ${Math.round(
-          (this.MIN_AD_SEQUENCE_INTERVAL - timeSinceAnyAd) / 1000
-        )}s more`
-      );
-    }
-
-    return canShow;
-  }
-
-  /**
-   * Load an interstitial ad with throttling
-   */
-  loadInterstitialAd() {
-    // Don't load ads if user is not logged in
-    if (!this.isUserLoggedIn) {
-      console.log('AdManager: Not loading interstitial - user not logged in');
-      return;
-    }
-
-    // Prevent loading if we're already loading
-    if (this.isLoadingInterstitial) {
-      console.log('AdManager: Already loading an interstitial ad');
-      return;
-    }
-
-    // Check if we already have a loaded ad
-    if (this.interstitialAd && this.interstitialLoaded) {
-      console.log('AdManager: Interstitial already loaded, skipping');
-      return;
-    }
-
-    // IMPORTANT: Remove the cooldown check for loading ads
-    // We should always attempt to have an ad ready even during cooldown
-
-    // Set loading state
-    this.isLoadingInterstitial = true;
-    this.lastInterstitialLoadTime = Date.now();
-
-    try {
-      // Clean up any existing ad
-      this.cleanupInterstitialAd();
-
-      console.log('AdManager: Loading interstitial ad');
-      const adId = getAdUnitId('interstitial');
-      console.log('AdManager: Using interstitial ID:', adId);
-
-      // Create the ad instance
-      this.interstitialAd = InterstitialAd.createForAdRequest(adId, {
-        requestNonPersonalizedAdsOnly: true,
-        keywords: ['inspiration', 'quotes', 'motivation'],
-      });
-
-      // Set up event listeners
-      const loadedListener = this.interstitialAd.addAdEventListener(
-        AdEventType.LOADED,
-        () => {
-          console.log('AdManager: Interstitial ad loaded');
-          this.interstitialLoaded = true;
-          this.isLoadingInterstitial = false;
-        }
-      );
-
-      // THIS IS THE CRITICAL HANDLER - Update cooldown when ad closes
-      const closedListener = this.interstitialAd.addAdEventListener(
-        AdEventType.CLOSED,
-        () => {
-          console.log('AdManager: Interstitial ad closed');
-          this.navigationCounter = 0;
-          this.interstitialLoaded = false;
-
-          // Set flag to allow other ads again
-          this.adDisplayInProgress = false;
-
-          // Track this specific ad type
-          this.trackAdShown('interstitial');
-
-          // Load a new ad, but with longer delay
-          setTimeout(() => {
-            if (this.canShowAd()) {
-              this.loadInterstitialAd();
-            } else {
-              console.log(
-                'AdManager: Not loading next interstitial yet - in cooldown period'
-              );
-            }
-          }, 10000);
-        }
-      );
-
-      const errorListener = this.interstitialAd.addAdEventListener(
-        AdEventType.ERROR,
-        (error) => {
-          console.log('AdManager: Interstitial ad error:', error);
-          this.interstitialLoaded = false;
-          this.isLoadingInterstitial = false;
-
-          // Try loading again after delay
-          setTimeout(() => this.loadInterstitialAd(), 60000);
-        }
-      );
-
-      // Store listeners for cleanup
-      this.interstitialListeners = [
-        loadedListener,
-        closedListener,
-        errorListener,
-      ];
-
-      // Load the ad
-      this.interstitialAd.load();
-    } catch (error) {
-      console.log('AdManager: Error setting up interstitial ad:', error);
-      this.interstitialAd = null;
-      this.isLoadingInterstitial = false;
-    }
-  }
-
-  /**
-   * Clean up interstitial ad resources
-   */
-  cleanupInterstitialAd() {
-    try {
-      this.safeRemoveListeners(this.interstitialListeners);
-      this.interstitialListeners = [];
-      this.interstitialLoaded = false;
-      this.interstitialAd = null;
-    } catch (error) {
-      console.log('AdManager: Error cleaning up interstitial ad:', error);
-    }
-  }
-
-  /**
-   * Load an app open ad with throttling
-   */
-  loadAppOpenAd() {
-    // Don't load ads if user is not logged in
-    if (!this.isUserLoggedIn) {
-      console.log('AdManager: Not loading app open ad - user not logged in');
-      return;
-    }
-
-    // Prevent loading if we're already loading
-    if (this.isLoadingAppOpen) {
-      console.log('AdManager: Already loading an app open ad');
-      return;
-    }
-
-    // Check if we already have a loaded ad
-    if (this.appOpenAd && this.appOpenLoaded) {
-      console.log('AdManager: App open ad already loaded, skipping');
-      return;
-    }
-
-    // Check throttling time
-    const now = Date.now();
-    const timeSinceLastLoad = now - this.lastAppOpenLoadTime;
-    if (timeSinceLastLoad < this.MIN_LOAD_INTERVAL) {
-      console.log(
-        `AdManager: Throttling app open load (${Math.round(
-          timeSinceLastLoad / 1000
-        )}s < ${this.MIN_LOAD_INTERVAL / 1000}s)`
-      );
-      return;
-    }
-
-    // Don't load app open ads if one was shown recently
-    if (!this.canShowAd()) {
-      console.log('AdManager: Not loading app open ad - in cooldown period');
-      return;
-    }
-
-    // Set loading state
-    this.isLoadingAppOpen = true;
-    this.lastAppOpenLoadTime = now;
-
-    try {
-      // Clean up any existing ad
-      this.cleanupAppOpenAd();
-
-      console.log('AdManager: Loading app open ad');
-      const adId = getAdUnitId('appOpen');
-      console.log('AdManager: Using app open ID:', adId);
-
-      this.appOpenAd = AppOpenAd.createForAdRequest(adId, {
-        requestNonPersonalizedAdsOnly: true,
-      });
-
-      // Set up event listeners
-      const loadedListener = this.appOpenAd.addAdEventListener(
-        AdEventType.LOADED,
-        () => {
-          console.log('AdManager: App open ad loaded');
-          this.appOpenLoaded = true;
-          this.isLoadingAppOpen = false;
-        }
-      );
-
-      // THIS IS THE CRITICAL HANDLER - Update cooldown when ad closes
-      const closedListener = this.appOpenAd.addAdEventListener(
-        AdEventType.CLOSED,
-        () => {
-          console.log('AdManager: App open ad closed');
-          this.appOpenLoaded = false;
-
-          // Set flag to allow other ads again
-          this.adDisplayInProgress = false;
-
-          // Track this specific ad type
-          this.trackAdShown('app_open');
-
-          // Load a new ad with longer delay
-          setTimeout(() => {
-            if (this.canShowAd()) {
-              this.loadAppOpenAd();
-            } else {
-              console.log(
-                'AdManager: Not loading next app open ad yet - in cooldown period'
-              );
-            }
-          }, 10000);
-        }
-      );
-
-      const errorListener = this.appOpenAd.addAdEventListener(
-        AdEventType.ERROR,
-        (error) => {
-          console.log('AdManager: App open ad error:', error);
-          this.appOpenLoaded = false;
-          this.isLoadingAppOpen = false;
-
-          // Try loading again after delay
-          setTimeout(() => this.loadAppOpenAd(), 60000);
-        }
-      );
-
-      // Store listeners for cleanup
-      this.appOpenListeners = [loadedListener, closedListener, errorListener];
-
-      // Load the ad
-      this.appOpenAd.load();
-    } catch (error) {
-      console.log('AdManager: Error setting up app open ad:', error);
-      this.appOpenAd = null;
-      this.isLoadingAppOpen = false;
-    }
-  }
-
-  /**
-   * Clean up app open ad resources
-   */
-  cleanupAppOpenAd() {
-    try {
-      this.safeRemoveListeners(this.appOpenListeners);
-      this.appOpenListeners = [];
-      this.appOpenLoaded = false;
-      this.appOpenAd = null;
-    } catch (error) {
-      console.log('AdManager: Error cleaning up app open ad:', error);
-    }
-  }
-
-  /**
-   * Update authentication state
-   * @param {boolean} isLoggedIn - Whether user is logged in
+   * Set authentication state - MAIN METHOD USED BY LAYOUT
    */
   setAuthState(isLoggedIn) {
-    console.log(
-      `AdManager: Setting auth state to ${
-        isLoggedIn ? 'logged in' : 'logged out'
-      }`
-    );
+    console.log(`🔑 Auth state: ${isLoggedIn ? 'logged in' : 'logged out'}`);
+
+    const wasLoggedIn = this.isUserLoggedIn;
     this.isUserLoggedIn = isLoggedIn;
 
-    if (!isLoggedIn) {
-      // User logged out - clean up ads
+    if (isLoggedIn && !wasLoggedIn) {
+      // User just logged in
+      this.initialize();
+    } else if (!isLoggedIn) {
+      // User logged out or not logged in
       this.reset();
     }
   }
 
   /**
-   * Track navigation and show interstitial ad if conditions are met
+   * Initialize
    */
-  trackNavigation(isPremium, from, to) {
-    // Don't show ads if user is premium or not logged in
-    if (isPremium || !this.isUserLoggedIn) return false;
-
-    // Check if any ad was shown recently
-    const now = Date.now();
-    const timeSinceAnyAd = now - this.lastAnyAdShownTime;
-    const timeSinceLastAd = now - this.lastAdShowTime;
-
-    // Increment counter
-    this.navigationCounter++;
-
-    // Add additional debug info for why ad isn't showing
-    console.log(
-      `AdManager: Navigation #${this.navigationCounter} from ${from} to ${to}`
-    );
-
-    // Check if the ad is ready or if we should try loading one
-    if (!this.interstitialLoaded || !this.interstitialAd) {
-      console.log(
-        'AdManager: No interstitial ad ready - attempting to load one'
-      );
-      this.loadInterstitialAd();
-      return false;
+  initialize() {
+    if (!this.isUserLoggedIn || this.initialized) {
+      return;
     }
 
-    // Log cooldown status
-    if (timeSinceAnyAd < this.MIN_AD_SEQUENCE_INTERVAL) {
-      console.log(
-        `AdManager: Not showing ad - in cooldown for ${Math.round(
-          (this.MIN_AD_SEQUENCE_INTERVAL - timeSinceAnyAd) / 1000
-        )}s more`
-      );
-      return false;
-    }
+    console.log('🚀 Initializing AdManager');
+    this.initialized = true;
+    this.sessionStart = Date.now();
+    this.sessionAdsShown = 0;
+    this.lastAdTime = 0;
+    this.navigationCount = 0;
 
-    // Check time since last ad
-    if (timeSinceLastAd < this.AD_SHOW_INTERVAL) {
-      console.log(
-        `AdManager: Not showing ad - waiting for interval (${Math.round(
-          (this.AD_SHOW_INTERVAL - timeSinceLastAd) / 1000
-        )}s more)`
-      );
-      return false;
-    }
-
-    // Check navigation threshold
-    if (this.navigationCounter < this.NAV_THRESHOLD) {
-      console.log(
-        `AdManager: Not showing ad - navigation count ${this.navigationCounter} < threshold ${this.NAV_THRESHOLD}`
-      );
-      return false;
-    }
-
-    // Force ad preload if counter gets very high
-    if (this.navigationCounter > 10 && !this.interstitialLoaded) {
-      console.log('AdManager: Navigation count very high - forcing ad preload');
-      this.loadInterstitialAd();
-      return false;
-    }
-
-    // All conditions met, show the ad
-    try {
-      console.log('AdManager: All conditions met, showing interstitial ad');
-      this.adDisplayInProgress = true;
-      this.interstitialAd.show();
-      this.navigationCounter = 0;
-      return true;
-    } catch (error) {
-      console.log('AdManager: Error showing interstitial ad:', error);
-      this.adDisplayInProgress = false;
-
-      // Reset the counter if we fail to show ad at a high count
-      if (this.navigationCounter > 15) {
-        console.log('AdManager: Resetting navigation counter due to error');
-        this.navigationCounter = 0;
-      }
-      return false;
-    }
+    // Load ads after delay
+    setTimeout(() => this.loadInterstitialAd(), 2000);
+    setTimeout(() => this.loadAppOpenAd(), 5000);
   }
 
   /**
-   * Add flag to prevent concurrent ads when showing app open ad
+   * Reset
    */
-  showAppOpenAd(isPremium) {
-    // Don't show ads if user is premium, not logged in, or in cooldown
-    if (isPremium || !this.isUserLoggedIn || !this.canShowAd()) {
-      return false;
+  reset() {
+    console.log('🔄 Resetting AdManager');
+    this.interstitialAd = null;
+    this.appOpenAd = null;
+    this.interstitialLoaded = false;
+    this.appOpenLoaded = false;
+    this.isLoadingInterstitial = false;
+    this.isLoadingAppOpen = false;
+    this.adInProgress = false;
+    this.navigationCount = 0;
+    this.sessionAdsShown = 0;
+    this.lastAdTime = 0;
+    this.initialized = false;
+  }
+
+  /**
+   * Check if can show any ad
+   */
+  canShowAnyAd() {
+    const now = Date.now();
+    const timeSinceLastAd = now - this.lastAdTime;
+
+    if (!this.isUserLoggedIn) return false;
+    if (this.adInProgress) return false;
+    if (this.sessionAdsShown >= this.MAX_SESSION_ADS) return false;
+    if (timeSinceLastAd < this.GLOBAL_AD_COOLDOWN) return false;
+
+    return true;
+  }
+
+  /**
+   * Mark ad as shown
+   */
+  markAdShown(adType) {
+    console.log(`🎯 AD COMPLETED: ${adType}`);
+    this.lastAdTime = Date.now();
+    this.sessionAdsShown++;
+    this.adInProgress = false;
+    this.navigationCount = 0;
+  }
+
+  /**
+   * Navigation tracking
+   */
+  onNavigation(isPremium, from, to) {
+    if (isPremium || !this.canShowAnyAd()) return false;
+
+    this.navigationCount++;
+    console.log(
+      `🧭 Navigation ${this.navigationCount}/${this.NAV_THRESHOLD}: ${from} → ${to}`
+    );
+
+    if (this.navigationCount >= this.NAV_THRESHOLD && this.interstitialLoaded) {
+      return this.showInterstitialAd();
     }
 
-    if (this.appOpenLoaded && this.appOpenAd) {
-      try {
-        console.log('AdManager: Showing app open ad');
-
-        // Set flag to block other ads
-        this.adDisplayInProgress = true;
-
-        this.appOpenAd.show();
-        return true;
-      } catch (error) {
-        console.log('AdManager: Error showing app open ad:', error);
-        this.adDisplayInProgress = false; // Reset flag on error
-        return false;
-      }
+    // Load ad if we don't have one
+    if (!this.interstitialLoaded && !this.isLoadingInterstitial) {
+      this.loadInterstitialAd();
     }
 
     return false;
   }
 
   /**
-   * Update the forcibly for support ads
+   * App foreground
    */
-  updateLastAdShownTime() {
-    this.lastAnyAdShownTime = Date.now();
-    console.log('AdManager: Manually updated ad cooldown for support ad');
+  onAppForeground(isPremium) {
+    if (isPremium || !this.canShowAnyAd()) return false;
+
+    if (this.appOpenLoaded) {
+      return this.showAppOpenAd();
+    }
+
+    // Load ad if we don't have one
+    if (!this.appOpenLoaded && !this.isLoadingAppOpen) {
+      this.loadAppOpenAd();
+    }
+
+    return false;
   }
 
   /**
-   * Reset ad state (for logout, etc.)
+   * Show interstitial
    */
-  reset() {
-    console.log('AdManager: Resetting ad state');
-    this.cleanupInterstitialAd();
-    this.cleanupAppOpenAd();
-    this.lastAdShowTime = 0;
-    this.navigationCounter = 0;
+  showInterstitialAd() {
+    if (this.adInProgress || !this.interstitialAd || !this.interstitialLoaded) {
+      return false;
+    }
+
+    try {
+      console.log('📱 SHOWING INTERSTITIAL');
+      this.adInProgress = true;
+      this.interstitialAd.show();
+      return true;
+    } catch (error) {
+      console.log('Error showing interstitial:', error);
+      this.adInProgress = false;
+      return false;
+    }
   }
 
   /**
-   * Add a method to coordinate ad loading
+   * Show app open
    */
-  coordinateAdLoading() {
-    // Only allow one type of ad to be loading at a time
-    const now = Date.now();
+  showAppOpenAd() {
+    if (this.adInProgress || !this.appOpenAd || !this.appOpenLoaded) {
+      return false;
+    }
 
-    // If navigation count is high, prioritize loading interstitial
+    try {
+      console.log('🚪 SHOWING APP OPEN');
+      this.adInProgress = true;
+      this.appOpenAd.show();
+      return true;
+    } catch (error) {
+      console.log('Error showing app open:', error);
+      this.adInProgress = false;
+      return false;
+    }
+  }
+
+  /**
+   * Load interstitial
+   */
+  loadInterstitialAd() {
     if (
-      this.navigationCounter >= this.NAV_THRESHOLD &&
-      !this.interstitialLoaded
+      !this.isUserLoggedIn ||
+      this.interstitialLoaded ||
+      this.isLoadingInterstitial
     ) {
-      console.log(
-        'AdManager: High navigation count - prioritizing interstitial ad load'
-      );
-      this.loadInterstitialAd();
       return;
     }
 
-    // If no ads are currently loading or showing, load one type
-    if (
-      !this.isLoadingInterstitial &&
-      !this.isLoadingAppOpen &&
-      !this.interstitialLoaded &&
-      !this.appOpenLoaded
-    ) {
-      // Prioritize loading interstitial ads
-      if (now - this.lastInterstitialLoadTime > this.MIN_LOAD_INTERVAL) {
-        console.log('AdManager: Coordinated loading of interstitial ad');
-        this.loadInterstitialAd();
-      }
-      // Only load app open if not loading interstitial
-      else if (now - this.lastAppOpenLoadTime > this.MIN_LOAD_INTERVAL) {
-        console.log('AdManager: Coordinated loading of app open ad');
-        this.loadAppOpenAd();
-      }
+    this.isLoadingInterstitial = true;
+    console.log('📱 Loading interstitial...');
+
+    try {
+      const adId = getAdUnitId('interstitial');
+      this.interstitialAd = InterstitialAd.createForAdRequest(adId, {
+        requestNonPersonalizedAdsOnly: true,
+      });
+
+      this.interstitialAd.addAdEventListener(AdEventType.LOADED, () => {
+        console.log('✅ Interstitial loaded');
+        this.interstitialLoaded = true;
+        this.isLoadingInterstitial = false;
+      });
+
+      this.interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
+        console.log('❌ Interstitial closed');
+        this.markAdShown('interstitial');
+        this.interstitialLoaded = false;
+        setTimeout(() => this.loadInterstitialAd(), 30000);
+      });
+
+      this.interstitialAd.addAdEventListener(AdEventType.ERROR, (error) => {
+        console.log('❌ Interstitial error:', error);
+        this.isLoadingInterstitial = false;
+        this.adInProgress = false;
+      });
+
+      this.interstitialAd.load();
+    } catch (error) {
+      console.log('Error loading interstitial:', error);
+      this.isLoadingInterstitial = false;
     }
+  }
+
+  /**
+   * Load app open
+   */
+  loadAppOpenAd() {
+    if (!this.isUserLoggedIn || this.appOpenLoaded || this.isLoadingAppOpen) {
+      return;
+    }
+
+    this.isLoadingAppOpen = true;
+    console.log('🚪 Loading app open...');
+
+    try {
+      const adId = getAdUnitId('appOpen');
+      this.appOpenAd = AppOpenAd.createForAdRequest(adId, {
+        requestNonPersonalizedAdsOnly: true,
+      });
+
+      this.appOpenAd.addAdEventListener(AdEventType.LOADED, () => {
+        console.log('✅ App open loaded');
+        this.appOpenLoaded = true;
+        this.isLoadingAppOpen = false;
+      });
+
+      this.appOpenAd.addAdEventListener(AdEventType.CLOSED, () => {
+        console.log('❌ App open closed');
+        this.markAdShown('app_open');
+        this.appOpenLoaded = false;
+        setTimeout(() => this.loadAppOpenAd(), 30000);
+      });
+
+      this.appOpenAd.addAdEventListener(AdEventType.ERROR, (error) => {
+        console.log('❌ App open error:', error);
+        this.isLoadingAppOpen = false;
+        this.adInProgress = false;
+      });
+
+      this.appOpenAd.load();
+    } catch (error) {
+      console.log('Error loading app open:', error);
+      this.isLoadingAppOpen = false;
+    }
+  }
+
+  /**
+   * Manual ad tracking
+   */
+  manualAdShown() {
+    this.markAdShown('manual');
+  }
+
+  /**
+   * Get status
+   */
+  getStatus() {
+    return {
+      isUserLoggedIn: this.isUserLoggedIn,
+      initialized: this.initialized,
+      adInProgress: this.adInProgress,
+      canShowAd: this.canShowAnyAd(),
+    };
   }
 }
 
-// Export a singleton instance
+// Export singleton
 export default new AdManager();
 

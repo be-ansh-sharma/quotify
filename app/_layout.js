@@ -1,6 +1,6 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
-import { Slot, usePathname } from 'expo-router';
+import { Slot } from 'expo-router';
 import { StatusBar, AppState } from 'react-native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { ThemeProvider } from '@react-navigation/native';
@@ -38,8 +38,6 @@ import { useCacheManager } from 'hooks/useCacheManager'; // Add this import
 import useUserStore from 'stores/userStore';
 
 export default function Layout() {
-  const currentPath = usePathname();
-  const previousPathRef = useRef(currentPath);
   const [isLayoutMounted, setIsLayoutMounted] = useState(false);
   const appState = useRef(AppState.currentState);
   const isPremium = useUserStore((state) => state?.user?.isPro);
@@ -62,8 +60,7 @@ export default function Layout() {
     isLayoutMounted,
     isInitialRouteSet
   );
-  const { initializeMobileAds, loadInterstitialAd, checkAndShowInterstitial } =
-    useAdManager(isPremium);
+  const { initializeMobileAds } = useAdManager(isPremium);
 
   // Set layout mounted flag
   useEffect(() => {
@@ -71,21 +68,24 @@ export default function Layout() {
   }, []);
 
   // Initialize ads only after layout is mounted AND user store is hydrated
+  // Make sure this useEffect doesn't run multiple times
   useEffect(() => {
     if (isLayoutMounted && isStoresHydrated) {
       const isLoggedIn = !!user?.uid;
+      const shouldShowAds = isLoggedIn && !isPremium;
 
-      if (isLoggedIn && !isPremium) {
-        console.log('Initializing ads for logged in free user');
-        initializeMobileAds();
-        loadInterstitialAd();
-      } else if (isLoggedIn && isPremium) {
-        console.log('User is premium, not loading ads');
-        AdManager.reset();
+      console.log(
+        `🔧 Setting up ads: logged in: ${isLoggedIn}, premium: ${isPremium}, should show ads: ${shouldShowAds}`
+      );
+
+      if (shouldShowAds) {
+        // Only initialize once
+        if (!AdManager.initialized) {
+          initializeMobileAds();
+          AdManager.setAuthState(true);
+        }
       } else {
-        console.log('User not logged in, not loading ads');
-        // Ensure ads are cleaned up if they were previously loaded
-        AdManager.reset();
+        AdManager.setAuthState(false);
       }
     }
   }, [
@@ -94,7 +94,6 @@ export default function Layout() {
     user?.uid,
     isPremium,
     initializeMobileAds,
-    loadInterstitialAd,
   ]);
 
   // Set initial route based on auth status
@@ -125,12 +124,6 @@ export default function Layout() {
     isInitialRouteSet,
     isLayoutMounted,
   ]);
-
-  // Track navigation for interstitial ads
-  useEffect(() => {
-    checkAndShowInterstitial(currentPath, previousPathRef.current);
-    previousPathRef.current = currentPath;
-  }, [currentPath, checkAndShowInterstitial]);
 
   // Prepare theme objects
   const paperTheme = isDarkMode ? customDarkTheme : customLightTheme;

@@ -17,6 +17,7 @@ import {
   addQuote,
   countUserPrivateQuotes,
   updateUserPrivateQuotes,
+  updateUserPublicQuotes,
 } from 'utils/firebase/firestore';
 import useUserStore from 'stores/userStore';
 import { showMessage } from 'react-native-flash-message';
@@ -243,14 +244,14 @@ export default function PostQuote() {
         createdAt: new Date().toISOString(),
         userId: user?.uid || null,
         userQuote: true,
-        approved: !isPrivate, // Only public quotes need admin approval
+        approved: false, // Only public quotes need admin approval
         visibility: isPrivate ? 'private' : 'public', // Set visibility based on toggle
       };
 
       if (isPrivate) {
         try {
           // Add the quote to the quotes collection and get its ID
-          const quoteId = await addQuote(quoteData);
+          const quoteId = await addQuote(quoteData, 'privatequotes');
 
           // Update the user document to track this private quote
           if (user?.uid && quoteId) {
@@ -276,22 +277,60 @@ export default function PostQuote() {
 
           showMessage({
             message: 'Quote saved privately!',
+            type: 'success',
           });
         } catch (error) {
           console.error('Error saving private quote:', error);
           showMessage({
             message: 'Failed to save your private quote.',
+            type: 'danger',
           });
         }
       } else {
-        await addQuoteToPendingList(quoteData); // Add to "pendingquotes" collection
-        showMessage({
-          message: 'Quote submitted! It’ll be reviewed soon.',
-        });
+        try {
+          // Add to pending quotes collection
+          const qid = await addQuoteToPendingList(quoteData);
+
+          // Update user's public quotes tracking (even though it's pending)
+          await updateUserPublicQuotes(user.uid, qid);
+          console.log(
+            `Added pending quote ${qid} to user ${user.uid} publicQuotes`
+          );
+
+          // Update the local user store to track this pending public quote
+          if (user?.uid && qid) {
+            const updatedPublicQuotes = user.publicQuotes
+              ? [...user.publicQuotes, qid]
+              : [qid];
+
+            useUserStore.setState({
+              user: {
+                ...user,
+                publicQuotes: updatedPublicQuotes,
+              },
+            });
+
+            console.log(
+              `Added pending quote ${qid} to user's publicQuotes in local store`
+            );
+          }
+
+          showMessage({
+            message: "Quote submitted! It'll be reviewed soon.",
+            type: 'success',
+          });
+        } catch (error) {
+          console.error('Error submitting public quote:', error);
+          showMessage({
+            message: 'Failed to submit your quote for review.',
+            type: 'danger',
+          });
+        }
       }
 
       router.push('/home');
     } catch (error) {
+      console.error('Error submitting quote:', error);
       showMessage({
         message: 'Failed to submit the quote. Please try again.',
       });

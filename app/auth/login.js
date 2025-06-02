@@ -20,6 +20,7 @@ import { useRouter } from 'expo-router';
 import { useSignInWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { auth } from 'utils/firebase/firebaseconfig';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { ensureUserDocument } from 'utils/firebase/firestore'; // Add this import
 import useUserStore from 'stores/userStore';
 import { useAppTheme } from 'context/AppThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -37,6 +38,7 @@ const Login = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetError, setResetError] = useState(null);
   const [resetSuccess, setResetSuccess] = useState(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false); // Add loading state
 
   // New state for password visibility
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -53,12 +55,32 @@ const Login = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
+  // Update the useEffect that handles successful login
   useEffect(() => {
-    if (user) {
-      setUser({ email: user.user.email });
-      setHasCheckedProfileOnce(false);
-      router.navigate('/(tabs)/home');
-    }
+    const handleSuccessfulLogin = async () => {
+      if (user) {
+        try {
+          setIsCreatingUser(true);
+          console.log('User logged in successfully:', user?.user?.email);
+
+          // Ensure user document exists in Firestore
+          const userData = await ensureUserDocument(user.user);
+
+          // Set user in store with the complete user data
+          setUser(userData);
+          setHasCheckedProfileOnce(false);
+
+          router.navigate('/(tabs)/home');
+        } catch (error) {
+          console.error('Error ensuring user document:', error);
+          setAuthError('Failed to complete login setup. Please try again.');
+        } finally {
+          setIsCreatingUser(false);
+        }
+      }
+    };
+
+    handleSuccessfulLogin();
   }, [user]);
 
   useEffect(() => {
@@ -131,7 +153,8 @@ const Login = () => {
 
   const handleLogin = () => {
     if (validate()) {
-      // Remove the try-catch to allow the error to be handled by the hook
+      // Clear any existing auth errors
+      setAuthError(null);
       signInWithEmailAndPassword(email, password);
     }
   };
@@ -177,6 +200,16 @@ const Login = () => {
 
   const styles = getStyles(COLORS);
 
+  // Update the loadingText logic
+  const isLoading = loading || isCreatingUser;
+
+  // Alternative approach - more explicit:
+  const getButtonText = () => {
+    if (isCreatingUser) return 'Setting up account...';
+    if (loading) return 'Logging In...';
+    return 'Login';
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -216,6 +249,7 @@ const Login = () => {
           error={!!emailError}
           style={styles.input}
           theme={{ colors: { primary: COLORS.primary } }}
+          disabled={isLoading}
         />
         <HelperText
           type='error'
@@ -233,11 +267,13 @@ const Login = () => {
           error={!!passwordError}
           style={styles.input}
           theme={{ colors: { primary: COLORS.primary } }}
+          disabled={isLoading}
           right={
             <TextInput.Icon
               icon={passwordVisible ? 'eye-off' : 'eye'}
               onPress={() => setPasswordVisible(!passwordVisible)}
               color={COLORS.text}
+              disabled={isLoading}
             />
           }
         />
@@ -259,12 +295,12 @@ const Login = () => {
           mode='contained'
           onPress={handleLogin}
           style={styles.button}
-          loading={loading}
-          disabled={loading}
+          loading={isLoading}
+          disabled={isLoading}
           contentStyle={{ paddingVertical: 6 }}
           labelStyle={styles.buttonText}
         >
-          {loading ? 'Logging In...' : 'Login'}
+          {getButtonText()}
         </Button>
 
         <Button
@@ -272,6 +308,7 @@ const Login = () => {
           onPress={openDialog}
           style={styles.forgotPassword}
           labelStyle={styles.forgotPasswordText}
+          disabled={isLoading}
         >
           Forgot Password?
         </Button>
@@ -283,6 +320,7 @@ const Login = () => {
             onPress={() => router.push('/auth/register')}
             style={styles.registerButton}
             labelStyle={styles.registerButtonText}
+            disabled={isLoading}
           >
             Register
           </Button>

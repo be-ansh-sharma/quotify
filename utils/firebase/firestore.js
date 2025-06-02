@@ -291,15 +291,33 @@ export const createUser = async (userData) => {
     }
 
     const userDocRef = doc(db, 'users', userData.uid); // Use UID as the document ID
+
+    // IMPORTANT: Include the uid in the document data for security rules validation
     await setDoc(userDocRef, {
+      uid: userData.uid, // This is crucial for the security rule
       email: userData.email,
       displayName: userData.displayName || '',
-      createdAt: serverTimestamp(), // Use Firestore timestamp
-      updatedAt: serverTimestamp(), // Use Firestore timestamp
-      uid: userData.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      // Initialize empty arrays for user quotes
+      privateQuotes: [],
+      publicQuotes: [],
+      bookmarked: [],
+      followedAuthors: [],
     });
 
-    console.log('User created successfully in Firestore:', userData);
+    console.log('User created successfully in Firestore:', userData.uid);
+
+    // Return the created user data
+    return {
+      uid: userData.uid,
+      email: userData.email,
+      displayName: userData.displayName || '',
+      privateQuotes: [],
+      publicQuotes: [],
+      bookmarked: [],
+      followedAuthors: [],
+    };
   } catch (error) {
     console.error('Error creating user in Firestore:', error);
     throw error;
@@ -727,20 +745,29 @@ export const fetchQuotesByAuthors = async (
 };
 
 /**
- * Fetch quotes by their IDs
+ * Fetch quotes by their IDs from different collections based on type
  * @param {string[]} quoteIds - Array of quote IDs to fetch
- * @returns {Promise<Array>} Array of quote documents
+ * @param {number} nextIndex - Starting index for pagination
+ * @param {number} pageSize - Number of quotes per page
+ * @param {number} processedChunks - Number of chunks already processed
+ * @param {string} quoteType - 'private' or 'public' to determine collection
+ * @param {string} userId - User ID to fetch pending quotes
+ * @returns {Promise<Object>} Object with quotes, pagination info, and pending quotes
  */
 export const fetchQuotesByIds = async (
   quoteIds,
   nextIndex = 0,
   pageSize = 10,
-  processedChunks = 0
+  processedChunks = 0,
+  quoteType = 'public',
+  userId = null
 ) => {
   try {
+    console.log('quoteids', quoteIds);
     if (!quoteIds || quoteIds.length === 0) {
       return {
         quotes: [],
+        pendingQuotes: [],
         hasMore: false,
         nextIndex: 0,
         processedChunks: 0,
@@ -756,31 +783,92 @@ export const fetchQuotesByIds = async (
     // Firestore has limits on how many IDs we can query at once
     const chunkSize = 10;
     let allQuotes = [];
+    let pendingQuotes = [];
 
-    // Process in chunks to avoid Firestore limitations
+    // If this is for public quotes and we have a userId, also fetch pending quotes
+    if (quoteType === 'public' && userId) {
+      try {
+        const pendingQuotesRef = collection(db, 'pendingquotes');
+        const pendingQuery = query(
+          pendingQuotesRef,
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        );
+        const pendingSnapshot = await getDocs(pendingQuery);
+
+        pendingQuotes = pendingSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          isPending: true, // Mark as pending
+        }));
+
+        console.log(`Found ${pendingQuotes.length} pending quotes for user`);
+      } catch (pendingError) {
+        console.error('Error fetching pending quotes:', pendingError);
+      }
+    }
+
+    // Process quote IDs in chunks to avoid Firestore limitations
     for (let i = 0; i < pageIds.length; i += chunkSize) {
       const chunk = pageIds.slice(i, i + chunkSize);
 
       try {
+        // Determine which collection to query based on quote type
+        const collectionName =
+          quoteType === 'private' ? 'privatequotes' : 'quotes';
+        const quotesRef = collection(db, collectionName);
+
         // Query this chunk of IDs
-        const quotesRef = collection(db, 'quotes');
         const q = query(quotesRef, where(documentId(), 'in', chunk));
         const querySnapshot = await getDocs(q);
 
         // Map to our quote objects with IDs
-        const chunkQuotes = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const chunkQuotes = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            isPending: false, // Mark as not pending
+          };
+        });
 
-        allQuotes = [...allQuotes, ...chunkQuotes];
+        // Filter quotes based on type
+        const filteredQuotes = chunkQuotes.filter((quote) => {
+          if (quoteType === 'private') {
+            return quote.visibility === 'private';
+          } else {
+            // For public quotes, include public and null visibility
+            return quote.visibility === 'public' || quote.visibility === null;
+          }
+        });
+
+        allQuotes = [...allQuotes, ...filteredQuotes];
       } catch (chunkError) {
         console.error(`Error fetching chunk ${i / chunkSize + 1}:`, chunkError);
       }
     }
 
+    // Sort quotes by creation date (newest first)
+    allQuotes.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return dateB - dateA;
+    });
+
+    // Sort pending quotes by creation date (newest first)
+    pendingQuotes.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return dateB - dateA;
+    });
+
+    console.log(
+      `Fetched ${allQuotes.length} ${quoteType} quotes and ${pendingQuotes.length} pending quotes`
+    );
+
     return {
       quotes: allQuotes,
+      pendingQuotes: pendingQuotes,
       hasMore: endIndex < quoteIds.length,
       nextIndex: endIndex,
       processedChunks: processedChunks + 1,
@@ -789,6 +877,7 @@ export const fetchQuotesByIds = async (
     console.error('Error fetching quotes by IDs:', error);
     return {
       quotes: [],
+      pendingQuotes: [],
       hasMore: false,
       nextIndex: nextIndex,
       processedChunks: processedChunks,
@@ -827,8 +916,10 @@ export const updateUserProfile = async (uid, updatedProfile) => {
 export const addQuoteToPendingList = async (quote) => {
   try {
     const pendingQuotesRef = collection(db, 'pendingquotes');
-    await addDoc(pendingQuotesRef, quote);
+    const docRef = await addDoc(pendingQuotesRef, quote);
+
     console.log('Quote added to pendingquotes collection:', quote);
+    return docRef.id; // Return the ID of the newly added quote
   } catch (error) {
     console.error('Error adding quote to pendingquotes collection:', error);
     throw error;
@@ -840,9 +931,9 @@ export const addQuoteToPendingList = async (quote) => {
  * @param {object} quote - The quote object to add.
  * @returns {Promise<void>} - A promise that resolves when the quote is added.
  * */
-export const addQuote = async (quoteData) => {
+export const addQuote = async (quoteData, colname) => {
   try {
-    const quotesRef = collection(db, 'quotes');
+    const quotesRef = collection(db, colname);
     const docRef = await addDoc(quotesRef, {
       ...quoteData,
       createdAt: serverTimestamp(),
@@ -930,7 +1021,7 @@ export const rejectQuote = async (quote) => {
   try {
     console.log('Rejecting quote:', quote);
     const pendingQuoteRef = doc(db, 'pendingquotes', quote.id); // Reference to the pending quote
-    const quotesRef = doc(db, 'quotes', quote.id);
+    const quotesRef = doc(db, 'privatequotes', quote.id);
 
     // Convert the quote to private and move it to the quotes collection
     const privateQuote = {
@@ -1537,7 +1628,7 @@ export const countUserPrivateQuotes = async (userId) => {
 export const deletePrivateQuote = async (quoteId) => {
   try {
     // First get the quote to find the associated user
-    const quoteRef = doc(db, 'quotes', quoteId);
+    const quoteRef = doc(db, 'privatequotes', quoteId);
     const quoteSnap = await getDoc(quoteRef);
 
     if (!quoteSnap.exists()) {
@@ -1951,7 +2042,24 @@ export const updateUserPrivateQuotes = async (userId, quoteId) => {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
       privateQuotes: arrayUnion(quoteId),
-      // Removed updatedAt for consistency
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating user private quotes:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a user's document to track a private quote
+ * @param {string} userId - The user's ID
+ * @param {string} quoteId - The ID of the private quote
+ */
+export const updateUserPublicQuotes = async (userId, quoteId) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      publicQuotes: arrayUnion(quoteId),
     });
     return true;
   } catch (error) {
@@ -2089,4 +2197,46 @@ export async function searchAuthors(term) {
     throw error;
   }
 }
+
+/**
+ * Check if user document exists in Firestore, create if missing
+ * @param {Object} authUser - Firebase auth user object
+ * @returns {Promise<Object>} - User document data
+ */
+export const ensureUserDocument = async (authUser) => {
+  try {
+    if (!authUser || !authUser.uid) {
+      throw new Error('Invalid auth user provided');
+    }
+
+    // Check if user document exists
+    const userDocRef = doc(db, 'users', authUser.uid);
+    const userSnap = await getDoc(userDocRef);
+
+    if (userSnap.exists()) {
+      // User document exists, return the data
+      console.log('User document found in Firestore');
+      return userSnap.data();
+    } else {
+      // User document doesn't exist, create it
+      console.log('User document not found, creating new document');
+
+      const userData = {
+        uid: authUser.uid,
+        email: authUser.email,
+        displayName:
+          authUser.displayName || authUser.email?.split('@')[0] || 'User',
+        createdAt: new Date(),
+      };
+
+      await createUser(userData);
+
+      console.log('User document created successfully');
+      return userData;
+    }
+  } catch (error) {
+    console.error('Error ensuring user document exists:', error);
+    throw error;
+  }
+};
 

@@ -22,6 +22,7 @@ const PAGE_SIZE = 10;
 export default function MyQuotes() {
   const user = useUserStore((state) => state.user);
   const [quotes, setQuotes] = useState([]);
+  const [pendingQuotes, setPendingQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filter, setFilter] = useState('public'); // 'public' or 'private'
@@ -45,10 +46,11 @@ export default function MyQuotes() {
           ? user?.privateQuotes || []
           : user?.publicQuotes || [];
 
-      if (quoteIds.length > 0) {
+      if (quoteIds.length > 0 || filter === 'public') {
         // Get the result object with quotes and pagination info
         const {
           quotes: fetchedQuotes,
+          pendingQuotes: fetchedPendingQuotes,
           hasMore: moreAvailable,
           nextIndex: newNextIndex,
           processedChunks: updatedChunks,
@@ -56,20 +58,23 @@ export default function MyQuotes() {
           quoteIds,
           isLoadMore ? nextIndex : 0,
           PAGE_SIZE,
-          isLoadMore ? processedChunks : 0
+          isLoadMore ? processedChunks : 0,
+          filter, // Pass the filter type
+          user?.uid // Pass user ID to fetch pending quotes
         );
 
-        // If we have quotes
+        // Update quotes
         if (fetchedQuotes && fetchedQuotes.length > 0) {
-          // Sort by createdAt if needed
-          const sortedQuotes = [...fetchedQuotes].sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-          );
-
-          // Update state with new quotes
           setQuotes((prev) =>
-            isLoadMore ? [...prev, ...sortedQuotes] : sortedQuotes
+            isLoadMore ? [...prev, ...fetchedQuotes] : fetchedQuotes
           );
+        } else if (!isLoadMore) {
+          setQuotes([]);
+        }
+
+        // Update pending quotes (only for public filter and first load)
+        if (!isLoadMore && filter === 'public') {
+          setPendingQuotes(fetchedPendingQuotes || []);
         }
 
         // Update pagination state
@@ -77,6 +82,8 @@ export default function MyQuotes() {
         setHasMore(moreAvailable);
         setProcessedChunks(updatedChunks);
       } else {
+        setQuotes([]);
+        setPendingQuotes([]);
         setHasMore(false);
       }
     } catch (error) {
@@ -133,8 +140,39 @@ export default function MyQuotes() {
     setHasMore(true);
     setProcessedChunks(0);
     setQuotes([]);
+    setPendingQuotes([]);
     loadQuotes();
   }, [filter, user?.uid]);
+
+  const renderQuoteItem = ({ item }) => (
+    <View style={styles.tileContainer}>
+      {/* Pass the quote with isPending flag to Tile */}
+      <Tile
+        quote={item}
+        user={user}
+        hideActions={item.isPending} // Explicitly hide actions for pending quotes
+      />
+
+      {/* Show pending status banner for pending quotes */}
+      {item.isPending && (
+        <View style={styles.pendingBanner}>
+          <MaterialIcons name='schedule' size={16} color={COLORS.text} />
+          <Text style={styles.pendingText}>Pending Approval</Text>
+        </View>
+      )}
+
+      {/* Show delete button for private quotes only */}
+      {filter === 'private' && !item.isPending && (
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeletePrivateQuote(item.id)}
+        >
+          <MaterialIcons name='delete' size={16} color={COLORS.error} />
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   const renderEmptyState = (message) => (
     <View style={styles.container}>
@@ -161,6 +199,10 @@ export default function MyQuotes() {
     return renderEmptyState('Login to view your posted quotes.');
   }
 
+  // Combine pending quotes with regular quotes for public filter
+  const displayQuotes =
+    filter === 'public' ? [...pendingQuotes, ...quotes] : quotes;
+
   return (
     <View style={styles.container}>
       <Header title='My Quotes' backRoute='/profile' />
@@ -179,7 +221,8 @@ export default function MyQuotes() {
               filter === 'public' && styles.activeFilterText,
             ]}
           >
-            Public
+            Public{' '}
+            {pendingQuotes.length > 0 && `(${pendingQuotes.length} pending)`}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -200,24 +243,13 @@ export default function MyQuotes() {
         </TouchableOpacity>
       </View>
 
-      {quotes.length > 0 ? (
+      {displayQuotes.length > 0 ? (
         <FlatList
-          data={quotes}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.tileContainer}>
-              <Tile quote={item} user={user} />
-              {filter === 'private' && (
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDeletePrivateQuote(item.id)}
-                >
-                  <MaterialIcons name='delete' size={16} color={COLORS.error} />
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          data={displayQuotes}
+          keyExtractor={(item) =>
+            `${item.id}_${item.isPending ? 'pending' : 'approved'}`
+          }
+          renderItem={renderQuoteItem}
           contentContainerStyle={styles.listContent}
           onEndReached={() => loadQuotes(true)}
           onEndReachedThreshold={0.5}
@@ -297,6 +329,21 @@ const getStyles = (COLORS) =>
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 2,
+    },
+    pendingBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 8,
+      backgroundColor: `${COLORS.warning}20`,
+      borderBottomWidth: 1,
+      borderBottomColor: `${COLORS.warning}30`,
+    },
+    pendingText: {
+      marginLeft: 6,
+      fontSize: 12,
+      color: COLORS.text,
+      fontWeight: '500',
     },
     deleteButton: {
       flexDirection: 'row',
